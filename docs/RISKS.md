@@ -33,7 +33,7 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 
 ## Risk 5: Free-tier quota
 - **Known:** Hard caps on agent minutes and inference credit (from research; confirm on pricing page).
-- **Mitigation:** Use the OpenAI plugin with our own key if Inference credit runs low. Keep dev sessions short.
+- **Mitigation (taken, ADR-024):** The agent uses the OpenAI plugin with our own key by default. The free plan's Inference credit ($2.50 a month, hard cap) and 5-session realtime cap no longer apply. LiveKit agent-session minutes (1,000 a month on the free plan) still apply to the deployed agent. Keep dev sessions short.
 
 ## Risk 6: Token route production guard
 - **Known:** `agent-starter-react` token route throws in production unless a flag is set (from research).

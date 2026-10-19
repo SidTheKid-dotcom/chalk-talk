@@ -158,3 +158,10 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Why:** Slide 4 has two plays that need different formations (stagger with Curry low; pick-and-roll with Curry up top). The first deck draft broke basic basketball (a defender behind his man, a ball handler setting a screen). A reviewer who knows basketball sees that at once. Rules in a test stop it from coming back.
 - **Rejected:** One slide per play (more slides than the brief allows). Freehand per-play layout chosen by the model (ADR-015).
 - **Cost:** One more short animation step before a play. A few more schema fields.
+
+## ADR-024: Realtime model through the OpenAI plugin with our own key
+- **Decision:** The agent reaches `gpt-realtime-2.1` through the LiveKit OpenAI plugin (`openai.realtime.RealtimeModel`) with our `OPENAI_API_KEY`, for dev, evals and the deployed demo. One factory reads `MODEL_PROVIDER` (`openai` default, `inference` fallback) and `REALTIME_MODEL` (default `gpt-realtime-2.1`). Rooms, RPC, attributes, dispatch and agent hosting stay on LiveKit. Amends ADR-002, which allowed either path.
+- **Why:** The free Build plan caps LiveKit Inference at $2.50 of credit a month (about 50 realtime minutes) and 5 concurrent realtime sessions, as a hard cap (quotas doc; `lk docs pricing-info`). Evals, testing, the Loom and reviewer sessions would exceed it, and the demo would fail while reviewers use it. A parallel eval run already hit the concurrency cap. `gpt-realtime-2.1` is available on our key (`GET /v1/models/gpt-realtime-2.1` returned 200).
+- **Rejected:** Keep Inference (credit cliff). Upgrade the LiveKit plan (cost and billing setup for a demo). A cheaper `gpt-realtime-2.1-mini` by default (kept as a one-variable option; tool choice quality matters more than cost here).
+- **Cost:** Model usage bills to our OpenAI account. No automatic OpenAI/Azure failover. Our OpenAI org's data settings apply instead of Inference zero retention. One more secret on LiveKit Cloud (`OPENAI_API_KEY`).
+- **Revisit:** If the plan is upgraded, or for production where Inference failover and one bill matter: set `MODEL_PROVIDER=inference`.
