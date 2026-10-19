@@ -205,18 +205,30 @@
         }
       }
     },
+    "markerMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(gsw_curry|gsw_thompson|gsw_green|gsw_iguodala|gsw_barnes|cle_james|cle_irving|cle_love|cle_smith|cle_tthompson)$": {
+          "$ref": "#/$defs/point"
+        }
+      }
+    },
     "diagram": {
       "type": "object",
       "additionalProperties": false,
       "required": ["kind", "markers", "zones"],
       "properties": {
         "kind": {"type": "string", "enum": ["half_court"]},
-        "markers": {
+        "markers": {"$ref": "#/$defs/markerMap"},
+        "matchups": {
           "type": "object",
           "additionalProperties": false,
+          "minProperties": 5,
+          "maxProperties": 5,
           "patternProperties": {
             "^(gsw_curry|gsw_thompson|gsw_green|gsw_iguodala|gsw_barnes|cle_james|cle_irving|cle_love|cle_smith|cle_tthompson)$": {
-              "$ref": "#/$defs/point"
+              "$ref": "#/$defs/playerId"
             }
           }
         },
@@ -224,6 +236,13 @@
           "type": "array",
           "items": {"$ref": "#/$defs/zoneId"}
         }
+      },
+      "if": {
+        "properties": {"markers": {"minProperties": 1}},
+        "required": ["markers"]
+      },
+      "then": {
+        "required": ["matchups"]
       }
     },
     "card": {
@@ -244,12 +263,22 @@
         "id": {"$ref": "#/$defs/playId"},
         "slide_id": {"$ref": "#/$defs/slideId"},
         "title": {"type": "string", "minLength": 1},
+        "start": {"$ref": "#/$defs/playStart"},
         "steps": {
           "type": "array",
           "minItems": 2,
           "maxItems": 5,
           "items": {"$ref": "#/$defs/step"}
         }
+      }
+    },
+    "playStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ball", "positions"],
+      "properties": {
+        "ball": {"$ref": "#/$defs/playerId"},
+        "positions": {"$ref": "#/$defs/markerMap"}
       }
     },
     "step": {
@@ -260,15 +289,7 @@
         "caption": {"type": "string", "minLength": 3, "maxLength": 40},
         "duration_ms": {"type": "integer", "minimum": 300, "maximum": 3000},
         "ball": {"$ref": "#/$defs/playerId"},
-        "moves": {
-          "type": "object",
-          "additionalProperties": false,
-          "patternProperties": {
-            "^(gsw_curry|gsw_thompson|gsw_green|gsw_iguodala|gsw_barnes|cle_james|cle_irving|cle_love|cle_smith|cle_tthompson)$": {
-              "$ref": "#/$defs/point"
-            }
-          }
-        },
+        "moves": {"$ref": "#/$defs/markerMap"},
         "arrows": {
           "type": "array",
           "items": {"$ref": "#/$defs/arrow"}
