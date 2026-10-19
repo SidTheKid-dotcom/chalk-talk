@@ -149,6 +149,7 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 
 ## ADR-022: Own role-checked token route; human tokens cannot edit attributes
 - **Decision:** Replace the starter's token route with `POST /api/token` per `docs/ARCHITECTURE.md#token-route`. Player and coach tokens do not get `canUpdateOwnMetadata`. The `role` attribute is set in the token.
+- **Amended (task 13):** Human tokens may publish microphone and camera, for the shared video rail. Screen share stays excluded. This reverses the audit-05 mic-only fix on purpose.
 - **Why:** The participant-attributes doc says a participant with `canUpdateOwnMetadata` can update its own attributes. A player could then claim `role=coach`. The starter's production guard exists because its route mints open tokens; a role-checked route with short TTL and no admin grants is the deliberate fix, not a deleted guard.
 - **Rejected:** Patch the starter route (keeps its open shape). Deleting the guard without a replacement.
 - **Cost:** The browser cannot set its own attributes. Not needed: the agent owns all state.
