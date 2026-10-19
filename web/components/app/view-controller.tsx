@@ -4,6 +4,7 @@ import { useTheme } from 'next-themes';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAgent, useSessionContext } from '@livekit/components-react';
 import { AgentSessionView_01 } from '@/components/agents-ui/blocks/agent-session-view-01';
+import { DeckPlaceholder } from '@/components/app/deck-placeholder';
 import { WelcomeView } from '@/components/app/welcome-view';
 
 const MotionWelcomeView = motion.create(WelcomeView);
@@ -49,19 +50,22 @@ export function ViewController({ isVideoInputSupported }: ViewControllerProps) {
       )}
       {/* Session view */}
       {isConnected && (
-        <MotionSessionView
-          key="session-view"
-          {...VIEW_MOTION_PROPS}
-          preConnectMessage={
-            agent.isConnected ? 'Agent is listening, ask it a question' : 'Waiting for agent'
-          }
-          supportsChatInput={true}
-          supportsVideoInput={isVideoInputSupported}
-          supportsScreenShare={isVideoInputSupported}
-          isPreConnectBufferEnabled={true}
-          themeMode={resolvedTheme === 'dark' ? 'dark' : 'light'}
-          className="fixed inset-0"
-        />
+        <>
+          <MotionSessionView
+            key="session-view"
+            {...VIEW_MOTION_PROPS}
+            preConnectMessage={
+              agent.isConnected ? 'Agent is listening, ask it a question' : 'Waiting for agent'
+            }
+            supportsChatInput={true}
+            supportsVideoInput={isVideoInputSupported}
+            supportsScreenShare={isVideoInputSupported}
+            isPreConnectBufferEnabled={true}
+            themeMode={resolvedTheme === 'dark' ? 'dark' : 'light'}
+            className="fixed inset-0"
+          />
+          <DeckPlaceholder />
+        </>
       )}
     </AnimatePresence>
   );
