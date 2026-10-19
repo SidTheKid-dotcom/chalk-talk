@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-Merged (audited): 01, 02, 03 (Spike 3 PASS), 05, 08. Running: 04 Spike 2 tool order (OpenAI), 06 Spike 1 coach audio (TTS clips via lk room join), 07 round 2 (layout).
+Merged: 01, 02, 03 (Spike 3 PASS), 05, 07 (UI lab), 08. Running: 04 Spike 2 tool order, 06 Spike 1 coach audio. Next: Wave 2 task files (presenter agent, styled /player) once both spikes report.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -9,6 +9,7 @@ Merged (audited): 01, 02, 03 (Spike 3 PASS), 05, 08. Running: 04 Spike 2 tool or
 - `[UNVERIFIED]` pass on ARCHITECTURE and RISKS with `lk docs`. ADR-019 to ADR-022.
 - Task files 01-07 written.
 - 01 setup merged: agent on gpt-realtime-2.1 with explicit dispatch, web starter, Makefile. Spoken mic turn not yet verified (no mic in executor browser).
+- 07 UI lab merged: all six slides, coach view and primitives at /lab from deck data; marker overlap test.
 - 03 Spike 3 merged: RPC ack after paint, median 117 ms; stale, error codes, hidden tab, agent restart, frozen tab bound all handled.
 - 08 model merged: OpenAI plugin first, LiveKit Inference fallback (RealtimeModelFallbackAdapter). Inference credit likely spent (429).
 - 05 token route merged: role in token, mic-only, coach room pattern, no human attribute edits, room timeouts and cap.
@@ -36,5 +37,6 @@ Merged (audited): 01, 02, 03 (Spike 3 PASS), 05, 08. Running: 04 Spike 2 tool or
 - Agent: cap session length (cost guard).
 - Agent nits from audit 08: log `__qualname__` and each fallback model id; parse providers once; validate providers and key at worker start, not per job; comment on tests reading `_models`.
 - /player: show a clear message when the agent session ends on error (all realtime models failed).
+- /player: featured fact card must not cover the Photo credits link (license), cutouts or court markers; move it into the left column. Coach view: BRIEFING stamp collides with the binder clip.
 - `CHALK_DEBUG` must not be set in `lk agent secrets` or any deploy config (enables the debug_probe RPC).
 - Decide whether planning files (`CLAUDE.md`, `AGENTS.md`, `.claude/`, `.agents/`, `docs/plan/`) stay public.
