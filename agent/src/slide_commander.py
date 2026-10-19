@@ -10,6 +10,7 @@ from typing import Any, Protocol
 from livekit.rtc import RpcError
 
 from callout import callout_rule_reason, rejected_callout
+from coach_switcher import find_by_role, participant_role
 from deck_data import (
     SLIDE_IDS,
     empty_overlay,
@@ -119,21 +120,7 @@ class SlideCommander:
         return list(self._attribute_writes)
 
     def find_player(self) -> RemoteParticipantLike | None:
-        found: RemoteParticipantLike | None = None
-        for participant in self._room.remote_participants.values():
-            if participant.attributes.get("role") == "player":
-                if found is not None:
-                    logger.warning(
-                        json.dumps(
-                            {
-                                "event": "multiple_players",
-                                "kept": found.identity,
-                                "ignored": participant.identity,
-                            }
-                        )
-                    )
-                    continue
-                found = participant
+        found = find_by_role(self._room, "player")
         if found is not None:
             self._player_identity = found.identity
         return found
@@ -143,9 +130,9 @@ class SlideCommander:
         if participant is None:
             for item in self._room.remote_participants.values():
                 if item.identity == identity:
-                    return item.attributes.get("role")
+                    return participant_role(item)
             return None
-        return participant.attributes.get("role")
+        return participant_role(participant)
 
     async def show_slide(self, slide_id: str) -> str:
         async with self._lock:

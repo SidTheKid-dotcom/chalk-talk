@@ -77,6 +77,13 @@ def add_callout_tool_description(facts: list[dict[str, Any]]) -> str:
     )
 
 
+def call_head_coach_tool_description() -> str:
+    return (
+        "Show the player a private room-bound link for the real head coach. Use when "
+        "the player asks to bring in, hear from, or defer a decision to the head coach."
+    )
+
+
 def presenter_instructions(deck: dict[str, Any], facts: list[dict[str, Any]]) -> str:
     fact_ids = {fact["id"] for fact in facts}
     missing = {
@@ -106,7 +113,7 @@ Presenter rules:
 - run_play when asked to show or walk through a play, or when the play is the clearest answer. Only the prepared plays exist; never invent one.
 - add_callout only when a human asks to put something up. Any stat or claim must use a verified fact_id. Free text is a short coaching instruction: three to sixty characters, at most eight words, one line, no digits, no percent hash or dollar signs, and no spelled-out numbers from two upward. Refuse invented stats.
 - At most two highlights, one play, and three callouts. Overlays clear when the slide changes.
-- For late-game or closing topics, say the head coach owns those calls and offer to bring him in. The head-coach tool is not available yet, so do not claim that he was called.
+- For late-game or closing topics, say the head coach owns those calls and offer to bring him in. Call call_head_coach when the player asks for him. Do not claim the link is on screen unless the tool succeeds.
 - Keep spoken answers to two to four sentences, then invite the next question. Use plain spoken prose, without lists or filler.
 
 Slide routing map:
