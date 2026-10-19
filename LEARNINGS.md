@@ -104,3 +104,8 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [handoff] Briefing used `user_turns[:-1]`, so a later "ok thanks" replaced the concern. Snapshot the user-turn count in `mark_requested` and brief only from the turns before it. (audit 13A)
 - [handoff] The floor debounce task had no done callback, so a failure never reached the error log. Log it the same way as `_schedule` (MISTAKES row 23). (audit 13A)
 - [livekit/realtime] `generate_reply(allow_interruptions=False)` is dropped when the Realtime model uses server turn detection. Omit the argument. (agent_activity.py; audit 13A)
+- [web/qr] `qrcode.react` 4.2.0 is ISC, not MIT. Draw the coach join code with local `QRCodeSVG`; do not call a network QR service. (task 13B)
+- [web/coach] Footer controls are flex items, so `min-width: 44px` shrinks "MIC ON" until the M looks clipped. Set `flex: none`, `white-space: nowrap`, `min-width: 120px` and a 4px radius. (task 13B)
+- [handoff] A session whose only user line is "Get me the head coach." briefs `asked` empty and `main_worry` "No specific concern was captured." Lane A drops the request turn. Show that; do not invent a concern. (task 13B)
+- [handoff] Floor router stayed on. Coach "Assistant, go to the LeBron slide." was heard once as "This then, go to the LeBron slide." and `show_slide(s2)` still applied. Player "Assistant, show the Kyrie slide." was intact and applied. A looping player clip flipped the floor back and interrupted the handoff line. (task 13B)
+- [handoff] A second local worker must use its own `AGENT_NAME` and a `NEXT_PUBLIC_APP_URL` that matches the port the player actually opened. The main checkout's production worker otherwise takes the job. (task 13B)

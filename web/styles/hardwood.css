@@ -1122,3 +1122,254 @@ html:has([data-hardwood]) body > div.group.fixed {
 [data-player-question] {
   display: none !important;
 }
+
+.coach-link {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+  max-width: 440px;
+  height: 56px;
+  padding-right: 4px;
+  overflow: hidden;
+  background: #0b0b0c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 4px solid var(--gold);
+}
+
+.coach-link svg {
+  display: block;
+  flex: none;
+  width: 56px;
+  height: 56px;
+}
+
+.coach-link input {
+  width: 160px;
+  min-width: 0;
+  height: 44px;
+  flex: 1;
+  padding: 0 8px;
+  font: 400 14px/1.2 var(--f-body);
+  color: var(--ink);
+  background: #151517;
+  border: 1px solid #2a2a2e;
+  border-radius: 0;
+}
+
+.coach-link button {
+  min-width: 72px;
+  height: 44px;
+  min-height: 44px;
+  flex: none;
+  padding: 0 12px;
+  font: 700 15px/1 var(--f-label);
+  letter-spacing: 0.12em;
+  color: var(--hardwood-panel);
+  text-transform: uppercase;
+  cursor: pointer;
+  background: var(--gold);
+  border: 0;
+}
+
+.coach-shell {
+  display: flex;
+  height: 100svh;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: #000;
+  color: var(--ink);
+}
+
+.coach-top {
+  display: flex;
+  flex: none;
+  gap: 12px;
+  align-items: center;
+  min-height: 48px;
+  padding: 8px 16px;
+  background: var(--blue);
+}
+
+.coach-mark {
+  display: block;
+  width: 8px;
+  height: 16px;
+  flex: none;
+  background: var(--gold);
+}
+
+.coach-private,
+.coach-connection {
+  margin: 0;
+  font: 700 14px/1 var(--f-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.coach-connection {
+  color: var(--ink-2);
+}
+
+.coach-top .pill {
+  margin-left: auto;
+}
+
+.coach-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.coach-stage-wrap {
+  min-width: 0;
+  min-height: 0;
+  flex: none;
+}
+
+.coach-stage-shell {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: #000;
+}
+
+.coach-side {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  padding: 16px 16px 8px;
+  overflow: auto;
+  background: #0b0b0c;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.coach-brief-title {
+  margin: 0 0 8px;
+  font: 400 48px/0.9 var(--f-title);
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+}
+
+.coach-field {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.coach-field-label {
+  margin: 0;
+  font: 700 14px/1 var(--f-label);
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+
+.coach-field-mark {
+  padding: 2px 6px;
+  color: var(--hardwood-panel);
+  background: var(--gold);
+}
+
+.coach-field-text {
+  margin: 8px 0 0;
+  font: 400 18px/1.4 var(--f-body);
+  white-space: pre-line;
+}
+
+.coach-mode {
+  margin: 12px 0 0;
+  font: 700 14px/1 var(--f-label);
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.coach-controls {
+  display: flex;
+  flex: none;
+  gap: 12px;
+  align-items: center;
+  min-height: 64px;
+  padding: 8px 16px 16px;
+  background: #0b0b0c;
+}
+
+.coach-controls button,
+.coach-controls a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.coach-controls button {
+  min-width: 120px;
+  padding: 0 18px;
+  font: 700 15px/1 var(--f-label);
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  text-transform: uppercase;
+  cursor: pointer;
+  background: #1a1a1d;
+  border: 2px solid #333;
+  border-radius: 4px;
+}
+
+.coach-controls button[data-coach-mic][data-live='1'],
+.coach-controls button[data-coach-audio] {
+  color: var(--hardwood-panel);
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.coach-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.coach-gate {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  padding: 24px 16px;
+}
+
+.coach-gate p {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.4;
+}
+
+@media (min-width: 900px) {
+  .coach-body {
+    flex-direction: row;
+  }
+
+  .coach-stage-wrap {
+    flex: 2;
+    height: 100%;
+  }
+
+  .coach-stage-shell {
+    height: 100%;
+  }
+
+  .coach-side {
+    flex: 1;
+    max-width: 33.333%;
+    border-top: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}

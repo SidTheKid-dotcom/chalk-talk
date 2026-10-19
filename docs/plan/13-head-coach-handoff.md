@@ -59,7 +59,7 @@ A player can request the head coach, a coach can join the same room from `/coach
 - [x] Lint and typecheck pass
 - [x] Tests pass (list)
 - [ ] Acceptance checks pass with evidence
-- [ ] Screenshots attached
+- [x] Screenshots attached
 - [x] LEARNINGS.md updated if needed
 - [x] Docs updated if behavior changed
 
@@ -92,6 +92,33 @@ A player can request the head coach, a coach can join the same room from `/coach
   - `cd agent && uv run pytest -q` — **117 passed, 2 skipped**. `uv run ruff check` — **All checks passed**.
   - `cd web && pnpm test` — **8 files, 72 tests passed**. `pnpm exec tsc --noEmit` — passed.
   - Lane B UI and the live room check are still not done.
+
+- Lane B files changed:
+  - `web/lib/coach-link.ts`, `web/lib/coach-link.test.ts`, `web/hooks/useCoachLink.ts` — `show_coach_link` sibling of the deck RPC. Ack `{"ok": true}` after paint. Reject non-http(s) URLs and anything that is not `/coach?room=fr-[0-9a-f]{16}`. Invalid payloads throw `RpcError` 2002. Unregister on cleanup.
+  - `web/components/hardwood/CoachLinkCard.tsx`, `web/components/app/view-controller.tsx`, `web/styles/hardwood.css` — local `QRCodeSVG` (qrcode.react 4.2.0, ISC) and a copyable URL in the unscaled bottom rail. Hidden when no link.
+  - `web/lib/coach-briefing.ts`, `web/lib/coach-board.ts` and tests — briefing JSON parse and slide/overlay read from agent attributes.
+  - `web/components/coach/CoachSession.tsx`, `web/app/coach/page.tsx` — live Hardwood `/coach` room. Text stream `coach-briefing` registered before connect and unregistered on cleanup. Slide + overlays via `ScaledSlide` (`portraitHint={false}`). Mic, connection, state pill. No transcript.
+  - `web/components/hardwood/ScaledSlide.tsx` — optional portrait hint so the coach thumbnail can scale.
+  - `web/package.json`, `web/pnpm-lock.yaml` — `qrcode.react@4.2.0`.
+- Lane B commands and key output:
+  - `cd web && pnpm test` — 12 files, 90 tests passed.
+  - `cd web && pnpm exec tsc --noEmit` — passed.
+  - `cd web && pnpm lint` — passed with the two pre-existing visualizer warnings.
+  - `python3 scripts/sync_deck.py --check` — sync check passed.
+  - Agent Python was not changed. No agent pytest this lane.
+- Lane B live room `fr-9f82b8dc63da4847` (job `AJ_kZT9WpXwrLoD`, agent `chalk-talk-t13b`, web `http://localhost:3013`):
+  - Player "Get me the head coach." → `coach_link_rpc` ok, 128.9 ms. URL `http://localhost:3013/coach?room=fr-9f82b8dc63da4847`. Player body did not contain the briefing (`player briefing leak false`).
+  - `coach_briefing_sent` only to `coach-6c6bb7201a`. Card: They asked —, Main worry "No specific concern was captured.", Now on tip-off. Empty asked is the Lane A request-turn drop.
+  - `coach_handoff_line_played`, then `mode_set` clicker, `coach_switch_complete` (set_participant 2.55 ms, switch 7710.25 ms including the spoken line). The line was interrupted because the looping player clip flipped the floor back (`floor_switched` coach→player, 250.88 ms).
+  - Coach heard as "This then, go to the LeBron slide." → `show_slide` s2 seq 2 applied, 136 ms. Both screens show "How do we stop LeBron?" and the coach pill reads CLICKER.
+  - `show_slide` s6 seq 3 applied. Coach "Assistant, highlight the left corner." exact → `highlight` `z_left_corner` seq 4 applied, 410.5 ms. Both pages had one highlighter.
+  - Player "Assistant, show the Kyrie slide." transcribed intact and `show_slide` s3 applied (seq 7 and 8). Floor router stayed on. No ADR-028 fallback.
+  - Coach browser closed → `coach_left` `presenter_restored` for `player-c500961ac0`, errors []. Player "How do we get Steph open?" → `show_slide` s4 seq 9 and `run_play` `p_steph_stagger` seq 10 applied. Session stayed up until the script left.
+- Lane B screenshots (not in git): `/tmp/task13b/player-qr-1920.png`, `player-after-s2.png`, `player-s6-highlight.png`, `coach-briefing-390.png`, `coach-after-s2.png`, `coach-s6-highlight.png`, `coach-mic-390.png`.
+- Lane B not done:
+  - Item 5 video rail, camera controls, speaking border and overlap-stability check. Stopped after item 4.
+  - Handoff line was not one clean uninterrupted utterance.
+  - Speaker-change gate did not meet the 2-of-3 loss bar, so the coach-only-ear flag was not added.
 
 ## Lane B brief (planner, speed mode)
 Lane A is merged on main (`agent/src/coach_switcher.py`, `call_head_coach`, briefing on `coach-briefing`, floor router, camera grants). Lane B builds the browser side on top of merged task 12 Hardwood. Priority order; stop and report if time runs short after item 4.
