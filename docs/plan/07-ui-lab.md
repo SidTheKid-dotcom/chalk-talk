@@ -42,6 +42,15 @@ A `/lab` route renders every Scouting Packet primitive from deck JSON, and scree
 - [x] Docs updated (README / DECISIONS / FACTS) if affected
 
 ## Report (executor fills)
+
+### Round 2
+Planner review: court labels collided, court too small, captions clipped, status "tum", wrong fact card, lower-third all caps, coach stamp over title.
+- Featured fact: optional `featured_fact_id` (s1 F08, s2 F07, s3 F16, s4 F11, s5 F15, s6 F08)
+- Markers: surname inside the ring, ~43px radius at 1920, defender offset toward the rim; Vitest overlap test
+- Sheet: court ~50–55% right, cutouts at the court edge, lineup/x-factor cutouts larger
+- Status: tracking 0 so "turn" reads, state pill "—", "Coach —"
+- Lower-third sentence case; coach stamp at the clip; thumbnail 60%
+
 - Files changed:
   - `web/app/lab/layout.tsx`, `web/app/lab/page.tsx`, `web/app/lab/credits/page.tsx`
   - `web/components/deck/*` (sheet, court, markers, cutouts, cards, briefing, gallery)

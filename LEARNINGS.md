@@ -47,3 +47,7 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [web/css] A three-column grid still placed the court in the empty `auto` cutout column when a slide had no side cutouts, shrinking slide 6. Use a two-column template when that slot is unused. (source: task 07)
 - [web/prettier] `prettier --write` reformats `web/lib/deck/deck.json` and would drift the synced copy. Ignore `lib/deck/*.json`. (source: task 07)
 - [web/court] Deck y=0 is the baseline. Mapping SVG as y-down puts the rim at the top; rotate to `toSvg(x,y)=(100-y,x)` so the basket sits on the right like the concepts. (source: task 07)
+- [web/court] A 55% square court at 1920×1080 is taller than the sheet once the status strip is reserved. Size the court frame by height (`aspect-ratio: 1; height: 100%; flex: none`) so the strip stays on screen. (source: task 07 r2)
+- [web/cutout] The paper-border drop-shadow covered Courier captions. Rotate only the photo and sit the label below the shadow with z-index. (source: task 07 r2)
+- [web/status] Wide Archivo tracking turns "turn" into "tum" (rn). Use letter-spacing 0 and disable liga/calt on the strip. (source: task 07 r2)
+- [deck] The first `fact_id` is not always the slide's featured card. Optional `featured_fact_id` (must be on that slide) picks it; omit the field for no card. (source: task 07 r2)
