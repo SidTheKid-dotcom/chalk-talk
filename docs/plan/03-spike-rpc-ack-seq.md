@@ -152,3 +152,34 @@ Screenshots:
 - Embedded browser has no mic (`getUserMedia` NotFoundError on the player page). Fine for this RPC spike.
 - README / DECISIONS / FACTS unchanged; only LEARNINGS and this task file.
 - Not pushed. Not merged.
+
+## Round 2 (auditor CHANGES REQUIRED)
+
+Kept 2003 on both sides. `initialDeckState.ready` is false; `useDeckCommands` sets ready when the deck mounts (`markDeckReady`) and clears it on unmount.
+
+### Files changed
+- `agent/src/slide_commander.py` — parse `applied:false` as FAILED for slide and highlight; map 1402/1403/1404/1504; `max_round_trip_latency=2.0`; catch `set_attributes`; drop debug helpers
+- `agent/src/debug_probe.py` — `DebugSlideCommander` subclass; reject non-player callers; stale_slide / stale_highlight actions
+- `agent/src/agent.py` — import `SlideId` from `deck_data`; debug path uses `DebugSlideCommander`
+- `agent/tests/test_slide_commander.py` — stale highlight, set_attributes failure, extra RPC codes
+- `agent/tests/test_debug_probe.py` — role gate; production commander has no debug helpers
+- `web/lib/deck/commands.ts` — ready false until mount; `seedDeckFromAgent` resets seq on identity change
+- `web/lib/deck/commands.test.ts` / `web/lib/deck/rpc.test.ts` / `web/lib/deck/rpc.ts` / `web/hooks/useDeckCommands.ts`
+- `web/components/app/deck-placeholder.tsx` — stale slide/highlight probe buttons
+- `LEARNINGS.md`
+
+### Commands run
+```
+cd agent && uv run pytest -q && uv run ruff check
+32 passed in 1.32s
+All checks passed!
+
+cd web && pnpm exec vitest run && pnpm exec tsc --noEmit && pnpm lint
+Test Files  4 passed (4)
+Tests  35 passed (35)
+tsc exit 0; lint pre-existing warnings only
+```
+
+### Not done / not verified
+- Optional live re-check of one stale highlight and one stale slide was not run this round (unit tests cover both).
+- Not pushed.
