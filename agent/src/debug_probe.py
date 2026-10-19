@@ -21,7 +21,89 @@ def debug_enabled() -> bool:
     return os.environ.get("CHALK_DEBUG") == "1"
 
 
-async def run_script(commander: SlideCommander) -> dict[str, Any]:
+class DebugSlideCommander(SlideCommander):
+    """Dev-only helpers for the CHALK_DEBUG probe. Production does not use this class."""
+
+    def __init__(self, room: Any, deck: dict[str, Any] | None = None) -> None:
+        super().__init__(room, deck)
+        self._dead_tab_armed = False
+        self._dead_tab_task: asyncio.Task[None] | None = None
+
+    def arm_dead_tab(self) -> None:
+        self._dead_tab_armed = True
+
+    def on_participant_disconnected(self, participant: Any) -> None:
+        if not self._dead_tab_armed:
+            return
+        identity = getattr(participant, "identity", "")
+        role = participant.attributes.get("role") if participant.attributes else None
+        if role != "player" and identity != self._player_identity:
+            return
+        self._dead_tab_armed = False
+        self._dead_tab_task = asyncio.create_task(
+            self._dead_tab_once(),
+            name="dead-tab-show-slide",
+        )
+        self._dead_tab_task.add_done_callback(_log_task_error)
+
+    async def send_raw(
+        self,
+        method: str,
+        payload: dict[str, Any],
+        *,
+        bump_seq: bool = True,
+        kind: str = "slide",
+    ) -> str:
+        async with self._lock:
+            body = dict(payload)
+            if bump_seq:
+                self._seq += 1
+                body["seq"] = self._seq
+            return await self._rpc(method, body, kind=kind)
+
+    async def _dead_tab_once(self) -> None:
+        result = await self.show_slide(self._current_slide or SLIDE_IDS[0])
+        logger.info(
+            json.dumps(
+                {
+                    "event": "dead_tab_result",
+                    "result": result,
+                }
+            )
+        )
+
+
+def _log_task_error(task: asyncio.Task[None]) -> None:
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.error(
+            json.dumps(
+                {
+                    "event": "background_task_error",
+                    "task": task.get_name(),
+                    "error": str(exc),
+                }
+            )
+        )
+
+
+def _reject_non_player(commander: SlideCommander, data: RpcInvocationData) -> str | None:
+    role = commander.role_of(data.caller_identity)
+    if role == "player":
+        return None
+    return json.dumps(
+        {
+            "ok": False,
+            "error": "player role required",
+            "caller_identity": data.caller_identity,
+            "role": role,
+        }
+    )
+
+
+async def run_script(commander: DebugSlideCommander) -> dict[str, Any]:
     """Drive SlideCommander against the real player. No model turns."""
     steps: list[dict[str, Any]] = []
 
@@ -80,9 +162,15 @@ async def run_script(commander: SlideCommander) -> dict[str, Any]:
     return {"steps": steps, "armed_dead_tab": True, "round_trips": summary}
 
 
-async def handle_debug_probe(commander: SlideCommander, data: RpcInvocationData) -> str:
+async def handle_debug_probe(
+    commander: DebugSlideCommander, data: RpcInvocationData
+) -> str:
     if not debug_enabled():
         return json.dumps({"ok": False, "error": "debug_probe disabled"})
+
+    rejected = _reject_non_player(commander, data)
+    if rejected is not None:
+        return rejected
 
     try:
         body = json.loads(data.payload) if data.payload else {}
@@ -101,11 +189,38 @@ async def handle_debug_probe(commander: SlideCommander, data: RpcInvocationData)
         result = await commander.show_slide(slide_id)
         return json.dumps({"ok": True, "action": "show_slide", "result": result})
 
+    if action == "highlight":
+        target = str(body.get("target") or "")
+        result = await commander.highlight(target)
+        return json.dumps({"ok": True, "action": "highlight", "result": result})
+
+    if action == "stale_highlight":
+        result = await commander.send_raw(
+            "highlight",
+            {
+                "slide_id": commander.current_slide or SLIDE_IDS[0],
+                "seq": 1,
+                "target": str(body.get("target") or "cle_james"),
+            },
+            bump_seq=False,
+            kind="highlight",
+        )
+        return json.dumps({"ok": True, "action": "stale_highlight", "result": result})
+
+    if action == "stale_slide":
+        result = await commander.send_raw(
+            "show_slide",
+            {"slide_id": commander.current_slide or SLIDE_IDS[0], "seq": 1},
+            bump_seq=False,
+            kind="slide",
+        )
+        return json.dumps({"ok": True, "action": "stale_slide", "result": result})
+
     script = await run_script(commander)
     return json.dumps({"ok": True, "action": "script", **script})
 
 
-async def register_debug_probe(room: Any, commander: SlideCommander) -> None:
+async def register_debug_probe(room: Any, commander: DebugSlideCommander) -> None:
     async def _handle(data: RpcInvocationData) -> str:
         return await handle_debug_probe(commander, data)
 
@@ -123,7 +238,7 @@ async def wait_until_shutdown(ctx: Any) -> None:
     await done.wait()
 
 
-async def run_debug_job(ctx: Any, commander: SlideCommander) -> None:
+async def run_debug_job(ctx: Any, commander: DebugSlideCommander) -> None:
     """Join the room without a realtime model so the spike does not burn inference credit."""
 
     def _on_disconnect(participant: Any, *_: Any) -> None:
@@ -145,6 +260,7 @@ async def run_debug_job(ctx: Any, commander: SlideCommander) -> None:
 
 __all__ = [
     "DEBUG_PROBE_METHOD",
+    "DebugSlideCommander",
     "debug_enabled",
     "handle_debug_probe",
     "register_debug_probe",

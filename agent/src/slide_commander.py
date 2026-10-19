@@ -22,6 +22,7 @@ from deck_data import (
 logger = logging.getLogger("agent")
 
 RPC_TIMEOUT_S = 3.0
+RPC_MAX_ROUND_TRIP_S = 2.0
 
 FAILED_SLIDE = "FAILED: slide not shown ({reason}). Do not describe it as on screen."
 FAILED_HIGHLIGHT = (
@@ -31,10 +32,14 @@ FAILED_HIGHLIGHT = (
 _RPC_REASONS: dict[int, str] = {
     1400: "unsupported method",
     1401: "recipient not found",
+    1402: "request payload too large",
+    1403: "unsupported server",
+    1404: "unsupported version",
     1500: "application error",
     1501: "connection timeout",
     1502: "response timeout",
     1503: "recipient disconnected",
+    1504: "response payload too large",
     1505: "send failed",
     2001: "unknown slide_id",
     2002: "malformed payload",
@@ -91,8 +96,6 @@ class SlideCommander:
         self._player_identity: str | None = None
         self._attribute_writes: list[dict[str, str]] = []
         self.round_trips_ms: list[float] = []
-        self._dead_tab_armed = False
-        self._dead_tab_task: asyncio.Task[None] | None = None
 
     @property
     def seq(self) -> int:
@@ -130,22 +133,14 @@ class SlideCommander:
             self._player_identity = found.identity
         return found
 
-    def arm_dead_tab(self) -> None:
-        self._dead_tab_armed = True
-
-    def on_participant_disconnected(self, participant: RemoteParticipantLike) -> None:
-        if not self._dead_tab_armed:
-            return
-        identity = getattr(participant, "identity", "")
-        role = participant.attributes.get("role") if participant.attributes else None
-        if role != "player" and identity != self._player_identity:
-            return
-        self._dead_tab_armed = False
-        self._dead_tab_task = asyncio.create_task(
-            self._dead_tab_once(),
-            name="dead-tab-show-slide",
-        )
-        self._dead_tab_task.add_done_callback(_log_task_error)
+    def role_of(self, identity: str) -> str | None:
+        participant = self._room.remote_participants.get(identity)
+        if participant is None:
+            for item in self._room.remote_participants.values():
+                if item.identity == identity:
+                    return item.attributes.get("role")
+            return None
+        return participant.attributes.get("role")
 
     async def show_slide(self, slide_id: str) -> str:
         async with self._lock:
@@ -155,36 +150,15 @@ class SlideCommander:
         async with self._lock:
             return await self._highlight_locked(target)
 
-    async def send_raw(
-        self,
-        method: str,
-        payload: dict[str, Any],
-        *,
-        bump_seq: bool = True,
-        kind: str = "slide",
-    ) -> str:
-        async with self._lock:
-            body = dict(payload)
-            if bump_seq:
-                self._seq += 1
-                body["seq"] = self._seq
-            return await self._rpc(method, body, kind=kind)
-
     async def _show_slide_locked(self, slide_id: str) -> str:
         if slide_id not in SLIDE_IDS or get_slide(slide_id, self._deck) is None:
             return FAILED_SLIDE.format(reason=f"unknown slide_id {slide_id}")
         self._seq += 1
         payload = {"slide_id": slide_id, "seq": self._seq}
         result = await self._rpc("show_slide", payload, kind="slide")
-        if result.startswith("FAILED:"):
-            return result
-        try:
-            ack = json.loads(result)
-        except json.JSONDecodeError:
-            return result
-        if not ack.get("applied"):
-            reason = ack.get("reason", "not applied")
-            return f"Slide unchanged ({reason}). Stay on the current slide."
+        applied, failure = _applied_or_failure(result, FAILED_SLIDE)
+        if not applied:
+            return failure or result
         return slide_narration(slide_id, self._deck)
 
     async def _highlight_locked(self, target: str) -> str:
@@ -207,8 +181,9 @@ class SlideCommander:
             "target": target,
         }
         result = await self._rpc("highlight", payload, kind="highlight")
-        if result.startswith("FAILED:"):
-            return result
+        applied, failure = _applied_or_failure(result, FAILED_HIGHLIGHT)
+        if not applied:
+            return failure or result
         label = target_label(target, self._deck)
         return f"Highlighted {label}. Refer to it as highlighted."
 
@@ -235,6 +210,7 @@ class SlideCommander:
                 method=method,
                 payload=json.dumps(payload),
                 response_timeout=RPC_TIMEOUT_S,
+                max_round_trip_latency=RPC_MAX_ROUND_TRIP_S,
             )
         except RpcError as exc:
             elapsed_ms = (time.perf_counter() - started) * 1000
@@ -313,8 +289,7 @@ class SlideCommander:
                 "slide_seq": str(seq),
                 "overlay_state": json.dumps(overlay, separators=(",", ":")),
             }
-            await self._room.local_participant.set_attributes(attrs)
-            self._attribute_writes.append(attrs)
+            await self._set_attributes(attrs, method=method, seq=seq)
             self._current_slide = slide_id
             self._overlay = overlay
             return
@@ -333,20 +308,28 @@ class SlideCommander:
                 "callouts": (self._overlay or {}).get("callouts") or [],
             }
             attrs = {"overlay_state": json.dumps(overlay, separators=(",", ":"))}
-            await self._room.local_participant.set_attributes(attrs)
-            self._attribute_writes.append(attrs)
+            await self._set_attributes(attrs, method=method, seq=seq)
             self._overlay = overlay
 
-    async def _dead_tab_once(self) -> None:
-        result = await self.show_slide(self._current_slide or SLIDE_IDS[0])
-        logger.info(
-            json.dumps(
-                {
-                    "event": "dead_tab_result",
-                    "result": result,
-                }
+    async def _set_attributes(
+        self, attrs: dict[str, str], *, method: str, seq: int
+    ) -> None:
+        try:
+            await self._room.local_participant.set_attributes(attrs)
+        except Exception as exc:
+            logger.error(
+                json.dumps(
+                    {
+                        "event": "set_attributes_failed",
+                        "method": method,
+                        "seq": seq,
+                        "error_type": type(exc).__name__,
+                        "error": str(exc),
+                    }
+                )
             )
-        )
+            return
+        self._attribute_writes.append(attrs)
 
     def _log_roundtrip(
         self,
@@ -385,17 +368,14 @@ class SlideCommander:
         logger.info(json.dumps(line))
 
 
-def _log_task_error(task: asyncio.Task[None]) -> None:
-    if task.cancelled():
-        return
-    exc = task.exception()
-    if exc is not None:
-        logger.error(
-            json.dumps(
-                {
-                    "event": "background_task_error",
-                    "task": task.get_name(),
-                    "error": str(exc),
-                }
-            )
-        )
+def _applied_or_failure(result: str, fail: str) -> tuple[bool, str | None]:
+    if result.startswith("FAILED:"):
+        return False, result
+    try:
+        ack = json.loads(result)
+    except json.JSONDecodeError:
+        return False, result
+    if ack.get("applied"):
+        return True, None
+    reason = ack.get("reason", "not applied")
+    return False, fail.format(reason=reason)

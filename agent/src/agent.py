@@ -1,7 +1,6 @@
 import logging
 import os
 from pathlib import Path
-from typing import Literal
 
 from dotenv import load_dotenv
 from livekit.agents import (
@@ -16,8 +15,8 @@ from livekit.agents import (
 )
 from livekit.plugins import ai_coustics
 
-from debug_probe import debug_enabled, run_debug_job
-from deck_data import assert_slide_ids_match_deck
+from debug_probe import DebugSlideCommander, debug_enabled, run_debug_job
+from deck_data import SlideId, assert_slide_ids_match_deck
 from slide_commander import SlideCommander
 
 logger = logging.getLogger("agent")
@@ -32,15 +31,6 @@ if not AGENT_NAME:
     raise RuntimeError("AGENT_NAME is required for explicit agent dispatch")
 
 assert_slide_ids_match_deck()
-
-SlideId = Literal[
-    "s1_tipoff",
-    "s2_lebron",
-    "s3_kyrie",
-    "s4_offense",
-    "s5_xfactors",
-    "s6_last_two",
-]
 
 
 class Assistant(Agent):
@@ -72,13 +62,13 @@ async def my_agent(ctx: JobContext):
         "agent_name": AGENT_NAME,
     }
 
-    commander = SlideCommander(ctx.room)
-
     if debug_enabled():
         # Spike 3 live driver: skip GPT Realtime so this job does not consume
         # inference credit. debug_probe calls SlideCommander directly.
-        await run_debug_job(ctx, commander)
+        await run_debug_job(ctx, DebugSlideCommander(ctx.room))
         return
+
+    commander = SlideCommander(ctx.room)
 
     # GPT Realtime is turn-based speech-to-speech. The model's own turn
     # detection (semantic VAD by default) owns turn boundaries, so the
