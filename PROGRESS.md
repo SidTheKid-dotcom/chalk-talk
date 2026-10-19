@@ -51,7 +51,6 @@ Demo video recorded and trimmed. Next: deploy (LiveKit Cloud agent + Vercel), ad
 - README known limit: if the briefing or handoff line fails, the coach is ignored until they rejoin.
 
 ## Ship checklist (collected from audits)
-- BEFORE ANY PUBLIC PUSH: git history contains a private name and a private Loom link (commits from the Hardwood planning, e.g. `44e82be`). Current files are clean. Rewrite or squash history before the first push to a public remote, then run `secret_scan.sh` and `git log -p | grep -i -E '<private terms>'` to confirm.
 - README Known limits: coach link is a bearer link (anyone with it joins as coach); no rate limit on the token route; free-tier cold start and minute caps.
 - Vercel: set `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `AGENT_NAME` for build and runtime (page checks env at build).
 - LiveKit Cloud agent: `AGENT_NAME` must be a secret (`lk agent secrets`), or the worker crash-loops.
