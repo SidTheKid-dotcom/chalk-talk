@@ -21,22 +21,28 @@ function AppSetup() {
 }
 
 interface AppProps {
-  tokenServerId?: string;
   tokenEndpoint: string;
-  agentName?: string;
   isVideoInputSupported: boolean;
 }
 
-export function App({ tokenServerId, tokenEndpoint, agentName, isVideoInputSupported }: AppProps) {
+export function App({ tokenEndpoint, isVideoInputSupported }: AppProps) {
   const tokenSource = useMemo(
     () =>
-      tokenServerId
-        ? TokenSource.developmentTokenServer(tokenServerId)
-        : TokenSource.endpoint(tokenEndpoint),
-    [tokenServerId, tokenEndpoint]
+      TokenSource.custom(async () => {
+        const response = await fetch(tokenEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: 'player' }),
+        });
+        if (!response.ok) {
+          throw new Error(`Token request failed: ${response.status}`);
+        }
+        return response.json();
+      }),
+    [tokenEndpoint]
   );
 
-  const session = useSession(tokenSource, agentName ? { agentName } : undefined);
+  const session = useSession(tokenSource);
 
   return (
     <AgentSessionProvider session={session}>
