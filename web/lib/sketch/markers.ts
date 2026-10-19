@@ -188,3 +188,59 @@ export function layoutMarkers({
 
   return buildLayouts(placed, players, radiusSvg, unit);
 }
+
+function moveAway(from: Coord, obstacle: Coord, distance: number): Coord {
+  const dx = from[0] - obstacle[0];
+  const dy = from[1] - obstacle[1];
+  const len = Math.hypot(dx, dy);
+  if (len < 0.05) return clampCourt([from[0] + distance, from[1]]);
+  return clampCourt([from[0] + (dx / len) * distance, from[1] + (dy / len) * distance]);
+}
+
+/** Nudge faint previous-position ghosts off live marker labels. */
+export function separateGhostsFromLive(
+  ghosts: MarkerLayout[],
+  live: MarkerLayout[],
+  courtWidthPx = labCourtWidthPx()
+): MarkerLayout[] {
+  if (ghosts.length === 0 || live.length === 0) return ghosts;
+  const unit = svgUnitPx(courtWidthPx);
+  const placed = new Map<PlayerId, Coord>(
+    ghosts.map((ghost) => [ghost.id, [ghost.svg[0], ghost.svg[1]]])
+  );
+
+  for (let iter = 0; iter < 24; iter += 1) {
+    let moved = false;
+    for (const ghost of ghosts) {
+      let svg = placed.get(ghost.id);
+      if (!svg) continue;
+      for (const marker of live) {
+        if (marker.id === ghost.id) continue;
+        const radiusPx = ghost.radiusSvg * unit;
+        const disk: LabelBox = {
+          x: svg[0] * unit - radiusPx,
+          y: svg[1] * unit - radiusPx,
+          w: radiusPx * 2,
+          h: radiusPx * 2,
+        };
+        const overlap = boxOverlapPx(disk, marker.box);
+        if (overlap <= LABEL_OVERLAP_TOLERANCE_PX) continue;
+        svg = moveAway(svg, marker.svg, (overlap + 4) / unit);
+        placed.set(ghost.id, svg);
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+
+  return ghosts.map((ghost) => {
+    const svg = placed.get(ghost.id) ?? ghost.svg;
+    const dx = (svg[0] - ghost.svg[0]) * unit;
+    const dy = (svg[1] - ghost.svg[1]) * unit;
+    return {
+      ...ghost,
+      svg,
+      box: { x: ghost.box.x + dx, y: ghost.box.y + dy, w: ghost.box.w, h: ghost.box.h },
+    };
+  });
+}

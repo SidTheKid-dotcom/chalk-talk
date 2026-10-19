@@ -38,19 +38,43 @@ Player, lobby and reusable slide primitives adopt the Hardwood Broadcast directi
 | Responsive | 1280x800 and 390x844 | no hidden controls; bounded camera reserve |
 
 ## Checklist
-- [ ] Implemented
-- [ ] Tests, lint and typecheck pass
-- [ ] Six slides verified at required sizes
-- [ ] Motion and interruption checks pass
-- [ ] Asset credits updated
-- [ ] Screenshots/recording attached outside git
-- [ ] LEARNINGS and task report updated
+- [x] Implemented
+- [x] Tests, lint and typecheck pass
+- [x] Six slides verified at required sizes
+- [x] Motion and interruption checks pass
+- [x] Asset credits updated
+- [x] Screenshots/recording attached outside git
+- [x] LEARNINGS and task report updated
 
 ## Report (executor fills)
 - Files changed:
+  - Tracked assets: `web/fonts/hardwood/*.woff2`, `web/public/hardwood/floor.jpg`, `web/public/hardwood/CREDITS.md`
+  - Chrome: `web/app/hardwood-fonts.ts`, `web/styles/hardwood.css`, `web/components/hardwood/*`, `web/lib/slide-transition.ts`, `web/lib/slide-transition.test.ts`, `web/app/player/layout.tsx`, `web/app/coach/layout.tsx`, `web/app/lab/layout.tsx`
+  - Surfaces: `web/components/deck/*` primitives + `SlideView.tsx`, `web/components/app/{app,view-controller,welcome-view}.tsx`, `web/app/{lab,coach}/**`, `web/lib/deck/credits.server.ts`
+  - Checks: `web/scripts/{shoot,shoot-motion,test-caption-layout}.mjs`, `web/package.json`
+  - Docs: `LEARNINGS.md`, `docs/plan/12-hardwood-frontend.md`
 - Commands run and key output:
-- Evidence paths:
+  - `pnpm test` — 9 files, 78 passed
+  - `pnpm lint` — pass; only pre-existing agents-ui warnings
+  - `pnpm exec tsc --noEmit` — pass
+  - `python3 scripts/sync_deck.py --check` — `sync check passed`
+  - `pnpm shoot` — 6 slides at 1920/1280/480, tool/state/responsive stills, contact sheet; geometry rows 6
+  - `pnpm test:geometry` — stage 1920×1080 / 1280×720 / 390×219.375; camera yes; no captions or text input
+  - `pnpm shoot:motion` — forward/backward/rapid/reduced passed (rAF transform samples + webm)
+- Evidence paths (gitignored / tmp, not committed):
+  - Stills: `web/screenshots/*.png` and `/tmp/task12-evidence/*.png`
+  - 25% sheet: `/tmp/task12-evidence/contact-sheet-25pct.png`
+  - Geometry: `/tmp/task12-evidence/geometry.json`
+  - Motion frames: `/tmp/task12-evidence/push-{forward,backward,rapid,reduced}/`
+  - Motion video: `/tmp/task12-evidence/push-{forward,backward,rapid,reduced}.webm`
+- Asset credits:
+  - Floor: Poly Haven “Laminate Floor 02”, CC0 → `web/public/hardwood/floor.jpg`
+  - Fonts (OFL): Bebas Neue, Inter, IBM Plex Sans Condensed, Kalam, DSEG7/14 Classic in `web/fonts/hardwood/`
+  - Cutouts: existing `design/players/` + `/lab/credits` (hardwood concept cutouts and JR image not copied)
 - Not done / not verified:
+  - Live `/player` stills (needs `LIVEKIT_URL`; lobby/ended captured via `/lab`)
+  - JR local meme remains gitignored; fallback card verified
+  - Did not merge
 
 ## Round 2 (planner, from audit 12)
 Fix on branch `t3/hardwood-frontend-redesign`. Do not change agent, deck, facts, RPC or hooks.
@@ -62,3 +86,12 @@ Fix on branch `t3/hardwood-frontend-redesign`. Do not change agent, deck, facts,
 6. **Nits.** Add `web/fonts/hardwood/OFL.txt` (font license text). `aria-pressed` on the mic toggle.
 
 Evidence: `pnpm test && pnpm lint && pnpm exec tsc --noEmit`; `python3 scripts/sync_deck.py --check`; mid-transition frames forward and backward; screenshots of slide 5, play step 2 and 4 on slide 2, controls at three viewports, portrait phone.
+
+## Round 2 report
+- Slide 5 cutouts are a captioned strip, not paired to points.
+- Push travels the full stage width. Headline boxes do not intersect at 50% time, forward or backward.
+- Plays hide the cutout, label the caption "Play", draw unlabeled ghosts, and offset every step including ghosts.
+- Session controls and Photo credits sit outside the scaled stage and stay at least 44px / 14px at 1920×1080, 1280×800, and 844×390.
+- Portrait under 600px pins the stage to the top, puts controls below, and shows the rotate hint.
+- `web/fonts/hardwood/OFL.txt` is tracked. The mic toggle sets `aria-pressed`.
+- Checks: `pnpm test` 79 passed; lint and `tsc --noEmit` passed; `sync_deck.py --check` passed. Stills in `/tmp/task12-r2/`.

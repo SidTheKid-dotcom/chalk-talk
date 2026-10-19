@@ -5,7 +5,7 @@ type KalamNoteProps = {
 
 export function KalamNote({ text, className = '' }: KalamNoteProps) {
   return (
-    <p className={`font-kalam m-0 text-[22px] leading-snug text-[var(--blue)] ${className}`}>
+    <p className={`font-kalam m-0 text-[32px] leading-snug text-[var(--gold)] ${className}`}>
       {text}
     </p>
   );
