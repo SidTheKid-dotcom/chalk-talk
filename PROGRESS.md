@@ -2,7 +2,7 @@
 
 ## Now
 SPEED MODE (user records the demo tonight). One audit per task; fix rounds are verified by the planner, not re-audited. Cut: task 14 automated E2E driver, task 04 harness merge, status-panel metrics beyond "—".
-Running: 13B coach link + `/coach` page + live handoff (Grok 4.7). Next: deploy (LiveKit Cloud agent + Vercel), README polish, Loom.
+Running: 13B coach link + `/coach` page + live handoff (Grok 4.7); speech-paced play motion (ADR-029, Grok 4.7). Next: merge those, deploy (LiveKit Cloud agent + Vercel), README polish, Loom.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.

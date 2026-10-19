@@ -177,8 +177,9 @@ run_play(play_id: PlayId) -> str
     If that fails, return its failure string. Do not send run_play.
   - seq = seq + 1, perform_rpc "run_play" to player, response_timeout ~3s
   - player acks when the first frame of the play is painted (animation started)
+  - the player (and coach) then advance captioned steps on the agent's speaking clock (ADR-029). `duration_ms` in the ack is still the sum of deck step tweens, not speech length.
   - on ack: update overlay_state, return play title + step captions in order + total duration,
-    "The play is running on screen. Walk through the steps in order, briefly."
+    "The play is on screen and advances with your speech. Speak each step caption in order while that step is showing. Do not skip ahead."
   - on timeout / RpcError: return "FAILED: play not shown (<reason>). Do not describe it as on screen."
 
 add_callout(fact_id: FactId | None = None, text: str | None = None) -> str
