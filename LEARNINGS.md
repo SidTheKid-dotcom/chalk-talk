@@ -39,3 +39,6 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [web/token] `TokenSource.endpoint` POSTs a `TokenSourceRequest` proto body, not `{"role":"player"}`. Use `TokenSource.custom` for the role-checked route. (source: task 05; livekit-client TokenSource.ts)
 - [livekit/attributes] `localParticipant.setAttributes({role:'coach'})` without `canUpdateOwnMetadata` fails with `SignalRequestError` code 15 "does not have permission to update own metadata". Role stays `player`. (source: task 05)
 - [livekit/cli] `lk room participants get --room NAME -i ID` prints `attributes.role`. Human tokens omit `canUpdateMetadata`; the agent has it. (source: task 05)
+- [web/token] `canPublishSources` is a `TrackSource[]` on mint and strings in the JWT (`microphone`). Assert the decoded string, not the enum number. (source: task 05 r2; livekit-server-sdk grants.ts)
+- [web/token] `RoomConfiguration` JWT includes protobuf defaults (`name`, `restartPolicy`, empty `tags`). Assert named fields, not `toEqual` on the whole config. (source: task 05 r2)
+- [web/token] Coach room format `^fr-[0-9a-f]{16}$` is checked in `parseTokenRequest`, so invalid ids 400 before `listRooms`. (source: task 05 r2)

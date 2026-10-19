@@ -70,3 +70,22 @@
   - Voice / mic not required and not verified (preview browser has no usable mic; player still joined and dispatched).
   - Coach UI, briefing, and agent mode changes are out of scope.
   - Not pushed.
+
+## Report (round 2, auditor CHANGES REQUIRED)
+- Files changed:
+  - `web/lib/token.ts`, `web/lib/token.test.ts` — `canPublishSources: [TrackSource.MICROPHONE]`; room ids `fr-` + 16 hex; coach 400 unless `/^fr-[0-9a-f]{16}$/`; player `RoomConfiguration` `emptyTimeout=60`, `departureTimeout=20`, `maxParticipants=4`.
+  - `web/app/page.tsx` — `isVideoInputSupported={false}`.
+  - `web/app/api/token/route.ts`, `web/app/api/token/route.test.ts` — 500 logs `error.message` and returns `{ "error": "Internal Server Error" }`; route JWTs decoded with `TokenVerifier`; `toEqual` on the full `video` grant; player dispatch vs coach none.
+  - `LEARNINGS.md`, `docs/plan/05-token-route.md`.
+- Commands run and key output:
+  - LiveKit docs MCP + installed `livekit-server-sdk` 2.18.0: `TrackSource.MICROPHONE` re-exported; JWT serializes as `"microphone"`; `RoomConfiguration` fields `emptyTimeout`, `departureTimeout`, `maxParticipants`.
+  - `cd web && pnpm test` — `Test Files  2 passed (2)` / `Tests  17 passed (17)`.
+  - `cd web && pnpm lint && pnpm exec tsc --noEmit` — exit 0. Same two pre-existing starter warnings in `agent-audio-visualizer-*.tsx`.
+  - Live: room `fr-5a05acdec2514bc8`, player `player-2711c4b34f` (`role=player`, `canPublishSources: [MICROPHONE]`), coach `coach-4d2e44e726` (`role=coach`, same sources). `lk room participants list` → player, agent, coach all ACTIVE. Player UI: mic + transcript + End call only (no camera/screen share). Coach stub: `connected as Coach in fr-5a05acdec2514bc8`.
+  - Agent: `received job request {"dispatch_id": "AD_jBgayJgoZ2wD", "room": "fr-5a05acdec2514bc8", "agent_name": "chalk-talk-agent", ...}` then `RoomIO linked to participant {"lk.pii.participant_identity": "player-2711c4b34f", ...}`. GPT Realtime then 429'd (unrelated to tokens); agent participant stayed in the room for the list.
+  - Screenshots: player `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mvf339n6-8f6426c2.png`; coach `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mvf33e4r-0da6461d.png`.
+- Not done / not verified:
+  - Voice / mic still not required in the preview browser.
+  - GPT Realtime 429 during the live check; dispatch and roles still verified.
+  - Coach UI, briefing, and agent mode changes remain out of scope.
+  - Not pushed.
