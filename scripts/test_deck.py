@@ -11,6 +11,7 @@ import pytest
 from jsonschema import Draft202012Validator
 
 import build_facts
+import sync_deck
 
 ROOT = Path(__file__).resolve().parents[1]
 DECK_PATH = ROOT / "deck" / "deck.json"
@@ -260,16 +261,20 @@ def basketball_errors(deck: dict) -> list[str]:
                 errors.append(
                     f"{play['id']} step {i}: screener {ball} holds the ball"
                 )
+            if not ball:
+                errors.append(f"{play['id']} step {i}: missing ball")
             if prev_ball and ball and ball != prev_ball:
                 passed = any(
-                    arrow.get("kind") == "pass" and arrow.get("from") == prev_ball
+                    arrow.get("kind") == "pass"
+                    and not arrow.get("option")
+                    and arrow.get("from") == prev_ball
                     for arrow in step.get("arrows", [])
                 )
                 if not passed:
                     errors.append(
                         f"{play['id']} step {i}: ball changed without a pass from {prev_ball}"
                     )
-            if "trap" in step.get("caption", "").lower():
+            if step.get("action") == "trap":
                 if not ball or ball not in end_pos:
                     errors.append(f"{play['id']} step {i}: trap has no ball handler")
                 else:
@@ -368,7 +373,10 @@ def validate_deck(deck: dict, facts: list[dict], players_dir: Path) -> list[str]
         if actual != expected["plays"]:
             errors.append(f"{slide_id} plays {actual} != {expected['plays']}")
 
-    target_ids = list(PLAYER_IDS) + list(ZONE_IDS) + list(CARD_IDS)
+    card_ids = [
+        card["id"] for slide in deck["slides"] for card in slide.get("cards", [])
+    ]
+    target_ids = list(deck["players"]) + list(deck["zones"]) + card_ids
     if len(target_ids) != len(set(target_ids)):
         errors.append("TargetId values are not unique")
 
@@ -391,6 +399,24 @@ def validate_deck(deck: dict, facts: list[dict], players_dir: Path) -> list[str]
                 errors.append(f"{slide['id']} card caption has a digit")
 
     errors.extend(basketball_errors(deck))
+    errors.extend(zone_band_errors(deck))
+    return errors
+
+
+def zone_band_errors(deck: dict) -> list[str]:
+    """Zones on the free-throw line sit above the paint (ARCHITECTURE.md)."""
+    errors: list[str] = []
+    zones = deck.get("zones") or {}
+    paint = (zones.get("z_paint") or {}).get("box")
+    if not paint or paint[1] != 0 or paint[3] != 38:
+        errors.append(f"z_paint y must be 0-38, got {paint}")
+    for zid in ("z_left_elbow", "z_right_elbow", "z_high_post"):
+        box = (zones.get(zid) or {}).get("box")
+        if not box or box[1] != 38 or box[3] != 50:
+            errors.append(f"{zid} y must be 38-50, got {box}")
+    top = (zones.get("z_top_key") or {}).get("box")
+    if not top or top[1] < 52:
+        errors.append(f"z_top_key must start at y 52, got {top}")
     return errors
 
 
@@ -448,6 +474,7 @@ def test_too_many_steps_fails(deck, facts):
     extra = {
         "caption": "Extra step past the cap",
         "duration_ms": 800,
+        "ball": "cle_james",
         "moves": {},
         "arrows": [],
     }
@@ -555,3 +582,83 @@ def test_build_facts_missing_url_fails():
     ]
     with pytest.raises(SystemExit, match="missing URL"):
         build_facts.verified_facts(rows)
+
+
+def test_build_facts_extra_pipe_fails():
+    text = (
+        "| id | Claim | Slide | Source URL | Verified |\n"
+        "|---|---|---|---|---|\n"
+        "| F01 | a | extra | s1_tipoff | https://example.com/a | y |\n"
+    )
+    with pytest.raises(SystemExit, match="5 columns"):
+        build_facts.parse_facts_md(text)
+
+
+def test_build_facts_uppercase_Y_is_verified():
+    text = (
+        "| id | Claim | Slide | Source URL | Verified |\n"
+        "|---|---|---|---|---|\n"
+        "| F01 | a | s1_tipoff | https://example.com/a | Y |\n"
+    )
+    rows = build_facts.parse_facts_md(text)
+    facts = build_facts.verified_facts(rows)
+    assert [row["id"] for row in facts] == ["F01"]
+
+
+def test_build_facts_garbage_verified_fails():
+    text = (
+        "| id | Claim | Slide | Source URL | Verified |\n"
+        "|---|---|---|---|---|\n"
+        "| F01 | a | s1_tipoff | https://example.com/a | maybe |\n"
+    )
+    with pytest.raises(SystemExit, match="verified cell must be y or n"):
+        build_facts.parse_facts_md(text)
+
+
+def test_synced_copies_match_sources():
+    assert sync_deck.check() == 0
+    for src in (ROOT / "deck" / "deck.json", ROOT / "deck" / "facts.json"):
+        src_bytes = src.read_bytes()
+        for dest_dir in (ROOT / "agent" / "data", ROOT / "web" / "lib" / "deck"):
+            dest = dest_dir / src.name
+            assert dest.read_bytes() == src_bytes, dest
+
+
+def test_trap_keys_on_action_not_caption(deck):
+    bad = copy.deepcopy(deck)
+    play = next(p for p in bad["plays"] if p["id"] == "p_draymond_short_roll")
+    play["steps"][0].pop("action", None)
+    play["steps"][0]["moves"]["cle_james"] = [20, 90]
+    errors = basketball_errors(bad)
+    assert not any("from the ball" in e or "trap needs two defenders" in e for e in errors)
+
+
+def test_option_pass_does_not_move_the_ball(deck):
+    bad = copy.deepcopy(deck)
+    play = next(p for p in bad["plays"] if p["id"] == "p_draymond_short_roll")
+    play["steps"][1]["arrows"] = [
+        {"from": "gsw_curry", "to": [50, 38], "kind": "pass", "option": True},
+        {"from": "gsw_green", "to": [50, 38], "kind": "cut"},
+    ]
+    errors = basketball_errors(bad)
+    assert any("ball changed without a pass from gsw_curry" in e for e in errors)
+
+
+def test_zone_bands(deck):
+    assert zone_band_errors(deck) == []
+
+
+def test_zone_band_violation_fails(deck):
+    bad = copy.deepcopy(deck)
+    bad["zones"]["z_high_post"]["box"] = [40, 32, 60, 46]
+    bad["zones"]["z_top_key"]["box"] = [40, 48, 60, 64]
+    errors = zone_band_errors(bad)
+    assert any("z_high_post y must be 38-50" in e for e in errors)
+    assert any("z_top_key must start at y 52" in e for e in errors)
+
+
+def test_missing_ball_fails(deck, facts):
+    bad = copy.deepcopy(deck)
+    del bad["plays"][0]["steps"][0]["ball"]
+    errors = validate_deck(bad, facts, PLAYERS_DIR)
+    assert any("ball" in e.lower() for e in errors)
