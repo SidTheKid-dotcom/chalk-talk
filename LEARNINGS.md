@@ -65,3 +65,5 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [web/cutout] The paper-border drop-shadow covered Courier captions. Rotate only the photo and sit the label below the shadow with z-index. (source: task 07 r2)
 - [web/status] Wide Archivo tracking turns "turn" into "tum" (rn). Use letter-spacing 0 and disable liga/calt on the strip. (source: task 07 r2)
 - [deck] The first `fact_id` is not always the slide's featured card. Optional `featured_fact_id` (must be on that slide) picks it; omit the field for no card. (source: task 07 r2)
+- [spike 1] RESULT PASS. Mid-session `session.room_io.set_participant(coach)` with gpt-realtime-2.1 (OpenAI plugin): 0.66 ms, full switch to clicker 46 ms, no session reset, player audio ignored, 4 coach turns -> 4 acked `show_slide`. Tested without a mic using OpenAI TTS clips published by `lk room join --attribute role=coach --publish clip.ogg`. (task 06)
+- [livekit/agents] By default the session closes when the linked participant disconnects. After switching to the coach, a coach hangup ends the whole session. See ADR-025. (task 06)

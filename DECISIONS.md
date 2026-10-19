@@ -166,3 +166,10 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Cost:** Model usage bills to our OpenAI account. Our OpenAI org's data settings apply on the primary path. One more secret on LiveKit Cloud (`OPENAI_API_KEY`). The adapter requires both models to agree on audio output and turn detection capabilities; a mismatch raises at startup.
 - **Synthio angle:** The voice agent survives a model provider outage mid-call with context kept. That is the reliability story a regulated voice product needs.
 - **Revisit:** On a paid LiveKit plan, consider `inference,openai` for one bill and Inference's own OpenAI/Azure routing.
+
+## ADR-025: Coach leave returns the agent to the player; "addressed" is judged by the model
+- **Decision:** (1) The agent session must survive the coach leaving. Disable close-on-disconnect for the linked participant, and on `role=coach` leave, find `role=player`, `set_participant(player)`, restore presenter instructions and set `mode=presenter`. If no player remains, end the session. (2) In clicker mode, the model decides whether a turn is addressed to it ("Assistant, ...", or clearly a request to the board), from the instruction and examples. No string match on the word "Assistant".
+- **Why:** Spike 1 showed the default closes the whole session when the linked coach hangs up (`CloseReason.PARTICIPANT_DISCONNECTED`), which would strand the player mid-demo. It also showed realtime ASR heard "Assistant" as "Distant"; the model still acted correctly, while a keyword check would have failed (and keyword routing is banned, MISTAKES row 7).
+- **Rejected:** Keep the default close (fragile demo). Hear both humans (not supported: one linked participant). A keyword gate on "Assistant" (brittle, banned).
+- **Cost:** More state to test: presenter -> clicker -> presenter. The model may answer a turn not meant for it; clicker eval items cover addressed and not-addressed turns (Risk 7).
+- **Revisit:** If eval shows unaddressed replies above the planner's bar, disable audio output in clicker mode except after an explicit address (`session.output.set_audio_enabled`).
