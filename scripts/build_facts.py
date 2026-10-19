@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
@@ -11,6 +12,14 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parents[1]
 FACTS_MD = ROOT / "FACTS.md"
 OUT = ROOT / "deck" / "facts.json"
+
+
+def is_yes(verified: str) -> bool:
+    return bool(re.match(r"y\b", verified, re.I))
+
+
+def is_no(verified: str) -> bool:
+    return bool(re.match(r"n\b", verified, re.I))
 
 
 def parse_facts_md(text: str) -> list[dict]:
@@ -29,9 +38,13 @@ def parse_facts_md(text: str) -> list[dict]:
         if not stripped.startswith("|"):
             break
         cols = [c.strip() for c in stripped.strip("|").split("|")]
-        if len(cols) < 5:
+        if len(cols) != 5:
             raise SystemExit(f"FACTS.md row does not have 5 columns: {stripped}")
-        fact_id, claim, slide, url, verified = cols[:5]
+        fact_id, claim, slide, url, verified = cols
+        if not is_yes(verified) and not is_no(verified):
+            raise SystemExit(
+                f"FACTS.md verified cell must be y or n: {fact_id} {verified!r}"
+            )
         if fact_id in seen:
             raise SystemExit(f"duplicate fact id: {fact_id}")
         seen.add(fact_id)
@@ -52,8 +65,13 @@ def parse_facts_md(text: str) -> list[dict]:
 def verified_facts(rows: list[dict]) -> list[dict]:
     out: list[dict] = []
     for row in rows:
-        if not row["verified"].startswith("y"):
+        verified = row["verified"]
+        if is_no(verified):
             continue
+        if not is_yes(verified):
+            raise SystemExit(
+                f"FACTS.md verified cell must be y or n: {row['id']} {verified!r}"
+            )
         url = row["source_url"]
         if not url.startswith("http://") and not url.startswith("https://"):
             raise SystemExit(f"missing URL for verified fact {row['id']}: {url!r}")
