@@ -13,14 +13,14 @@
   },
   "zones": {
     "z_paint": {"label": "Paint", "shape": "rect", "box": [34, 0, 66, 38]},
-    "z_top_key": {"label": "Top of the key", "shape": "rect", "box": [40, 48, 60, 64]},
+    "z_top_key": {"label": "Top of the key", "shape": "rect", "box": [40, 52, 60, 66]},
     "z_left_wing": {"label": "Left wing", "shape": "rect", "box": [8, 36, 28, 58]},
     "z_right_wing": {"label": "Right wing", "shape": "rect", "box": [72, 36, 92, 58]},
     "z_left_corner": {"label": "Left corner", "shape": "rect", "box": [0, 0, 16, 22]},
     "z_right_corner": {"label": "Right corner", "shape": "rect", "box": [84, 0, 100, 22]},
-    "z_left_elbow": {"label": "Left elbow", "shape": "rect", "box": [26, 32, 40, 44]},
-    "z_right_elbow": {"label": "Right elbow", "shape": "rect", "box": [60, 32, 74, 44]},
-    "z_high_post": {"label": "High post", "shape": "rect", "box": [40, 32, 60, 46]}
+    "z_left_elbow": {"label": "Left elbow", "shape": "rect", "box": [28, 38, 40, 50]},
+    "z_right_elbow": {"label": "Right elbow", "shape": "rect", "box": [60, 38, 72, 50]},
+    "z_high_post": {"label": "High post", "shape": "rect", "box": [40, 38, 60, 50]}
   },
   "slides": [
     {
@@ -170,11 +170,11 @@
       "section": "X-factors",
       "title": "X-factors: Love, bench, fouls, pace",
       "points": [
-        "Love produced when he played and sat another night.",
+        "Love had a big Game One, then sat Game Three.",
         "Green is back. Stay out of foul trouble.",
         "Bench and pace can decide it if the stars cancel."
       ],
-      "notes": "Walk the swing factors. Love produced when he was in and was inactive for another night. Green missed a game under suspension and then played with fouls; we need him on the floor. Livingston, Iguodala, and Ezeli are the bench minutes. We can push; our regular-season pace was high. No court on this slide.",
+      "notes": "Walk the swing factors. Love was productive in Game One and inactive in Game Three. Green missed a game under suspension and then played with fouls; we need him on the floor. Our bench can swing it. We can push; our regular-season pace was high. No court on this slide.",
       "fact_ids": ["F13", "F15", "F17", "F18", "F19"],
       "cutouts": [
         "kevin-love.png",
@@ -238,6 +238,7 @@
         {
           "caption": "Both defenders trap the ball",
           "duration_ms": 1200,
+          "action": "trap",
           "ball": "cle_james",
           "moves": {"gsw_green": [54, 74], "gsw_iguodala": [46, 74]},
           "arrows": [
@@ -371,6 +372,7 @@
         {
           "caption": "They trap Curry on the ball",
           "duration_ms": 1200,
+          "action": "trap",
           "ball": "gsw_curry",
           "moves": {
             "gsw_green": [55, 61],
@@ -397,11 +399,11 @@
           "caption": "Look lob, corner, or drive",
           "duration_ms": 1400,
           "ball": "gsw_green",
-          "moves": {"gsw_green": [50, 30]},
+          "moves": {},
           "arrows": [
-            {"from": "gsw_green", "to": [50, 30], "kind": "dribble"},
-            {"from": "gsw_green", "to": [12, 14], "kind": "pass"},
-            {"from": "gsw_green", "to": [90, 12], "kind": "pass"}
+            {"from": "gsw_green", "to": [12, 14], "kind": "pass", "option": true},
+            {"from": "gsw_green", "to": [90, 12], "kind": "pass", "option": true},
+            {"from": "gsw_green", "to": [50, 10], "kind": "dribble", "option": true}
           ]
         }
       ]
