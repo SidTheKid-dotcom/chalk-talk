@@ -15,6 +15,8 @@ export type DrawnArrow = {
   kind: ArrowKind;
   option?: boolean;
   key: string;
+  /** Tween length for `.draw-stroke`. Speech holds do not stretch the stroke. */
+  drawMs?: number;
 };
 
 type PlayArrowsProps = {
@@ -55,7 +57,14 @@ export function PlayArrows({ arrows, animate = false }: PlayArrowsProps) {
               strokeDasharray={arrow.kind === 'pass' ? '1.2 2.4' : dashed ? '2.8 1.6' : undefined}
               strokeLinecap="round"
               className={animate && !option ? 'draw-stroke' : undefined}
-              style={animate && !option ? { ['--dash' as string]: length } : undefined}
+              style={
+                animate && !option
+                  ? {
+                      ['--dash' as string]: length,
+                      ['--draw-ms' as string]: `${arrow.drawMs ?? 900}ms`,
+                    }
+                  : undefined
+              }
             />
             {arrow.kind !== 'screen' ? (
               <path d={arrowHead(from, to)} fill="none" stroke={color} strokeWidth="1.4" />

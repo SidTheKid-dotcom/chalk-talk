@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DrawnArrow } from '@/components/deck/PlayArrows';
 import { getPlay } from '@/lib/deck/load';
 import {
-  frameAtElapsed,
-  playFrame,
-  playMotionSegments,
-  prefersReducedMotion,
-} from '@/lib/deck/plays';
+  advancePlayClock,
+  createPlayClock,
+  frameForPlayClock,
+  isPlayClockDone,
+} from '@/lib/deck/play-clock';
+import { playFrame, playMotionSegments, prefersReducedMotion } from '@/lib/deck/plays';
 import type { Coord, PlayId, PlayerId, SlideDiagram } from '@/lib/deck/types';
 
 export type PlayMotionView = {
@@ -18,13 +19,21 @@ export type PlayMotionView = {
   caption: string | null;
 };
 
+/**
+ * `speaking === undefined` keeps the wall clock (lab, no agent).
+ * `true` / `false` follow `useAgent().state === 'speaking'` (`lk.agent.state`).
+ * The flag is read from a ref so a speaking change does not restart the play.
+ */
 export function usePlayMotion(
   diagram: SlideDiagram | null | undefined,
   playId: string | null,
   playSeq: number | null,
-  animate: boolean
+  animate: boolean,
+  speaking?: boolean
 ): PlayMotionView {
   const play = playId ? getPlay(playId as PlayId) : undefined;
+  const speakingRef = useRef(speaking);
+  speakingRef.current = speaking;
   const endFrame = useMemo(() => {
     if (!diagram || !play) return null;
     return playFrame(diagram, play);
@@ -56,19 +65,23 @@ export function usePlayMotion(
       return;
     }
 
+    let clock = createPlayClock();
+    let last = performance.now();
     let frameId = 0;
-    const started = performance.now();
+    const publish = (next: typeof clock) => {
+      clock = next;
+      const frame = frameForPlayClock(segments, clock);
+      if (frame) setView(frame);
+    };
+    publish(clock);
     const tick = (now: number) => {
-      const next = frameAtElapsed(segments, now - started);
-      if (next) {
-        setView(next);
-      }
-      const total = segments.reduce((sum, segment) => sum + segment.durationMs, 0);
-      if (now - started < total) {
+      const dt = Math.max(0, now - last);
+      last = now;
+      publish(advancePlayClock(clock, dt, speakingRef.current, segments));
+      if (!isPlayClockDone(segments, clock)) {
         frameId = window.requestAnimationFrame(tick);
       }
     };
-    setView(frameAtElapsed(segments, 0) ?? endFrame);
     frameId = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(frameId);
   }, [animate, diagram, endFrame, play, playSeq, segments]);
