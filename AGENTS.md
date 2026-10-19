@@ -21,7 +21,7 @@ Full spec: `docs/PRODUCT.md`.
 
 ## Architecture summary
 - One LiveKit Cloud room per session. Random room name. Participants: player, agent, coach.
-- Agent: Python `livekit-agents` 1.8.x. `AgentSession` with GPT Realtime (`openai/gpt-realtime-2.1`).
+- Agent: Python `livekit-agents` 1.8.x. `AgentSession` with GPT Realtime (`gpt-realtime-2.1`; `REALTIME_PROVIDERS` default `openai,inference`; evals pin `REALTIME_PROVIDERS=openai`).
 - Agent modes: `presenter` and `clicker`.
 - Tools: `show_slide(slide_id, seq)`, `call_head_coach()`, and three board tools: `highlight(target)`, `run_play(play_id)`, `add_callout(fact_id | text)`.
 - Board tools are a fixed menu. The model picks ids from the deck data. It never makes layout.

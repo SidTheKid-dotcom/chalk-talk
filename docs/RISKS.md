@@ -34,6 +34,7 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 ## Risk 5: Free-tier quota
 - **Known:** Hard caps on agent minutes and inference credit (from research; confirm on pricing page).
 - **Mitigation (taken, ADR-024):** The agent uses the OpenAI plugin with our own key by default. The free plan's Inference credit ($2.50 a month, hard cap) and 5-session realtime cap no longer apply. LiveKit agent-session minutes (1,000 a month on the free plan) still apply to the deployed agent. Keep dev sessions short.
+- **Known gap:** The Inference fallback is only as available as the Inference credit left. In task 08 the swap was proven (invalid OpenAI key, availability event, swap to Inference) but Inference returned 429, so no reply came from it. Re-check after the monthly reset if the fallback matters for the demo.
 
 ## Risk 6: Token route production guard
 - **Known:** `agent-starter-react` token route throws in production unless a flag is set (from research).

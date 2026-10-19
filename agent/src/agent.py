@@ -9,10 +9,15 @@ from livekit.agents import (
     AgentSession,
     JobContext,
     cli,
-    inference,
     room_io,
 )
+from livekit.agents.llm import (
+    RealtimeAvailabilityChangedEvent,
+    RealtimeModelFallbackAdapter,
+)
 from livekit.plugins import ai_coustics
+
+from model import build_realtime_model, parse_realtime_providers
 
 logger = logging.getLogger("agent")
 
@@ -36,6 +41,15 @@ class Assistant(Agent):
         )
 
 
+def _on_realtime_availability(ev: RealtimeAvailabilityChangedEvent) -> None:
+    logger.info(
+        "realtime_availability_changed model=%s provider=%s available=%s",
+        ev.realtime_model.model,
+        ev.realtime_model.provider,
+        ev.available,
+    )
+
+
 server = AgentServer()
 
 
@@ -52,11 +66,14 @@ async def my_agent(ctx: JobContext):
     # preemptive_generation were removed. Kept: noise cancellation on the
     # room audio input. Docs: https://docs.livekit.io/agents/models/realtime/openai
     # and https://docs.livekit.io/agents/logic/turns#realtime-models
+    providers = parse_realtime_providers()
+    llm = build_realtime_model()
+    logger.info("realtime providers=%s", ",".join(providers))
+    if isinstance(llm, RealtimeModelFallbackAdapter):
+        llm.on("realtime_availability_changed", _on_realtime_availability)
+
     session = AgentSession(
-        llm=inference.RealtimeModel(
-            model="openai/gpt-realtime-2.1",
-            voice="marin",
-        ),
+        llm=llm,
     )
 
     await session.start(
