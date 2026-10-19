@@ -1,4 +1,4 @@
-# 12 — Head-coach handoff, shared video and live coach view
+# 13 — Head-coach handoff, shared video and live coach view
 
 ## Goal
 A player can request the head coach, a coach can join the same room from `/coach`, both humans can see who is speaking on camera, receive a private briefing, share one AI clicker that follows the active human, and leave without ending the player's session.
@@ -7,12 +7,13 @@ A player can request the head coach, a coach can join the same room from `/coach
 - Product: `docs/PRODUCT.md#demo-script` steps 6-9, `#who-is-in-the-room`
 - Contract: `docs/ARCHITECTURE.md#text-streams`, `#agent-modes-and-the-switch`, `#sequence-handoff`
 - Decisions: ADR-009, ADR-010, ADR-014, ADR-025
-- Design: `docs/DESIGN-BRIEF.md#coach-phone-view-390844-portrait`
+- Design: `docs/DESIGN-BRIEF.md#coach-view`, `#voice-and-camera-chrome`, `#slide-transitions`
 - Spike evidence and required fixes: `docs/plan/06-spike-coach-audio.md`, `PROGRESS.md#handoff-task-must-include-audit-06`
 - Current LiveKit docs: React `useTracks([Track.Source.Camera])` + `VideoTrack` render camera tracks; `RoomEvent.ActiveSpeakersChanged` / `ParticipantEvent.IsSpeakingChanged` identify speakers. Python `AgentSession` still has one linked participant, changed with `RoomIO.set_participant()`.
-- Depends on merged tasks 09-11.
+- Depends on merged tasks 09-12.
 
 ## Scope
+- Reuse the merged task-12 Hardwood player/lobby primitives for `/coach`; do not introduce a second visual language.
 - Add `call_head_coach`: generate the room-bound `/coach?room=` URL, send `show_coach_link` RPC to the player, mark handoff requested, and return only the contracted short result.
 - Render a link and QR on `/player` without exposing a server key or granting admin permissions.
 - Replace the coach stub with the portrait Scouting Packet coach view: live deck and overlays from agent attributes, mic controls, connection state and private briefing card.
@@ -28,6 +29,7 @@ A player can request the head coach, a coach can join the same room from `/coach
 - Set `RoomOptions(close_on_disconnect=False)`. On coach leave, restore presenter instructions and mode, select the player by role and resume listening. End only when no player remains.
 - In clicker mode stay silent unless addressed, while still following topic changes and allowed prepared plays. No keyword/regex intent routing.
 - Tests cover camera grants, video-off fallback, active speaker UI, duplicate coaches, coach without prior request, private destination, attributes-changed path, failed instruction update, switch rollback, sequential player/coach floor changes, simultaneous-speaker floor stability and coach-leave recovery.
+- Frontend tests cover minimum type scale, fixed stage/court geometry across slide/state/video changes, absence of visible transcripts, forward/backward transition direction, interrupted-transition cleanup and reduced motion.
 
 ## Out of scope
 - Automated AI coach test harness, final interruption metrics and production deployment.
@@ -36,6 +38,8 @@ A player can request the head coach, a coach can join the same room from `/coach
 | Check | How to verify | Evidence required |
 |---|---|---|
 | Automated checks | agent pytest/ruff and web test/lint/typecheck | exact output |
+| Hardwood fit | desktop, 1280x720, 1280x800 and 390x844 screenshot loop | large readable type; no slide/camera/control overlap |
+| Slide motion | navigate forward, backward and interrupt during transition | recording or frame sequence; fixed chrome and correct settle state |
 | Join flow | player requests coach, phone-size `/coach` joins same live room with camera + mic | player QR/link, participant roles, both-video screenshot |
 | Privacy | inspect text-stream destination and player UI | coach receives briefing; player does not |
 | State continuity | join coach after a slide highlight/play | matching slide and overlays on both screens |

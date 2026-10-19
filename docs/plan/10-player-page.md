@@ -8,7 +8,7 @@
 - Contract: `docs/ARCHITECTURE.md#rpc-methods-agent---browser`, `#participant-identities-and-attributes`, `#late-join-and-reconnect`
 - Existing code: `web/hooks/useDeckCommands.ts`, `web/lib/deck/commands.ts`, `web/lib/deck/rpc.ts` (task 03), placeholder `web/components/app/deck-placeholder.tsx`
 - Decisions: ADR-008, ADR-016, ADR-018
-- Follow-ups from the planner's lab review (in `PROGRESS.md`): fact card must not cover the Photo credits link, cutouts or markers; move it into the left column. Coach view stamp vs clip (coach page is task 12; skip here).
+- Follow-ups from the planner's lab review (in `PROGRESS.md`): fact card must not cover the Photo credits link, cutouts or markers; move it into the left column. Coach view is task 13; skip here.
 - Mistakes: rows 9, 10, 11, 12
 
 ## Scope
@@ -16,7 +16,7 @@
 - Deck state comes only from `useDeckCommands` (RPC) and, on connect or reconnect, the agent's `current_slide` / `overlay_state` attributes (already handled by the hook). Highlights from the `highlight` RPC render as the gold highlighter swipe on the marker or zone.
 - Before connect: a start screen in the Scouting Packet style (title, one line on what this is, "Start film session" button, mic note). No starter LiveKit branding.
 - Live caption: the agent's current spoken line in serif italic (Fraunces italic) from the agent transcription stream (`lk.transcription` or the starter's transcript hook; check what the starter uses). One line, latest segment.
-- Status strip: state pill from `lk.agent.state` (Listening / Thinking / Speaking); `turn NN` counts agent turns; `latency — ms` and `interruptions —` stay "—" (task 13 fills them); `Coach —` stays until task 12.
+- Status strip: state pill from `lk.agent.state` (Listening / Thinking / Speaking); `turn NN` counts agent turns; `latency — ms` and `interruptions —` stay "—" (task 14 fills them); `Coach —` stays until task 13.
 - Mic failure: catch `getUserMedia` errors and show a clear message on the sheet ("Microphone blocked or missing. Allow mic access and reload."). No unhandled runtime error overlay.
 - Session ended: when the agent leaves or the room disconnects, show a message ("The film session ended.") with a restart button.
 - Fact card placement: move the featured fact card into the left column below the points; it must not overlap the Photo credits link, cutouts or court markers. Photo credits link visible on every slide.
