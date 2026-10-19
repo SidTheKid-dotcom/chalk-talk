@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { RoomEvent } from 'livekit-client';
 import { useAgent, useSessionContext, useSessionMessages } from '@livekit/components-react';
 import { WelcomeView } from '@/components/app/welcome-view';
 import { PhotoCreditsLink } from '@/components/deck/PhotoCredits';
 import { SlideView } from '@/components/deck/SlideView';
 import { useDeckCommands } from '@/hooks/useDeckCommands';
+import { usePlayMotion } from '@/hooks/usePlayMotion';
 import { isSlideId } from '@/lib/deck/commands';
 import { deck, getSlide } from '@/lib/deck/load';
-import type { CutoutCredit, TargetId } from '@/lib/deck/types';
+import type { AgentState, CutoutCredit, TargetId } from '@/lib/deck/types';
 import {
   agentStateLabel,
   agentTurnCount,
@@ -206,29 +207,84 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
     );
   }
 
-  const slide = getSlide(commands.currentSlideId);
   const status = agentStateLabel(agent.state);
   const caption = latestAgentLine(messages);
   const turn = String(agentTurnCount(messages)).padStart(2, '0');
   const highlights = commands.highlights as TargetId[];
   return (
+    <PlayerSlide
+      credits={credits}
+      jrImageSrc={jrImageSrc}
+      slideId={commands.currentSlideId}
+      highlights={highlights}
+      playId={commands.play?.play_id ?? null}
+      playSeq={commands.play?.seq ?? null}
+      playAnimate={commands.playAnimate}
+      callouts={commands.callouts}
+      caption={caption}
+      status={status}
+      turn={turn}
+      notice={micFailure}
+    >
+      {commandBar}
+    </PlayerSlide>
+  );
+}
+
+function PlayerSlide({
+  credits,
+  jrImageSrc,
+  slideId,
+  highlights,
+  playId,
+  playSeq,
+  playAnimate,
+  callouts,
+  caption,
+  status,
+  turn,
+  notice,
+  children,
+}: {
+  credits: CutoutCredit[];
+  jrImageSrc: string | null;
+  slideId: string;
+  highlights: TargetId[];
+  playId: string | null;
+  playSeq: number | null;
+  playAnimate: boolean;
+  callouts: ReturnType<typeof useDeckCommands>['callouts'];
+  caption: string | null;
+  status: AgentState;
+  turn: string;
+  notice: string | null;
+  children: ReactNode;
+}) {
+  const slide = getSlide(slideId as Parameters<typeof getSlide>[0]);
+  const motion = usePlayMotion(slide.diagram, playId, playSeq, playAnimate);
+  return (
     <div className="flex h-svh min-h-0 flex-col bg-[var(--manila)]">
-      <MobileSessionMeta state={status} turn={agentTurnCount(messages)} />
+      <MobileSessionMeta state={status} turn={Number(turn)} />
       <ScaledSlide>
         <SlideView
           deck={deck}
           slide={slide}
           credits={credits}
           highlights={highlights}
-          captionText={caption}
+          arrows={motion.arrows}
+          markerOverrides={motion.markers}
+          ball={motion.ball}
+          playCaption={motion.caption}
+          callouts={callouts}
+          captionText={caption ?? undefined}
           status={{ state: status, turn }}
-          notice={micFailure}
+          notice={notice}
           jrImageSrc={jrImageSrc}
           animate
           shot
         />
       </ScaledSlide>
-      {commandBar}
+      {children}
     </div>
   );
 }
