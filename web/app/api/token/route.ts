@@ -98,10 +98,8 @@ export async function POST(req: Request) {
       headers: { 'Cache-Control': 'no-store' },
     });
   } catch (error) {
-    if (error instanceof Error) {
-      console.error(error.message);
-      return new NextResponse(error.message, { status: 500 });
-    }
-    return new NextResponse('Internal Server Error', { status: 500 });
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    console.error(message);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
