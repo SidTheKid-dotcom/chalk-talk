@@ -104,3 +104,4 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [handoff] Briefing used `user_turns[:-1]`, so a later "ok thanks" replaced the concern. Snapshot the user-turn count in `mark_requested` and brief only from the turns before it. (audit 13A)
 - [handoff] The floor debounce task had no done callback, so a failure never reached the error log. Log it the same way as `_schedule` (MISTAKES row 23). (audit 13A)
 - [livekit/realtime] `generate_reply(allow_interruptions=False)` is dropped when the Realtime model uses server turn detection. Omit the argument. (agent_activity.py; audit 13A)
+- [web/play] `useAgent().state === 'speaking'` is `lk.agent.state`. Captioned play steps tween in deck `duration_ms` then hold for the speech budget; a quiet 700ms (never spoke, or speech stopped) finishes the rest with hold 0. A shorter quiet, including barge-in into `listening`, keeps the current frame. Arrow draw uses `--draw-ms`, not 900ms. (ADR-029)

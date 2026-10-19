@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { deck, getPlay, getSlide } from '@/lib/deck/load';
 import {
   PLAY_START_DURATION_MS,
+  SPEECH_BUDGET_MAX_MS,
+  SPEECH_BUDGET_MIN_MS,
+  captionWordCount,
   frameAtElapsed,
   interpolateMarkers,
   playDurationMs,
   playFrame,
   playMotionSegments,
+  speechBudgetMs,
+  stepHoldMs,
 } from '@/lib/deck/plays';
 
 describe('play data helpers', () => {
@@ -50,5 +55,24 @@ describe('play data helpers', () => {
     expect(end?.caption).toBe('Weak side rotates home');
     expect(end?.markers.gsw_curry).toEqual(playFrame(slide.diagram, play).markers.gsw_curry);
     expect(deck.plays).toHaveLength(4);
+  });
+
+  it('budgets speech from the caption word count, clamped to 1.6–5s', () => {
+    expect(captionWordCount('  Both   defenders trap the ball  ')).toBe(5);
+    expect(captionWordCount('')).toBe(0);
+    expect(speechBudgetMs('Both defenders trap the ball', 1200)).toBe(5 * 380 + 450);
+    expect(speechBudgetMs('Go now', 1200)).toBe(SPEECH_BUDGET_MIN_MS);
+    expect(speechBudgetMs('one two three four five six seven eight nine ten', 1200)).toBe(4250);
+    const long = Array.from({ length: 20 }, () => 'word').join(' ');
+    expect(speechBudgetMs(long, 1200)).toBe(SPEECH_BUDGET_MAX_MS);
+    expect(speechBudgetMs('Hi', 4000)).toBe(4000);
+    const slide = getSlide('s2_lebron');
+    const play = getPlay('p_blitz_lebron_pnr');
+    if (!slide.diagram) throw new Error('expected court');
+    const segments = playMotionSegments(slide.diagram, play);
+    const first = segments[0];
+    if (!first?.caption) throw new Error('expected a captioned step');
+    expect(first.liveArrows[0]?.drawMs).toBe(1200);
+    expect(stepHoldMs(first)).toBe(speechBudgetMs(first.caption, 1200) - 1200);
   });
 });

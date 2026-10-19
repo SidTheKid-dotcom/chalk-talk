@@ -363,6 +363,11 @@ async def test_run_play_from_other_slide_changes_slide_first() -> None:
     result = await commander.run_play("p_blitz_lebron_pnr")
     assert "Blitz the LeBron pick-and-roll" in result
     assert "Screen comes at the top" in result
+    assert result.endswith(
+        "The play is on screen and advances with your speech. "
+        "Speak each step caption in order while that step is showing. "
+        "Do not skip ahead."
+    )
     methods = [call["method"] for call in room.local_participant.calls]
     assert methods[-2:] == ["show_slide", "run_play"]
     slide_payload = json.loads(room.local_participant.calls[-2]["payload"])

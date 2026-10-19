@@ -961,7 +961,7 @@
 .draw-stroke {
   stroke-dasharray: var(--dash);
   stroke-dashoffset: var(--dash);
-  animation: draw-on 900ms var(--ease-draw) forwards;
+  animation: draw-on var(--draw-ms, 900ms) var(--ease-draw) forwards;
 }
 
 .swipe-in {
