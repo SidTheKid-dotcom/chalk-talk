@@ -92,3 +92,7 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [board/callout] Whitespace-only `fact_id` must be stripped before the payload branch, or `"   "` plus text is sent as `fact_id` instead of `text`. (source: task 11 audit)
 - [player/caption] Long STT lines with `nowrap` still grow min-content width unless every ancestor from the 1920×1080 desk through the caption row has `min-width:0` and the caption uses `flex: 1 1 0%`. That growth resized the 55% court column. (task 10 follow-up)
 - [player/chrome] A bottom text-entry bar is a layout sibling of ScaledSlide, so it steals height and shifts the sheet. Overlay mic/end instead. (task 10 follow-up)
+- [handoff] `close_on_disconnect=False` disables the library reason filter, so any player disconnect ended the session. End only when `disconnect_reason` is in `DEFAULT_CLOSE_ON_DISCONNECT_REASONS` and no player remains. (audit 13A)
+- [handoff] Briefing used `user_turns[:-1]`, so a later "ok thanks" replaced the concern. Snapshot the user-turn count in `mark_requested` and brief only from the turns before it. (audit 13A)
+- [handoff] The floor debounce task had no done callback, so a failure never reached the error log. Log it the same way as `_schedule` (MISTAKES row 23). (audit 13A)
+- [livekit/realtime] `generate_reply(allow_interruptions=False)` is dropped when the Realtime model uses server turn detection. Omit the argument. (agent_activity.py; audit 13A)

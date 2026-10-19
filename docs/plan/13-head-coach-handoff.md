@@ -56,12 +56,12 @@ A player can request the head coach, a coach can join the same room from `/coach
 
 ## Checklist
 - [ ] Implemented
-- [ ] Lint and typecheck pass
-- [ ] Tests pass (list)
+- [x] Lint and typecheck pass
+- [x] Tests pass (list)
 - [ ] Acceptance checks pass with evidence
 - [ ] Screenshots attached
-- [ ] LEARNINGS.md updated if needed
-- [ ] Docs updated if behavior changed
+- [x] LEARNINGS.md updated if needed
+- [x] Docs updated if behavior changed
 
 ## Report (executor fills)
 - Lane A files changed:
@@ -83,3 +83,12 @@ A player can request the head coach, a coach can join the same room from `/coach
   - No production worker or live room was started. Shared-floor switch latency, first-word clipping, interruption behavior and coach-leave recovery still need the Lane B integrated phone/laptop acceptance run.
   - No player coach-link/QR UI, coach briefing handler/card, camera controls, video rail, active-speaker styling or visual checks; these remain Lane B.
   - Realtime cannot guarantee verbatim scripted speech without a separate TTS. The handoff uses an awaited, tool-disabled `generate_reply` with one-line instructions before clicker mode and participant switching.
+- Lane A round 2 (audit 13A):
+  - Player disconnect ends the session only for `DEFAULT_CLOSE_ON_DISCONNECT_REASONS`, and only when no player remains.
+  - Briefing uses the user-turn count recorded when the request succeeds, so a later "ok thanks" does not replace the concern.
+  - Floor debounce failures use the same done-callback error log as `_schedule`. A 50 ms A/B/A flip does not switch; a held speaker switches once.
+  - Dropped `allow_interruptions=False` on the handoff line. Realtime server turn detection ignores it.
+  - `docs/ARCHITECTURE.md` switch trigger and close-on-disconnect text match the code. ADR-022 records the camera grant.
+  - `cd agent && uv run pytest -q` — **117 passed, 2 skipped**. `uv run ruff check` — **All checks passed**.
+  - `cd web && pnpm test` — **8 files, 72 tests passed**. `pnpm exec tsc --noEmit` — passed.
+  - Lane B UI and the live room check are still not done.
