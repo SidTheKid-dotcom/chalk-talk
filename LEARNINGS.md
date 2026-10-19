@@ -15,3 +15,5 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [livekit/cli] `lk agent init AGENT-NAME` uses that name as both the directory and the dispatch name. Override `@server.rtc_session(agent_name=...)` from `AGENT_NAME`. (CLI agent-development doc; task 01)
 - [livekit/cli] CLI 2.19+ `lk agent dev` registers under a random `dev-` deployment, so a starter token that dispatches production may miss the local worker. Pass `--deployment production` when no cloud agent exists. (CLI agent-development doc; task 01)
 - [agent/tests] The Python starter's pytest file is fully commented, so `uv run pytest` exits 5 with 0 tests. Add a tiny import/instructions smoke test. (task 01)
+- [livekit/agents] First GPT Realtime job stalled ~900ms importing `openai.types.realtime` on the job process. Prewarm that module if cold-start lag matters. (task 01)
+- [livekit/logs] Worker INFO logs the job and RoomIO link, not the assistant transcript. The reply is in the web chat UI. (task 01)
