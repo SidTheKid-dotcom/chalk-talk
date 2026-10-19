@@ -309,6 +309,9 @@ def validate_deck(deck: dict, facts: list[dict], players_dir: Path) -> list[str]
     for i, slide in enumerate(deck["slides"], start=1):
         if slide.get("number") != i:
             errors.append(f"{slide.get('id')} number {slide.get('number')} != {i}")
+        topics = slide.get("topics") or []
+        if not topics or len(topics) != len(set(topics)):
+            errors.append(f"{slide.get('id')} needs unique routing topics")
 
     for slide_id, expected in PER_SLIDE.items():
         slide = slides.get(slide_id)
@@ -398,6 +401,11 @@ def validate_deck(deck: dict, facts: list[dict], players_dir: Path) -> list[str]
                 errors.append(f"{slide['id']} point has a digit: {point!r}")
         if DIGIT.search(slide.get("notes", "")):
             errors.append(f"{slide['id']} notes have a digit")
+        for topic in slide.get("topics") or []:
+            if DIGIT.search(topic):
+                errors.append(f"{slide['id']} topic has a digit: {topic!r}")
+            if SPELLED_NUMBER.search(topic):
+                errors.append(f"{slide['id']} topic has a spelled-out number: {topic!r}")
         for card in slide.get("cards", []):
             for err in callout_text_errors(card.get("caption", ""), max_chars=40):
                 errors.append(f"{slide['id']} card caption: {err}")
@@ -449,6 +457,9 @@ def test_points_notes_captions_have_no_digits(deck):
                 found.append(f"{slide['id']} point {point!r}")
         if DIGIT.search(slide["notes"]):
             found.append(f"{slide['id']} notes")
+        for topic in slide["topics"]:
+            if DIGIT.search(topic):
+                found.append(f"{slide['id']} topic {topic!r}")
         for card in slide["cards"]:
             if DIGIT.search(card["caption"]):
                 found.append(f"{slide['id']} card caption")
@@ -457,6 +468,34 @@ def test_points_notes_captions_have_no_digits(deck):
             if DIGIT.search(step["caption"]):
                 found.append(f"{play['id']} step {i} caption")
     assert found == []
+
+
+def test_topics_have_no_unsourced_numbers(deck):
+    found: list[str] = []
+    for slide in deck["slides"]:
+        for topic in slide["topics"]:
+            if DIGIT.search(topic) or SPELLED_NUMBER.search(topic):
+                found.append(f"{slide['id']} topic {topic!r}")
+    assert found == []
+
+
+def test_topic_spelled_number_fails(deck, facts):
+    bad = copy.deepcopy(deck)
+    bad["slides"][1]["topics"].append("number twenty-three")
+    errors = validate_deck(bad, facts, PLAYERS_DIR)
+    assert any("spelled-out number" in e and "topic" in e for e in errors)
+
+
+def test_every_slide_has_unique_routing_topics(deck):
+    for slide in deck["slides"]:
+        assert len(slide["topics"]) >= 2, slide["id"]
+        assert len(slide["topics"]) == len(set(slide["topics"])), slide["id"]
+
+
+def test_pace_topic_routes_to_xfactors(deck):
+    slides = slide_by_id(deck)
+    assert "pace" in slides["s5_xfactors"]["topics"]
+    assert "push or slow down" in slides["s5_xfactors"]["topics"]
 
 
 def test_bad_caption_fails(deck, facts):

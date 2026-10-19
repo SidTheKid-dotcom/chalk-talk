@@ -5,7 +5,10 @@ Chalk Talk is a voice AI assistant coach. It walks a Warriors player through a s
 **Status: work in progress.** This README only describes what is built and verified. Sections below are filled in as the work lands.
 
 ## What it does
-_To be written._
+- Opens on the acked tip-off slide before the assistant speaks.
+- Routes natural questions to one of six prepared slides from deck-owned topics.
+- Grounds each spoken answer in the selected slide's points, notes, and verified fact claims.
+- Keeps slide state in LiveKit participant attributes so reconnecting viewers can recover it.
 
 ## Try it
 _Live link and demo video: to be added._
@@ -25,7 +28,7 @@ make web-typecheck
 
 Once a cloud agent exists (`lk agent create`), a local worker on production takes real traffic. Set `LIVEKIT_AGENT_DEPLOYMENT` then.
 
-`AGENT_NAME` must match on the agent (`@server.rtc_session(agent_name=...)`) and in the player token's explicit dispatch. `POST /api/token` mints short-lived player and coach tokens with a `role` attribute. A missing `LIVEKIT_URL` fails loudly; there is no homepage-agent fallback. The realtime model uses `REALTIME_PROVIDERS=openai,inference` by default (OpenAI plugin first, LiveKit Inference fallback). Evals pin `REALTIME_PROVIDERS=openai`.
+`AGENT_NAME` must match on the agent (`@server.rtc_session(agent_name=...)`) and in the player token's explicit dispatch. `POST /api/token` mints short-lived player and coach tokens with a `role` attribute. A missing `LIVEKIT_URL` fails loudly; there is no homepage-agent fallback. The realtime model uses `REALTIME_PROVIDERS=openai,inference` by default (OpenAI plugin first, LiveKit Inference fallback). Evals pin `REALTIME_PROVIDERS=openai`. `CHALK_DEBUG=1` skips realtime credential checks and the GPT session so the RPC probe can run without an OpenAI key.
 
 ## Architecture
 _Diagram and summary: to be written. Design contracts live in `docs/ARCHITECTURE.md`._

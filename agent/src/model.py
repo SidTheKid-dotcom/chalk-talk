@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
+from dataclasses import dataclass
 
 from livekit.agents import inference
 from livekit.agents.llm import RealtimeModelFallbackAdapter
@@ -18,13 +20,19 @@ DEFAULT_MODEL = "gpt-realtime-2.1"
 DEFAULT_VOICE = "marin"
 
 
-def parse_realtime_providers() -> list[str]:
+@dataclass(frozen=True)
+class RealtimeConfig:
+    providers: tuple[str, ...]
+    model_id: str
+
+
+def parse_realtime_providers() -> tuple[str, ...]:
     """Parse REALTIME_PROVIDERS (comma list). Default openai,inference."""
     raw = os.environ.get("REALTIME_PROVIDERS")
     if raw is None:
-        names = list(DEFAULT_PROVIDERS)
+        names = DEFAULT_PROVIDERS
     else:
-        names = [part.strip() for part in raw.split(",")]
+        names = tuple(part.strip() for part in raw.split(","))
 
     if not names or any(not name for name in names):
         raise ValueError(
@@ -40,12 +48,25 @@ def parse_realtime_providers() -> list[str]:
     return names
 
 
-def _openai_model(model_id: str) -> RealtimeModel:
-    if not os.environ.get("OPENAI_API_KEY", "").strip():
+def load_realtime_config() -> RealtimeConfig:
+    providers = parse_realtime_providers()
+    raw_model = os.environ.get("REALTIME_MODEL")
+    if raw_model is None:
+        model_id = DEFAULT_MODEL
+    else:
+        model_id = raw_model.strip()
+        if not model_id:
+            raise ValueError("REALTIME_MODEL is empty. Set a realtime model id.")
+
+    if "openai" in providers and not os.environ.get("OPENAI_API_KEY", "").strip():
         raise ValueError(
             "OPENAI_API_KEY is required when REALTIME_PROVIDERS includes openai. "
             "Set it in .env, or drop openai from REALTIME_PROVIDERS to use LiveKit Inference only."
         )
+    return RealtimeConfig(providers=providers, model_id=model_id)
+
+
+def _openai_model(model_id: str) -> RealtimeModel:
     return openai.realtime.RealtimeModel(
         model=model_id,
         voice=DEFAULT_VOICE,
@@ -60,7 +81,7 @@ def _inference_model(model_id: str) -> RealtimeModel:
     )
 
 
-def build_realtime_model() -> RealtimeModel:
+def build_realtime_model(config: RealtimeConfig | None = None) -> RealtimeModel:
     """Build the session realtime model from REALTIME_PROVIDERS and REALTIME_MODEL.
 
     One provider returns that model directly. Two or more return
@@ -68,8 +89,9 @@ def build_realtime_model() -> RealtimeModel:
     Inference defaults agree on audio_output, turn_detection, and
     supports_overlapping_speech, which the adapter requires.
     """
-    providers = parse_realtime_providers()
-    model_id = os.environ.get("REALTIME_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
+    config = config or load_realtime_config()
+    providers = config.providers
+    model_id = config.model_id
 
     builders = {
         "openai": _openai_model,
@@ -82,10 +104,23 @@ def build_realtime_model() -> RealtimeModel:
     else:
         model = RealtimeModelFallbackAdapter(models=models)
 
+    model_rows = [
+        {
+            "class": f"{type(item).__module__}.{type(item).__qualname__}",
+            "provider": item.provider,
+            "model_id": item.model,
+        }
+        for item in models
+    ]
     logger.info(
-        "built realtime model providers=%s class=%s model=%s",
-        ",".join(providers),
-        type(model).__module__,
-        model.model,
+        json.dumps(
+            {
+                "event": "realtime_model_built",
+                "providers": providers,
+                "class": f"{type(model).__module__}.{type(model).__qualname__}",
+                "model_id": model.model,
+                "fallbacks": model_rows,
+            }
+        )
     )
     return model

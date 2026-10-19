@@ -5,7 +5,7 @@ import os
 import time
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Annotated, Any, Protocol
 
 from dotenv import load_dotenv
 from livekit.agents import (
@@ -27,10 +27,12 @@ from livekit.agents.llm import (
     RealtimeModelFallbackAdapter,
 )
 from livekit.plugins import ai_coustics
+from pydantic import Field
 
 from debug_probe import DebugSlideCommander, debug_enabled, run_debug_job
-from deck_data import SlideId, assert_slide_ids_match_deck
-from model import build_realtime_model, parse_realtime_providers
+from deck_data import SlideId, assert_slide_ids_match_deck, load_deck, load_facts
+from model import RealtimeConfig, build_realtime_model, load_realtime_config
+from prompts import presenter_instructions, show_slide_tool_description
 from slide_commander import SlideCommander
 
 logger = logging.getLogger("agent")
@@ -45,10 +47,35 @@ if not AGENT_NAME:
     raise RuntimeError("AGENT_NAME is required for explicit agent dispatch")
 
 assert_slide_ids_match_deck()
+DECK = load_deck()
+FACTS = load_facts()
+PRESENTER_INSTRUCTIONS = presenter_instructions(DECK, FACTS)
+SHOW_SLIDE_DESCRIPTION = show_slide_tool_description(DECK)
+
+
+def load_worker_realtime_config() -> RealtimeConfig | None:
+    """Validate realtime credentials at worker import, unless this is a debug probe."""
+    if debug_enabled():
+        return None
+    return load_realtime_config()
+
+
+REALTIME_CONFIG = load_worker_realtime_config()
 
 CLICKER_INSTRUCTIONS = (
     "Do not present. Stay silent unless addressed as Assistant. "
     "Call show_slide when the humans move to a topic on another slide."
+)
+
+STARTUP_SLIDE_ID = "s1_tipoff"
+STARTUP_PLAYER_WAIT_S = 5.0
+STARTUP_RETRY_ATTEMPTS = 8
+STARTUP_RETRY_DELAY_S = 0.25
+STARTUP_RETRYABLE_REASONS = (
+    "player not found",
+    "recipient not found",
+    "unsupported method",
+    "not ready",
 )
 
 
@@ -85,6 +112,10 @@ class _AgentLike(Protocol):
     async def update_instructions(self, instructions: str) -> None: ...
 
 
+class _SlideShower(Protocol):
+    async def show_slide(self, slide_id: str) -> str: ...
+
+
 def _log(event: str, **fields: object) -> None:
     logger.info(json.dumps({"event": event, **fields}))
 
@@ -114,6 +145,125 @@ def find_by_role(room: _RoomLike, role: str) -> _RemoteParticipantLike | None:
             continue
         found = participant
     return found
+
+
+def is_startup_retryable(result: str) -> bool:
+    if not result.startswith("FAILED:"):
+        return False
+    return any(reason in result for reason in STARTUP_RETRYABLE_REASONS)
+
+
+def startup_reply_instructions(result: str) -> str:
+    if result.startswith("FAILED:"):
+        return (
+            "The opening slide could not be shown. Tell the player that in one or two "
+            "short sentences. Do not describe any slide content, assignments, or facts. "
+            "Invite them to try again.\n\n"
+            f"{result}"
+        )
+    return (
+        "Greet the player and present the opening slide in exactly three short "
+        "sentences, using only this show_slide result. The last sentence must "
+        "invite their next question.\n\n"
+        f"{result}"
+    )
+
+
+async def wait_for_player(
+    room: _RoomLike,
+    *,
+    timeout_s: float = STARTUP_PLAYER_WAIT_S,
+) -> _RemoteParticipantLike | None:
+    existing = find_by_role(room, "player")
+    if existing is not None:
+        return existing
+
+    found: asyncio.Future[_RemoteParticipantLike] = (
+        asyncio.get_running_loop().create_future()
+    )
+
+    def _maybe_complete(participant: object) -> None:
+        if found.done() or not hasattr(participant, "identity"):
+            return
+        if participant_role(participant) == "player":
+            found.set_result(participant)  # type: ignore[arg-type]
+
+    def _on_connected(participant: _RemoteParticipantLike) -> None:
+        _maybe_complete(participant)
+
+    def _on_attrs(changed: Mapping[str, str], participant: object) -> None:
+        _maybe_complete(participant)
+
+    room.on("participant_connected", _on_connected)
+    room.on("participant_attributes_changed", _on_attrs)
+    existing = find_by_role(room, "player")
+    if existing is not None:
+        if not found.done():
+            found.set_result(existing)
+        return existing
+    try:
+        return await asyncio.wait_for(found, timeout=timeout_s)
+    except asyncio.TimeoutError:
+        return None
+
+
+async def show_startup_slide(
+    commander: _SlideShower,
+    *,
+    attempts: int = STARTUP_RETRY_ATTEMPTS,
+    delay_s: float = STARTUP_RETRY_DELAY_S,
+    sleep: Any = asyncio.sleep,
+) -> str:
+    last = (
+        "FAILED: slide not shown (player not found). Do not describe it as on screen."
+    )
+    for attempt in range(1, attempts + 1):
+        last = await commander.show_slide(STARTUP_SLIDE_ID)
+        applied = not last.startswith("FAILED:")
+        retryable = is_startup_retryable(last)
+        _log(
+            "startup_slide",
+            slide_id=STARTUP_SLIDE_ID,
+            attempt=attempt,
+            applied=applied,
+            retryable=retryable,
+            result=last,
+        )
+        if applied or not retryable:
+            return last
+        if attempt < attempts:
+            await sleep(delay_s)
+    return last
+
+
+async def greet_after_startup(session: Any, result: str) -> None:
+    await session.generate_reply(
+        instructions=startup_reply_instructions(result),
+        tool_choice="none",
+    )
+
+
+async def present_opening_slide(
+    session: Any,
+    commander: _SlideShower,
+    room: _RoomLike,
+    *,
+    player_timeout_s: float = STARTUP_PLAYER_WAIT_S,
+    attempts: int = STARTUP_RETRY_ATTEMPTS,
+    delay_s: float = STARTUP_RETRY_DELAY_S,
+    sleep: Any = asyncio.sleep,
+) -> str:
+    player = await wait_for_player(room, timeout_s=player_timeout_s)
+    _log(
+        "startup_player_wait",
+        found=player is not None,
+        identity=getattr(player, "identity", None),
+    )
+    result = await show_startup_slide(
+        commander, attempts=attempts, delay_s=delay_s, sleep=sleep
+    )
+    await greet_after_startup(session, result)
+    return result
 
 
 class CoachSwitcher:
@@ -259,17 +409,13 @@ class CoachSwitcher:
 class Assistant(Agent):
     def __init__(self, commander: SlideCommander | None = None) -> None:
         self._commander = commander
-        super().__init__(
-            instructions=(
-                "You are the Warriors' assistant coach before Game 7 of the 2016 NBA "
-                "Finals. Greet the player in one sentence. "
-                "Call show_slide before you speak about a slide."
-            ),
-        )
+        super().__init__(instructions=PRESENTER_INSTRUCTIONS)
 
-    @function_tool
-    async def show_slide(self, slide_id: SlideId) -> str:
-        """Show this slide on the player's board before you speak about it."""
+    @function_tool(description=SHOW_SLIDE_DESCRIPTION)
+    async def show_slide(
+        self,
+        slide_id: Annotated[SlideId, Field(description=SHOW_SLIDE_DESCRIPTION)],
+    ) -> str:
         if self._commander is None:
             return "FAILED: slide not shown (commander missing). Do not describe it as on screen."
         return await self._commander.show_slide(slide_id)
@@ -346,6 +492,9 @@ async def my_agent(ctx: JobContext):
         await run_debug_job(ctx, DebugSlideCommander(ctx.room))
         return
 
+    if REALTIME_CONFIG is None:
+        raise RuntimeError("realtime config missing outside CHALK_DEBUG")
+
     commander = SlideCommander(ctx.room)
 
     # GPT Realtime is turn-based speech-to-speech. The model's own turn
@@ -354,9 +503,8 @@ async def my_agent(ctx: JobContext):
     # preemptive_generation were removed. Kept: noise cancellation on the
     # room audio input. Docs: https://docs.livekit.io/agents/models/realtime/openai
     # and https://docs.livekit.io/agents/logic/turns#realtime-models
-    providers = parse_realtime_providers()
-    llm = build_realtime_model()
-    logger.info("realtime providers=%s", ",".join(providers))
+    llm = build_realtime_model(REALTIME_CONFIG)
+    logger.info("realtime providers=%s", ",".join(REALTIME_CONFIG.providers))
     if isinstance(llm, RealtimeModelFallbackAdapter):
         llm.on("realtime_availability_changed", _on_realtime_availability)
 
@@ -385,10 +533,7 @@ async def my_agent(ctx: JobContext):
     CoachSwitcher(session, assistant, ctx.room).attach()
 
     await ctx.connect()
-
-    await session.generate_reply(
-        instructions="Greet the player in one sentence.",
-    )
+    await present_opening_slide(session, commander, ctx.room)
 
 
 if __name__ == "__main__":

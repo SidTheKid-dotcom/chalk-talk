@@ -113,13 +113,17 @@ def slide_narration(slide_id: str, deck: dict[str, Any] | None = None) -> str:
             claims.append(f"{fact_id}: {row['claim']}")
 
     targets = targets_on_slide(slide)
-    play_ids = [play["id"] for play in plays_on_slide(slide_id, data)]
+    target_menu = [f"{target} ({target_label(target, data)})" for target in targets]
+    play_menu = [
+        f"{play['id']} ({play['title']})" for play in plays_on_slide(slide_id, data)
+    ]
     return (
         f"Title: {slide['title']}\n"
+        f"Points: {' | '.join(slide['points'])}\n"
         f"Notes: {slide['notes']}\n"
-        f"Facts: {'; '.join(claims) if claims else '(none)'}\n"
-        f"Board menu: targets={','.join(targets) if targets else '(none)'} "
-        f"plays={','.join(play_ids) if play_ids else '(none)'}"
+        f"Fact claims: {'; '.join(claims) if claims else '(none)'}\n"
+        f"Board menu: targets={'; '.join(target_menu) if target_menu else '(none)'}; "
+        f"plays={'; '.join(play_menu) if play_menu else '(none)'}"
     )
 
 

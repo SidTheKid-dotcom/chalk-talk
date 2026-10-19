@@ -40,15 +40,26 @@ In presenter mode the agent shows slide 1 on start, routes questions to the righ
 | Shutdown | stop PIDs, `lk room list` | empty list |
 
 ## Checklist
-- [ ] Implemented
-- [ ] Lint and typecheck pass
-- [ ] Tests pass (list)
-- [ ] Acceptance checks pass with evidence
-- [ ] Screenshots attached (UI tasks)
-- [ ] LEARNINGS.md updated (if any surprise)
-- [ ] Docs updated (README / DECISIONS / FACTS) if affected
+- [x] Implemented
+- [x] Lint and typecheck pass
+- [x] Tests pass (list)
+- [x] Acceptance checks pass with evidence (audit 09 live startup order verified; see room-list and microphone limits below)
+- [x] Screenshots attached (UI tasks)
+- [x] LEARNINGS.md updated (if any surprise)
+- [x] Docs updated (README / DECISIONS / FACTS) if affected
 
 ## Report (executor fills)
-- Files changed:
+- Files changed: `agent/src/agent.py`, `agent/src/deck_data.py`, `agent/src/model.py`, `agent/src/prompts.py`, presenter/model/commander tests, `deck/deck.json`, `deck/schema.json`, generated deck copies, `scripts/test_deck.py`, `README.md`, and `LEARNINGS.md`.
+- Audit 09 follow-up files: `agent/src/agent.py` (startup wait/retry + FAILED-only greeting + debug skip), `agent/tests/conftest.py`, `agent/tests/test_agent.py`, `agent/tests/test_presenter_behavior.py`, `agent/tests/test_model.py`, `deck/deck.json` + synced copies, `scripts/test_deck.py`, `README.md`, `LEARNINGS.md`.
 - Commands run and key output:
-- Not done / not verified:
+  - `cd agent && uv run pytest -q`: 70 passed, 2 provider-backed tests skipped by default.
+  - `cd agent && uv run ruff check`: all checks passed.
+  - `uv run --with pytest --with jsonschema pytest scripts -q`: 31 passed.
+  - `python3 scripts/sync_deck.py --check`: sync check passed.
+  - `CHALK_DEBUG=1 OPENAI_API_KEY= ... uv run python -c "from agent import REALTIME_CONFIG"`: `debug_import_ok`; REALTIME_CONFIG is None.
+  - Same import without CHALK_DEBUG: `ValueError: OPENAI_API_KEY is required...` at module import, before worker registration.
+  - Provider-backed LiveKit harness, `RUN_AGENT_BEHAVIOR_TESTS=1 REALTIME_PROVIDERS=openai`, two fresh sessions: 2 passed. Event order on every turn was `message, function_call, function_call_output, message`. Pre-tool lead-ins were content-free and <=20 words. Post-tool answers were non-empty. Both `s2_lebron` post-tool replies named Iguodala and used no unreturned numbers.
+  - Live room `fr-fbb16c11fdaa4336`: `startup_player_wait found=true identity=player-5a025ab664`; `rpc_roundtrip show_slide seq=1 applied=true` (155.0 ms); `startup_slide attempt=1 applied=true`; then first assistant message. No duplicate tool call.
+  - Screenshot: homepage deck placeholder after ack, `slide: Tip-off: tonight and the three keys`, `seq: 1`.
+- Not done / not verified: microphone audio was unavailable in the headless browser. Chat input stayed disabled, so this audit live check used Start call only (startup order), not a typed pace turn. `/player` is not on this branch (task 10). Local task-owned agent/web PIDs were stopped and room `fr-fbb16c11fdaa4336` was deleted. Final `lk room list` was empty.
+- Unresolved: none of the four audit findings remain. `opencode.json` is still a pre-existing uncommitted local change and was not touched.
