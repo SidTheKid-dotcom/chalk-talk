@@ -16,12 +16,14 @@ Secrets live in `.env` (repo root) and `web/.env.local`. Copy them from the priv
 ```bash
 cd agent && uv sync
 cd web && pnpm install
-make agent-dev      # LiveKit Cloud worker; registers AGENT_NAME from env
+make agent-dev      # cd agent && lk agent dev --deployment ${LIVEKIT_AGENT_DEPLOYMENT:-production}
 make web-dev        # http://localhost:3000
 make agent-test
 make web-lint
 make web-typecheck
 ```
+
+Once a cloud agent exists (`lk agent create`), a local worker on production takes real traffic. Set `LIVEKIT_AGENT_DEPLOYMENT` then.
 
 `AGENT_NAME` must match on the agent (`@server.rtc_session(agent_name=...)`) and in `web/.env.local` (starter `agentName` prop). The token route is still the starter's; task 05 replaces it.
 

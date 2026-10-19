@@ -84,8 +84,10 @@ LEARNINGS.md  Surprises and gotchas found while building.
 
 ## Commands
 ```bash
+lk cloud auth # link LiveKit Cloud project
+lk skills install # LiveKit docs MCP + skills for Claude Code and Cursor
 # --- task 01: agent + web local run ---
-make agent-dev          # cd agent && lk agent dev
+make agent-dev          # cd agent && lk agent dev --deployment ${LIVEKIT_AGENT_DEPLOYMENT:-production}
 make web-dev            # cd web && pnpm dev
 make agent-test         # cd agent && uv run pytest
 make web-lint           # cd web && pnpm lint
@@ -95,8 +97,8 @@ cd web && pnpm install
 lk agent debugger start
 lk agent debugger say "hello"
 lk agent debugger stop
-# CLI 2.19+ registers `lk agent dev` under a random dev- deployment.
-# If the browser cannot reach the local agent, use: cd agent && lk agent dev --deployment production
+# Once a cloud agent exists (`lk agent create`), a local worker on production
+# takes real traffic. Set LIVEKIT_AGENT_DEPLOYMENT then.
 ```
 
 ## Mistakes to avoid (short list)
