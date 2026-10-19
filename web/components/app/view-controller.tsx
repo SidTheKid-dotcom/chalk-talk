@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RoomEvent } from 'livekit-client';
 import { useAgent, useSessionContext } from '@livekit/components-react';
 import { WelcomeView } from '@/components/app/welcome-view';
@@ -11,12 +11,15 @@ import { CoachLinkCard } from '@/components/hardwood/CoachLinkCard';
 import { HardwoodStage } from '@/components/hardwood/HardwoodStage';
 import { JoinPanel } from '@/components/hardwood/JoinPanel';
 import { SlidePush } from '@/components/hardwood/SlidePush';
+import { VideoRail } from '@/components/hardwood/VideoRail';
 import { useCoachLink } from '@/hooks/useCoachLink';
 import { useDeckCommands } from '@/hooks/useDeckCommands';
+import { useHumanTiles } from '@/hooks/useHumanTiles';
 import { usePlayMotion } from '@/hooks/usePlayMotion';
 import { isSlideId } from '@/lib/deck/commands';
 import { deck, getSlide } from '@/lib/deck/load';
 import type { AgentState, CutoutCredit, TargetId } from '@/lib/deck/types';
+import { primeLocalMedia } from '@/lib/media-join';
 import {
   agentStateLabel,
   decidePlayerPhase,
@@ -25,6 +28,7 @@ import {
 } from '@/lib/player';
 
 const MIC_FAILURE = 'Microphone blocked or missing. Allow mic access and reload.';
+const CAMERA_FAILURE = 'Camera blocked or missing. Voice still works.';
 
 const STARTUP_TIMEOUT_MS = 30_000;
 
@@ -38,9 +42,12 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
   const agent = useAgent();
   const commands = useDeckCommands();
   const coachUrl = useCoachLink();
-  const coachLink = coachUrl ? <CoachLinkCard url={coachUrl} /> : null;
+  const humans = useHumanTiles(session.room);
+  const coachJoined = humans.some((tile) => tile.role === 'coach');
+  const coachLink = coachUrl ? <CoachLinkCard url={coachUrl} occupied={coachJoined} /> : null;
   const [phase, setPhase] = useState<'ready' | 'starting' | 'active' | 'ended'>('ready');
   const [micFailure, setMicFailure] = useState<string | null>(null);
+  const [cameraFailure, setCameraFailure] = useState<string | null>(null);
   const [startFailure, setStartFailure] = useState<string | null>(null);
   const [roomConnected, setRoomConnected] = useState(session.room.state === 'connected');
   const endedRef = useRef(false);
@@ -103,17 +110,11 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
     setPhase('starting');
     setStartFailure(null);
 
-    let microphoneEnabled = true;
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('getUserMedia is unavailable');
-      }
-      const permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      permissionStream.getTracks().forEach((track) => track.stop());
-      setMicFailure(null);
-    } catch {
-      microphoneEnabled = false;
-      setMicFailure(MIC_FAILURE);
+    const primed = await primeLocalMedia();
+    const microphoneEnabled = primed.mic;
+    setMicFailure(primed.mic ? null : (primed.reason ?? MIC_FAILURE));
+    if (!primed.camera) {
+      setCameraFailure(primed.reason ?? CAMERA_FAILURE);
     }
 
     try {
@@ -125,6 +126,14 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
           },
         },
       });
+      if (primed.camera) {
+        try {
+          await session.room.localParticipant.setCameraEnabled(true);
+          setCameraFailure(null);
+        } catch {
+          setCameraFailure(CAMERA_FAILURE);
+        }
+      }
       if (endedRef.current) return;
       setPhase((current) => (current === 'ended' ? current : 'active'));
     } catch (error) {
@@ -162,6 +171,19 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
     }
   }
 
+  const cameraOn = Boolean(
+    session.local.cameraTrack && !session.local.cameraTrack.publication.isMuted
+  );
+
+  async function toggleCamera() {
+    try {
+      await session.room.localParticipant.setCameraEnabled(!cameraOn);
+      setCameraFailure(null);
+    } catch {
+      setCameraFailure(CAMERA_FAILURE);
+    }
+  }
+
   if (phase === 'ready' || phase === 'starting') {
     return (
       <WelcomeView
@@ -181,15 +203,21 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
       microphoneOn={microphoneOn}
       micFailure={micFailure}
       toggleMicrophone={toggleMicrophone}
+      cameraOn={cameraOn}
+      cameraFailure={cameraFailure}
+      toggleCamera={toggleCamera}
       endSession={endSession}
     />
   );
 
   const status = agentStateLabel(agent.state);
+  const slideId =
+    commands.currentSlideId && isSlideId(commands.currentSlideId) ? commands.currentSlideId : null;
+  const highlights = commands.highlights as TargetId[];
 
-  if (!commands.currentSlideId || !isSlideId(commands.currentSlideId)) {
-    return (
-      <div className="player-shell">
+  return (
+    <div className="player-shell">
+      <div className="player-stage">
         <ScaledSlide
           rail={
             <>
@@ -199,41 +227,36 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
             </>
           }
         >
-          <HardwoodStage
-            status={status}
-            notice={micFailure}
-            topic="SETTING THE BOARD"
-            showCredits={false}
-          >
-            <div className="flex h-full items-center justify-center">
-              <p className="font-inter m-0 text-[24px] text-[var(--ink-2)]">
-                Waiting for the first sheet.
-              </p>
-            </div>
-          </HardwoodStage>
+          {slideId ? (
+            <PlayerSlide
+              credits={credits}
+              jrImageSrc={jrImageSrc}
+              slideId={slideId}
+              seq={commands.lastAppliedSeq}
+              highlights={highlights}
+              playId={commands.play?.play_id ?? null}
+              playSeq={commands.play?.seq ?? null}
+              playAnimate={commands.playAnimate}
+              speaking={agent.state === 'speaking'}
+              callouts={commands.callouts}
+              status={status}
+              notice={micFailure}
+            />
+          ) : (
+            <HardwoodStage
+              status={status}
+              notice={micFailure}
+              topic="GAME 7"
+              showCredits={false}
+              showCameraReserve={false}
+            >
+              <div className="h-full w-full" data-blank-board />
+            </HardwoodStage>
+          )}
         </ScaledSlide>
       </div>
-    );
-  }
-
-  const highlights = commands.highlights as TargetId[];
-  return (
-    <PlayerSlide
-      credits={credits}
-      jrImageSrc={jrImageSrc}
-      slideId={commands.currentSlideId}
-      seq={commands.lastAppliedSeq}
-      highlights={highlights}
-      playId={commands.play?.play_id ?? null}
-      playSeq={commands.play?.seq ?? null}
-      playAnimate={commands.playAnimate}
-      speaking={agent.state === 'speaking'}
-      callouts={commands.callouts}
-      status={status}
-      notice={micFailure}
-      controls={sessionControls}
-      coachLink={coachLink}
-    />
+      <VideoRail room={session.room} />
+    </div>
   );
 }
 
@@ -250,8 +273,6 @@ function PlayerSlide({
   callouts,
   status,
   notice,
-  controls,
-  coachLink,
 }: {
   credits: CutoutCredit[];
   jrImageSrc: string | null;
@@ -265,42 +286,34 @@ function PlayerSlide({
   callouts: ReturnType<typeof useDeckCommands>['callouts'];
   status: AgentState;
   notice: string | null;
-  controls: ReactNode;
-  coachLink: ReactNode;
 }) {
   const slide = getSlide(slideId as Parameters<typeof getSlide>[0]);
   const motion = usePlayMotion(slide.diagram, playId, playSeq, playAnimate, speaking);
   return (
-    <div className="player-shell">
-      <ScaledSlide
-        rail={
-          <>
-            {coachLink}
-            <PhotoCreditsLink />
-            {controls}
-          </>
-        }
-      >
-        <HardwoodStage slide={slide} status={status} notice={notice} showCredits={false}>
-          <SlidePush slideId={slideId} seq={seq}>
-            <SlideView
-              deck={deck}
-              slide={slide}
-              credits={credits}
-              highlights={highlights}
-              arrows={motion.arrows}
-              markerOverrides={motion.markers}
-              ball={motion.ball}
-              playCaption={motion.caption}
-              playId={playId}
-              callouts={callouts}
-              jrImageSrc={jrImageSrc}
-              animate
-            />
-          </SlidePush>
-        </HardwoodStage>
-      </ScaledSlide>
-    </div>
+    <HardwoodStage
+      slide={slide}
+      status={status}
+      notice={notice}
+      showCredits={false}
+      showCameraReserve={false}
+    >
+      <SlidePush slideId={slideId} seq={seq}>
+        <SlideView
+          deck={deck}
+          slide={slide}
+          credits={credits}
+          highlights={highlights}
+          arrows={motion.arrows}
+          markerOverrides={motion.markers}
+          ball={motion.ball}
+          playCaption={motion.caption}
+          playId={playId}
+          callouts={callouts}
+          jrImageSrc={jrImageSrc}
+          animate
+        />
+      </SlidePush>
+    </HardwoodStage>
   );
 }
 
@@ -308,11 +321,17 @@ function SessionControls({
   microphoneOn,
   micFailure,
   toggleMicrophone,
+  cameraOn,
+  cameraFailure,
+  toggleCamera,
   endSession,
 }: {
   microphoneOn: boolean;
   micFailure: string | null;
   toggleMicrophone: () => Promise<void>;
+  cameraOn: boolean;
+  cameraFailure: string | null;
+  toggleCamera: () => Promise<void>;
   endSession: () => Promise<void>;
 }) {
   return (
@@ -320,20 +339,22 @@ function SessionControls({
       <button
         type="button"
         data-player-camera
-        disabled
-        title="Camera tiles are reserved for the head-coach handoff"
+        data-live={cameraOn && !cameraFailure ? '1' : '0'}
+        aria-pressed={cameraOn}
+        title={cameraFailure ?? undefined}
+        onClick={() => void toggleCamera()}
       >
-        Camera off
+        {cameraFailure ? 'Camera unavailable' : cameraOn ? 'Camera on' : 'Camera off'}
       </button>
       <button
         type="button"
         data-player-mic
         data-live={microphoneOn && !micFailure ? '1' : '0'}
         aria-pressed={microphoneOn}
-        disabled={Boolean(micFailure)}
+        title={micFailure ?? undefined}
         onClick={() => void toggleMicrophone()}
       >
-        {micFailure ? 'Mic unavailable' : microphoneOn ? 'Mic on' : 'Mic off'}
+        {micFailure ? 'Retry mic' : microphoneOn ? 'Mic on' : 'Mic off'}
       </button>
       <button type="button" data-player-end onClick={() => void endSession()}>
         End session

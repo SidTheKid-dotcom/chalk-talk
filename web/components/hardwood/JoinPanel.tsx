@@ -16,8 +16,8 @@ export function JoinPanel({
   actionLabel,
   kicker = 'Film session · Game 7',
   title = 'Chalk Talk',
-  body = 'The assistant coach walks you through the Game 7 plan by voice. Six slides. Cut in any time.',
-  note = 'Camera space is reserved. Microphone access is requested when you join.',
+  body = 'Floppy walks you through the Game 7 plan by voice. Six slides. Cut in any time.',
+  note = 'Mic and camera are requested when you join. Camera-off still works for voice.',
 }: JoinPanelProps) {
   return (
     <section className="join-card">

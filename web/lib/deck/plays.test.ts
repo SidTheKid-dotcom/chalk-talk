@@ -57,12 +57,14 @@ describe('play data helpers', () => {
     expect(deck.plays).toHaveLength(4);
   });
 
-  it('budgets speech from the caption word count, clamped to 1.6–5s', () => {
+  it('budgets speech from the caption word count, clamped to 4–10s', () => {
     expect(captionWordCount('  Both   defenders trap the ball  ')).toBe(5);
     expect(captionWordCount('')).toBe(0);
-    expect(speechBudgetMs('Both defenders trap the ball', 1200)).toBe(5 * 380 + 450);
+    expect(speechBudgetMs('Both defenders trap the ball', 1200)).toBe(5 * 700 + 1600);
     expect(speechBudgetMs('Go now', 1200)).toBe(SPEECH_BUDGET_MIN_MS);
-    expect(speechBudgetMs('one two three four five six seven eight nine ten', 1200)).toBe(4250);
+    expect(speechBudgetMs('one two three four five six seven eight nine ten', 1200)).toBe(
+      10 * 700 + 1600
+    );
     const long = Array.from({ length: 20 }, () => 'word').join(' ');
     expect(speechBudgetMs(long, 1200)).toBe(SPEECH_BUDGET_MAX_MS);
     expect(speechBudgetMs('Hi', 4000)).toBe(4000);

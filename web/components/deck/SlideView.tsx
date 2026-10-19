@@ -6,10 +6,11 @@ import { NoteCard } from '@/components/deck/NoteCard';
 import type { DrawnArrow } from '@/components/deck/PlayArrows';
 import { PlayerCutout } from '@/components/deck/PlayerCutout';
 import { Points } from '@/components/deck/Points';
+import { TeamLogo } from '@/components/deck/TeamLogo';
 import type { OverlayCallout } from '@/lib/deck/commands';
 import { creditForFile } from '@/lib/deck/credits';
-import { facts, featuredFact, getPlay } from '@/lib/deck/load';
-import { playStartMarkers } from '@/lib/deck/plays';
+import { cutoutForPlayer, lineupFiles, playerIdForCutout } from '@/lib/deck/cutouts';
+import { facts } from '@/lib/deck/load';
 import type { Coord, CutoutCredit, Deck, DeckSlide, PlayerId, TargetId } from '@/lib/deck/types';
 
 export type SlideViewProps = {
@@ -62,7 +63,7 @@ export function SlideView({
   playId = null,
   animate = false,
 }: SlideViewProps) {
-  const noteFact = noteFactId ? facts.find((fact) => fact.id === noteFactId) : featuredFact(slide);
+  const noteFact = noteFactId ? facts.find((fact) => fact.id === noteFactId) : undefined;
   const activeHighlights = highlights ?? (highlight ? [highlight] : []);
   const jrCard = slide.cards.find((card) => card.id === 'k_jr_card');
   const showJr = Boolean(jrCard) && (revealJr || activeHighlights.includes('k_jr_card'));
@@ -74,7 +75,7 @@ export function SlideView({
         : slide.id === 's6_last_two' && showJr
           ? 'close'
           : 'court';
-  const ghosts = ghostMarkers(slide, playId, markerOverrides);
+  const focusIds = courtFocusIds(activeHighlights, ball, markerOverrides);
 
   return (
     <div className="slide-canvas" data-layout={layout} data-slide-canvas={slide.id}>
@@ -104,14 +105,16 @@ export function SlideView({
             <Points points={slide.points} />
           </div>
           {noteFact ? <NoteCard kind="fact" fact={noteFact} /> : null}
+          {layout === 'hero' ? <MatchupCard /> : null}
         </div>
       )}
 
       {layout === 'hero' ? (
-        <div className="slide-visual relative flex min-h-0 items-end justify-center gap-4">
-          <HeroCutouts
-            files={slide.cutouts.slice(0, 3)}
+        <div className="slide-visual relative flex min-h-0 flex-col justify-center gap-5">
+          <LineupStrip
+            files={slide.cutouts}
             credits={credits}
+            highlights={activeHighlights}
             forceMissing={forceMissingCutout}
           />
         </div>
@@ -130,11 +133,12 @@ export function SlideView({
 
       {slide.diagram ? (
         <div className="slide-visual slide-court relative min-h-0">
-          {layout === 'court' && slide.cutouts.length > 0 && !playId ? (
-            <div className="pointer-events-none absolute bottom-10 left-0 z-[2] max-w-[180px]">
+          {layout === 'court' && !playId ? (
+            <div className="pointer-events-none absolute bottom-10 left-0 z-[2] max-w-[280px]">
               <CutoutRow
-                files={slide.cutouts.slice(0, 1)}
+                files={courtCutoutFiles(slide.cutouts, activeHighlights)}
                 credits={credits}
+                highlights={activeHighlights}
                 size={188}
                 forceMissing={forceMissingCutout}
               />
@@ -147,10 +151,10 @@ export function SlideView({
               highlights={activeHighlights}
               arrows={arrows}
               markerOverrides={markerOverrides}
-              ghosts={ghosts}
               ball={ball}
               animate={animate}
               showZoneLabels={slide.id === 's6_last_two'}
+              focusIds={focusIds}
             />
             {playCaption ? (
               <p className="play-caption" data-play-caption>
@@ -172,27 +176,31 @@ export function SlideView({
   );
 }
 
-function ghostMarkers(
-  slide: DeckSlide,
-  playId: string | null,
-  current?: Partial<Record<PlayerId, Coord>>
-): Partial<Record<PlayerId, Coord>> | undefined {
-  if (!slide.diagram || !playId || !current) return undefined;
-  try {
-    const play = getPlay(playId as Parameters<typeof getPlay>[0]);
-    const start = playStartMarkers(slide.diagram, play);
-    const ghosts: Partial<Record<PlayerId, Coord>> = {};
-    for (const [id, pos] of Object.entries(current)) {
-      const origin = start[id as PlayerId];
-      if (!origin || !pos) continue;
-      if (origin[0] !== pos[0] || origin[1] !== pos[1]) {
-        ghosts[id as PlayerId] = origin;
-      }
-    }
-    return Object.keys(ghosts).length > 0 ? ghosts : undefined;
-  } catch {
-    return undefined;
+function courtFocusIds(
+  highlights: TargetId[],
+  ball?: PlayerId,
+  markerOverrides?: Partial<Record<PlayerId, Coord>>
+): PlayerId[] {
+  const focus = new Set<PlayerId>();
+  for (const target of highlights) {
+    if (cutoutForPlayer(target)) focus.add(target as PlayerId);
   }
+  if (ball) focus.add(ball);
+  if (markerOverrides) {
+    for (const id of Object.keys(markerOverrides) as PlayerId[]) {
+      focus.add(id);
+    }
+  }
+  return [...focus];
+}
+
+function courtCutoutFiles(slideFiles: string[], highlights: TargetId[]): string[] {
+  const files = [...slideFiles.slice(0, 1)];
+  for (const target of highlights) {
+    const file = cutoutForPlayer(target);
+    if (file && !files.includes(file)) files.push(file);
+  }
+  return files.slice(0, 2);
 }
 
 function CalloutStack({ callouts }: { callouts: OverlayCallout[] }) {
@@ -238,7 +246,7 @@ function FactorsGrid({
 }: {
   slide: DeckSlide;
   credits: CutoutCredit[];
-  noteFact: ReturnType<typeof featuredFact>;
+  noteFact: (typeof facts)[number] | undefined;
   callouts: OverlayCallout[];
   forceMissingCutout: boolean;
 }) {
@@ -295,27 +303,80 @@ function FactorsGrid({
   );
 }
 
-function HeroCutouts({
+function MatchupCard() {
+  return (
+    <div className="matchup-card" data-matchup>
+      <div className="matchup-team gsw">
+        <TeamLogo src="/local/warriors-logo.svg" abbrev="GSW" alt="Golden State Warriors" />
+        <span className="matchup-name">Warriors</span>
+      </div>
+      <span className="matchup-vs">vs</span>
+      <div className="matchup-team cle">
+        <TeamLogo src="/local/cavaliers-logo.svg" abbrev="CLE" alt="Cleveland Cavaliers" />
+        <span className="matchup-name">Cavaliers</span>
+      </div>
+    </div>
+  );
+}
+
+function LineupStrip({
   files,
   credits,
+  highlights,
   forceMissing,
 }: {
   files: string[];
   credits: CutoutCredit[];
+  highlights: TargetId[];
   forceMissing: boolean;
 }) {
-  const sizes = [280, 360, 280];
+  const warriors = lineupFiles(files, 'gsw');
+  const cavs = lineupFiles(files, 'cle');
   return (
-    <div className="flex items-end justify-center gap-2">
-      {files.map((file, index) => (
-        <CutoutRow
-          key={file}
-          files={[file]}
-          credits={credits}
-          size={sizes[index] ?? 260}
-          forceMissing={forceMissing}
-        />
-      ))}
+    <div className="lineup-board" data-lineup>
+      <LineupRow
+        label="GSW"
+        files={warriors}
+        credits={credits}
+        highlights={highlights}
+        forceMissing={forceMissing}
+      />
+      <LineupRow
+        label="CLE"
+        files={cavs}
+        credits={credits}
+        highlights={highlights}
+        forceMissing={forceMissing}
+      />
+    </div>
+  );
+}
+
+function LineupRow({
+  label,
+  files,
+  credits,
+  highlights,
+  forceMissing,
+}: {
+  label: string;
+  files: string[];
+  credits: CutoutCredit[];
+  highlights: TargetId[];
+  forceMissing: boolean;
+}) {
+  if (files.length === 0) return null;
+  return (
+    <div className="lineup-row" data-lineup-team={label}>
+      <span className="lineup-label">{label}</span>
+      <CutoutRow
+        files={files}
+        credits={credits}
+        highlights={highlights}
+        size={140}
+        forceMissing={forceMissing}
+        className="lineup-cells"
+      />
     </div>
   );
 }
@@ -327,6 +388,7 @@ function CutoutRow({
   forceMissing = false,
   nowrap = false,
   className = '',
+  highlights = [],
 }: {
   files: string[];
   credits: CutoutCredit[];
@@ -334,6 +396,7 @@ function CutoutRow({
   forceMissing?: boolean;
   nowrap?: boolean;
   className?: string;
+  highlights?: TargetId[];
 }) {
   return (
     <div
@@ -342,6 +405,7 @@ function CutoutRow({
       {files.map((file) => {
         const credit = creditForFile(credits, file);
         const team = credit?.teamAbbrev === 'CLE' ? 'cle' : 'gsw';
+        const playerId = playerIdForCutout(file);
         return (
           <PlayerCutout
             key={file}
@@ -351,6 +415,7 @@ function CutoutRow({
             team={team}
             size={size}
             forceMissing={forceMissing}
+            highlighted={playerId !== null && highlights.includes(playerId)}
           />
         );
       })}

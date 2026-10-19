@@ -7,8 +7,8 @@
  * license source of truth (plus CREDITS.md). predev/prebuild copy into
  * public/. A check mode compares names so the copies cannot silently drift.
  *
- * Also copies the gitignored JR meme from local-assets into web/public/local
- * when that file exists on this machine. Never commit either destination.
+ * Also copies the gitignored JR meme and team logos from local-assets into
+ * web/public/local when they exist on this machine. Never commit either destination.
  */
 import { copyFileSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -24,6 +24,13 @@ const localSources = [
   join(repoRoot, 'local-assets'),
   '/home/sidvish/Documents/Work/Personal/synthio-take-home/local-assets',
 ].filter(Boolean);
+
+const LOCAL_FILES = [
+  'lebron-jr-cutout.png',
+  'lebron-jr.jpg',
+  'warriors-logo.svg',
+  'cavaliers-logo.svg',
+];
 
 const check = process.argv.includes('--check');
 
@@ -64,10 +71,7 @@ mkdirSync(localDestDir, { recursive: true });
 writeFileSync(join(localDestDir, '.gitkeep'), '');
 for (const candidate of localSources) {
   if (!existsSync(candidate)) continue;
-  const files = listMatching(
-    candidate,
-    (name) => name === 'lebron-jr-cutout.png' || name === 'lebron-jr.jpg'
-  );
+  const files = listMatching(candidate, (name) => LOCAL_FILES.includes(name));
   for (const name of files) {
     copyFileSync(join(candidate, name), join(localDestDir, name));
   }
@@ -80,6 +84,6 @@ for (const candidate of localSources) {
 console.log(`[sync-players] players: ${sourceFiles.length} files -> ${destDir}`);
 console.log(
   localCopied.length > 0
-    ? `[sync-players] local meme: ${localCopied.join(', ')} -> ${localDestDir}`
-    : '[sync-players] local meme missing; JR card will use the text fallback'
+    ? `[sync-players] local assets: ${localCopied.join(', ')} -> ${localDestDir}`
+    : '[sync-players] local assets missing; JR card and logos use fallbacks'
 );

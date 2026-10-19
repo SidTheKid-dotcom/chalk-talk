@@ -14,6 +14,7 @@ type BottomRailProps = {
   meta?: string;
   extra?: ReactNode;
   showCredits?: boolean;
+  showCameraReserve?: boolean;
 };
 
 function pillClass(state: AgentState): string {
@@ -43,6 +44,7 @@ export function BottomRail({
   slideNumber = null,
   extra,
   showCredits = true,
+  showCameraReserve = true,
 }: BottomRailProps) {
   const n = slideNumber == null ? '0' : String(slideNumber);
   const { scale, reservePx } = useStageChrome();
@@ -67,7 +69,7 @@ export function BottomRail({
           </span>
         ) : null}
       </div>
-      <CameraReserve />
+      {showCameraReserve ? <CameraReserve /> : null}
       {extra}
     </footer>
   );

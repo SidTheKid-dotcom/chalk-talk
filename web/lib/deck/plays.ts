@@ -2,11 +2,11 @@ import type { DrawnArrow } from '@/components/deck/PlayArrows';
 import type { Coord, DeckPlay, PlayerId, SlideDiagram } from '@/lib/deck/types';
 
 export const PLAY_START_DURATION_MS = 300;
-export const SPEECH_MS_PER_WORD = 380;
-export const SPEECH_PAD_MS = 450;
-export const SPEECH_BUDGET_MIN_MS = 1600;
-export const SPEECH_BUDGET_MAX_MS = 5000;
-/** Quiet stretch before a clicker-silent play, or a stopped line, finishes at deck speed. */
+export const SPEECH_MS_PER_WORD = 700;
+export const SPEECH_PAD_MS = 1600;
+export const SPEECH_BUDGET_MIN_MS = 4000;
+export const SPEECH_BUDGET_MAX_MS = 10000;
+/** Quiet stretch before a clicker-silent play finishes at deck speed. Speech pauses freeze. */
 export const SPEAKING_START_GRACE_MS = 700;
 
 export type PlayViewFrame = {

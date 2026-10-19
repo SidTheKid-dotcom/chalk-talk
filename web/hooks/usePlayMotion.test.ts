@@ -31,7 +31,7 @@ function run(playId: PlayId, steps: Array<[number, boolean | undefined]>) {
 describe('usePlayMotion speaking clock', () => {
   it('tweens a step in duration_ms and then holds until the speech budget is gone', () => {
     const holding = run('p_blitz_lebron_pnr', [[2_000, true]]);
-    const next = run('p_blitz_lebron_pnr', [[2_350, true]]);
+    const next = run('p_blitz_lebron_pnr', [[5_200, true]]);
     expect(holding.frame?.caption).toBe('Screen comes at the top');
     expect(holding.frame?.markers?.cle_tthompson).toEqual([56, 70]);
     expect(next.frame?.caption).toBe('Both defenders trap the ball');
@@ -71,18 +71,28 @@ describe('usePlayMotion speaking clock', () => {
     expect(stillTalking.frame?.caption).toBe('Screen comes at the top');
   });
 
-  it('finishes remaining steps at motion speed after speech stops', () => {
-    const ended = run('p_blitz_lebron_pnr', [
+  it('keeps the current frame when speech pauses after a caption', () => {
+    const paused = run('p_blitz_lebron_pnr', [
       [200, true],
       [SPEAKING_START_GRACE_MS, false],
       [1100, false],
     ]);
-    const keptSpeaking = run('p_blitz_lebron_pnr', [[200 + 1100, true]]);
-    expect(ended.clock.mode).toBe('finish');
-    expect(ended.clock.finishMs).toBe(1100);
-    expect(ended.frame?.caption).toBe('Both defenders trap the ball');
-    expect(keptSpeaking.frame?.caption).toBe('Screen comes at the top');
-    expect(ended.frame?.markers?.gsw_green).not.toEqual(keptSpeaking.frame?.markers?.gsw_green);
+    const keptSpeaking = run('p_blitz_lebron_pnr', [[200, true]]);
+    expect(paused.clock.mode).toBe('pace');
+    expect(paused.clock.paceMs).toBe(200);
+    expect(paused.frame?.caption).toBe(keptSpeaking.frame?.caption);
+    expect(paused.frame?.markers).toEqual(keptSpeaking.frame?.markers);
+  });
+
+  it('resumes the speaking clock after a pause', () => {
+    const resumed = run('p_blitz_lebron_pnr', [
+      [200, true],
+      [2_000, false],
+      [5_000, true],
+    ]);
+    expect(resumed.clock.mode).toBe('pace');
+    expect(resumed.clock.paceMs).toBe(5_200);
+    expect(resumed.frame?.caption).toBe('Both defenders trap the ball');
   });
 
   it('stays on the last frame after the play ends', () => {
@@ -101,7 +111,7 @@ describe('usePlayMotion speaking clock', () => {
     const speaking = run('p_blitz_lebron_pnr', [[5_000, true]]);
     expect(wall.clock.mode).toBe('wall');
     expect(wall.frame?.caption).toBe('Weak side rotates home');
-    expect(speaking.frame?.caption).toBe('Tag the roller behind');
+    expect(speaking.frame?.caption).toBe('Screen comes at the top');
     expect(speaking.frame?.markers?.gsw_curry).not.toEqual([28, 28]);
   });
 
@@ -140,7 +150,7 @@ describe('usePlayMotion speaking clock', () => {
       );
     }
     const mid = frameForPlayClock(segments, shots[1].clock);
-    expect(mid?.caption).toBe('Tag the roller behind');
+    expect(mid?.caption).toBe('Screen comes at the top');
     expect(shots[1].clock.wallMs).toBe(5_000);
   });
 });

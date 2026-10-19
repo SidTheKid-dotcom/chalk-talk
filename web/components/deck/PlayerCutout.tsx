@@ -11,6 +11,7 @@ type PlayerCutoutProps = {
   forceMissing?: boolean;
   className?: string;
   team?: 'gsw' | 'cle';
+  highlighted?: boolean;
 };
 
 export function PlayerCutout({
@@ -21,13 +22,17 @@ export function PlayerCutout({
   forceMissing = false,
   className = '',
   team,
+  highlighted = false,
 }: PlayerCutoutProps) {
   const [missing, setMissing] = useState(forceMissing);
   const showImage = !missing && !forceMissing;
   const resolvedTeam = team ?? (caption.includes('CLE') ? 'cle' : 'gsw');
 
   return (
-    <figure className={`relative m-0 inline-flex flex-col items-center ${className}`}>
+    <figure
+      className={`relative m-0 inline-flex flex-col items-center ${highlighted ? 'cutout-highlighted' : ''} ${className}`}
+      data-cutout-highlight={highlighted ? '1' : '0'}
+    >
       {showImage ? (
         <div className="relative" style={{ width: size }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

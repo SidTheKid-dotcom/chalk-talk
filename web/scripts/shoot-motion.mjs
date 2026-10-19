@@ -206,9 +206,7 @@ async function freezeMidpoint(name, path) {
   if (!overlap?.outgoing || !overlap?.incoming) {
     errors.push(`${name}: missing headline at the midpoint`);
   } else if (intersects(overlap.outgoing, overlap.incoming)) {
-    errors.push(
-      `${name}: headlines intersect (${overlap.outgoingId} and ${overlap.incomingId})`
-    );
+    errors.push(`${name}: headlines intersect (${overlap.outgoingId} and ${overlap.incomingId})`);
   }
   await context.close();
 }
