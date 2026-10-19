@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08. Running: 04 Spike 2 tool order. Next: Wave 2 task files when 04 reports.
+Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08. Spike 2 measurement is complete; audit and merge of its harness remain. Wave 2 plans 09 and 10 are ready to execute in parallel after that audit starts.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.

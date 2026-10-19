@@ -57,9 +57,9 @@ LEARNINGS.md  Surprises and gotchas found while building.
 ```
 
 ## Roles
-- **Planner** = Claude Code (Opus). Plans and researches. Writes `docs/plan/<task>.md`. Delegates with `delegate_task`. Reviews diffs. Does not edit app code.
+- **Planner** = OpenCode (GPT-5.6 Sol). Plans and researches. Writes `docs/plan/<task>.md`. Delegates with `delegate_task`. Reviews diffs. Does not edit app code.
 - **Executor** = Cursor (Grok). Takes one task file at a time. Implements it. Runs checks. Ticks the checklist. Reports evidence.
-- **Auditor** = a separate Claude thread. Reviews each diff before merge.
+- **Auditor** = a separate non-executor thread. Reviews each diff before merge.
 
 ## Hard rules
 - Keep all keys server-side in `.env`. Never send a key to the browser.
