@@ -185,3 +185,32 @@ scripts/test_deck.py::test_build_facts_missing_url_fails PASSED
 ============================== 16 passed in 0.22s ==============================
 ```
 Sync check: `python3 scripts/sync_deck.py --check` → `sync check passed`.
+
+## Round 3 (auditor CHANGES REQUIRED)
+
+Auditor: all 19 facts correct. Required: false Love line; parser silent drops; s5 bench names; TargetId check; trap keyed on `action`; required `ball`; sync byte-compare; zone bands; short-roll option arrows.
+
+### Files changed (round 3)
+- `LEARNINGS.md` — merge kept both sides; round 3 parser/trap/option lines
+- `scripts/build_facts.py` — exactly 5 columns; `y\b` / `n\b` case-insensitive; error if neither
+- `scripts/test_deck.py` — extra pipe, `Y`, garbage verified; trap on `action`; option arrows ignored by ball rule; zone bands; TargetId from deck data; sync byte-compare; missing `ball`
+- `deck/schema.json` — `ball` required on every step; optional `action: trap`; optional `option` on arrows
+- `deck/deck.json` — s5 Love/bench copy; zone bands; two trap steps marked; short-roll option arrows plus drive
+- `agent/data/deck.json`, `web/lib/deck/deck.json` — synced copies
+
+### s5 points
+```
+Love had a big Game One, then sat Game Three.
+Green is back. Stay out of foul trouble.
+Bench and pace can decide it if the stars cancel.
+```
+
+### s5 notes
+```
+Walk the swing factors. Love was productive in Game One and inactive in Game Three. Green missed a game under suspension and then played with fouls; we need him on the floor. Our bench can swing it. We can push; our regular-season pace was high. No court on this slide.
+```
+
+### Acceptance evidence (round 3)
+`uv run --with pytest --with jsonschema pytest scripts -v` → 25 passed (full list in executor report).
+`python3 scripts/sync_deck.py --check` → `sync check passed`.
+`cd agent && uv run pytest` → 2 passed (merge did not break the agent smoke tests).

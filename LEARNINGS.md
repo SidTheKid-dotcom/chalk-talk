@@ -32,3 +32,7 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [deck] Slide 5 pace is F19 (Warriors). Say "our pace", not theirs. Love copy can only use F13 + F17. (source: task 02 round 2)
 - [facts] A soft claim ("Love produced when he played") passed planner review but was false across Games 5-6. Any slide sentence that judges performance needs a fact per game it covers, not one game. (audit 02)
 - [facts] Basketball-Reference returns 403 to curl and plain WebFetch. A search-provider fetch (parallel-search web_fetch) reads the full pages. (audit 02)
+- [facts] `split("|")` plus `cols[:5]` dropped a verified row when a cell had a pipe, with no error. Require exactly five columns. (source: task 02 round 3)
+- [facts] `startswith("y")` skipped `Y` silently. Match `y\b` / `n\b` case-insensitive and exit if the cell is neither. (source: task 02 round 3)
+- [deck] Short-roll corner arrows are reads, not passes made. Mark `"option": true` and ignore option arrows in the ball rule. (source: task 02 round 3)
+- [deck] Trap tests must key on `"action": "trap"`, not the caption, or a wording change disables the radius check. (source: task 02 round 3)
