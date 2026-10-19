@@ -9,8 +9,16 @@ export function creditsMarkdownPath(): string {
   return join(process.cwd(), '..', 'design', 'players', 'CREDITS.md');
 }
 
+export function hardwoodCreditsPath(): string {
+  return join(process.cwd(), 'public', 'hardwood', 'CREDITS.md');
+}
+
 export function loadCreditsMarkdown(): string {
   return readFileSync(creditsMarkdownPath(), 'utf8');
+}
+
+export function loadHardwoodCreditsMarkdown(): string {
+  return readFileSync(hardwoodCreditsPath(), 'utf8');
 }
 
 export function loadCutoutCredits(): CutoutCredit[] {

@@ -3,10 +3,13 @@ import { MotionDemo } from '@/components/deck/MotionDemo';
 import { PrimitivesGallery } from '@/components/deck/PrimitivesGallery';
 import { ScaledSlide } from '@/components/deck/ScaledSlide';
 import { SlideView } from '@/components/deck/SlideView';
+import { HardwoodStage } from '@/components/hardwood/HardwoodStage';
+import { JoinPanel } from '@/components/hardwood/JoinPanel';
+import { PushDemo } from '@/components/hardwood/PushDemo';
 import { loadCutoutCredits, resolveJrImageSrc } from '@/lib/deck/credits.server';
 import { deck, firstSentence, getPlay, getSlide } from '@/lib/deck/load';
 import { playFrame } from '@/lib/deck/plays';
-import type { PlayId, SlideId, TargetId } from '@/lib/deck/types';
+import type { AgentState, PlayId, SlideId, TargetId } from '@/lib/deck/types';
 
 const SLIDE_IDS = new Set<SlideId>(deck.slides.map((slide) => slide.id));
 const PLAY_IDS = new Set<PlayId>(deck.plays.map((play) => play.id));
@@ -17,6 +20,22 @@ type LabPageProps = {
 
 function param(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function LabControls() {
+  return (
+    <div className="player-session-controls" data-player-controls>
+      <button type="button" data-player-camera disabled title="Camera tiles are reserved">
+        Camera off
+      </button>
+      <button type="button" data-player-mic data-live="1">
+        Mic on
+      </button>
+      <button type="button" data-player-end>
+        End session
+      </button>
+    </div>
+  );
 }
 
 export default async function LabPage({ searchParams }: LabPageProps) {
@@ -34,7 +53,7 @@ export default async function LabPage({ searchParams }: LabPageProps) {
     const slide = getSlide((slideId as SlideId) || 's3_kyrie');
     const jump = coachJump(slide);
     return (
-      <div className="flex min-h-screen justify-center bg-[var(--manila)]">
+      <div className="flex min-h-screen justify-center bg-black">
         <CoachBriefing
           deck={deck}
           slide={slide}
@@ -52,36 +71,96 @@ export default async function LabPage({ searchParams }: LabPageProps) {
     return <MotionDemo />;
   }
 
+  if (view === 'lobby' || view === 'ended') {
+    const ended = view === 'ended';
+    return (
+      <div className="lobby-shell">
+        <ScaledSlide>
+          <HardwoodStage vignette={!ended} topic={ended ? 'SESSION CLOSED' : 'FILM SESSION'}>
+            <div className="flex h-full items-center justify-center">
+              <JoinPanel
+                kicker={ended ? 'Session closed' : 'Film session · Game 7'}
+                title={ended ? 'The film session ended.' : 'Chalk Talk'}
+                body={
+                  ended
+                    ? 'Start a fresh room when you are ready to continue.'
+                    : 'The assistant coach walks you through the Game 7 plan by voice. Six slides. Cut in any time.'
+                }
+                note={ended ? null : undefined}
+                actionLabel={ended ? 'Restart session' : 'Join film session'}
+              />
+            </div>
+          </HardwoodStage>
+        </ScaledSlide>
+      </div>
+    );
+  }
+
+  if (view === 'push') {
+    return (
+      <div className="player-shell">
+        <ScaledSlide>
+          <PushDemo
+            credits={credits}
+            jrImageSrc={jrImageSrc}
+            fromId={param(query.from)}
+            toId={param(query.to) ?? slideId}
+            rapid={param(query.rapid) === '1'}
+          />
+        </ScaledSlide>
+      </div>
+    );
+  }
+
   if (slideId && SLIDE_IDS.has(slideId as SlideId)) {
     const slide = getSlide(slideId as SlideId);
     const play = playId && PLAY_IDS.has(playId as PlayId) ? getPlay(playId as PlayId) : undefined;
     const frame = play && slide.diagram ? playFrame(slide.diagram, play) : undefined;
-    const captionText = param(query.caption);
     const scaled = param(query.scale) === '1';
+    const status: AgentState =
+      param(query.state) === 'listening'
+        ? 'Listening'
+        : param(query.state) === 'thinking'
+          ? 'Thinking'
+          : param(query.state) === 'speaking'
+            ? 'Speaking'
+            : '—';
+    const callouts =
+      param(query.callout) === 'text'
+        ? [{ callout_id: 'c6', text: 'Iguodala on LeBron' }]
+        : param(query.callout) === 'fact' && slide.fact_ids[0]
+          ? [{ callout_id: 'c1', fact_id: slide.fact_ids[0] }]
+          : [];
     const view = (
-      <SlideView
-        deck={deck}
+      <HardwoodStage
         slide={slide}
-        credits={credits}
-        highlight={highlight}
-        arrows={frame?.arrows}
-        markerOverrides={frame?.markers}
-        ball={frame?.ball}
-        jrImageSrc={jrImageSrc}
-        forceMissingCutout={fallback === 'cutout'}
-        forceMissingJr={fallback === 'jr'}
-        revealJr={highlight === 'k_jr_card' || fallback === 'jr'}
-        animate={param(query.animate) === '1'}
-        shot={shot || true}
-        captionText={captionText}
-      />
+        status={status}
+        vignette={slide.id === 's1_tipoff'}
+        railExtra={<LabControls />}
+      >
+        <SlideView
+          deck={deck}
+          slide={slide}
+          credits={credits}
+          highlight={highlight}
+          arrows={frame?.arrows}
+          markerOverrides={frame?.markers}
+          ball={frame?.ball}
+          playCaption={frame?.caption}
+          playId={play?.id ?? null}
+          callouts={callouts}
+          jrImageSrc={jrImageSrc}
+          forceMissingCutout={fallback === 'cutout'}
+          forceMissingJr={fallback === 'jr'}
+          revealJr={highlight === 'k_jr_card' || fallback === 'jr'}
+          animate={param(query.animate) === '1'}
+          shot={shot || true}
+        />
+      </HardwoodStage>
     );
     if (scaled) {
       return (
-        <div
-          className="relative flex h-svh min-h-0 min-w-0 flex-col overflow-hidden bg-[var(--manila)]"
-          data-player-scale
-        >
+        <div className="player-shell" data-player-scale>
           <ScaledSlide>{view}</ScaledSlide>
         </div>
       );
@@ -90,16 +169,17 @@ export default async function LabPage({ searchParams }: LabPageProps) {
   }
 
   return (
-    <div className="desk">
-      <header className="px-10 pt-10">
-        <p className="font-archivo m-0 text-[13px] tracking-wide text-[var(--blue)] uppercase">
+    <div className="hardwood-stage" style={{ height: 'auto', minHeight: '100vh', width: '100%' }}>
+      <div className="hardwood-floor" />
+      <header className="relative z-10 px-10 pt-10">
+        <p className="lab m-0" style={{ color: 'var(--gold)' }}>
           Lab
         </p>
-        <h1 className="font-fraunces mt-2 text-[56px]">Scouting packet</h1>
-        <p className="font-courier max-w-2xl text-[16px] text-[var(--ink-2)]">
+        <h1 className="slide-title mt-2 text-[72px]">Hardwood Broadcast</h1>
+        <p className="font-inter max-w-2xl text-[18px] text-[var(--ink-2)]">
           Every slide is drawn from deck JSON. Open a slide, the coach view, or the primitives.
         </p>
-        <nav className="font-archivo mt-4 flex flex-wrap gap-4 text-[14px]">
+        <nav className="font-plex mt-4 flex flex-wrap gap-4 text-[14px]">
           {deck.slides.map((slide) => (
             <a key={slide.id} className="underline" href={`/lab?slide=${slide.id}&shot=1`}>
               {slide.number}. {slide.section}
@@ -111,15 +191,20 @@ export default async function LabPage({ searchParams }: LabPageProps) {
           <a className="underline" href="/lab?view=motion">
             Motion
           </a>
+          <a className="underline" href="/lab?view=push">
+            Push
+          </a>
           <a className="underline" href="/lab/credits">
             Photo credits
           </a>
         </nav>
       </header>
-      <div className="flex flex-col gap-12 px-6 py-10">
+      <div className="relative z-10 flex flex-col gap-12 px-6 py-10">
         {deck.slides.map((slide) => (
           <div key={slide.id} className="origin-top scale-[0.72]" style={{ width: 1920 }}>
-            <SlideView deck={deck} slide={slide} credits={credits} jrImageSrc={jrImageSrc} shot />
+            <HardwoodStage slide={slide}>
+              <SlideView deck={deck} slide={slide} credits={credits} jrImageSrc={jrImageSrc} shot />
+            </HardwoodStage>
           </div>
         ))}
       </div>

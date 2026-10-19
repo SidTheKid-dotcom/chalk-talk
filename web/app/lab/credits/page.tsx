@@ -1,15 +1,16 @@
 import { PhotoCreditsLink } from '@/components/deck/PhotoCredits';
-import { loadCreditsMarkdown } from '@/lib/deck/credits.server';
+import { loadCreditsMarkdown, loadHardwoodCreditsMarkdown } from '@/lib/deck/credits.server';
 
 export default function CreditsPage() {
-  const markdown = loadCreditsMarkdown();
+  const markdown = `${loadHardwoodCreditsMarkdown()}\n\n${loadCreditsMarkdown()}`;
 
   return (
-    <div className="desk px-10 py-10">
-      <p className="font-archivo m-0 text-[13px] tracking-wide uppercase">
+    <div className="relative min-h-screen px-10 py-10">
+      <div className="hardwood-floor" />
+      <p className="lab relative z-10 m-0">
         <PhotoCreditsLink href="/lab" />
       </p>
-      <article className="sheet mx-auto mt-6 max-w-3xl [transform:none] px-10 py-10">
+      <article className="card relative z-10 mx-auto mt-6 max-w-3xl px-10 py-10">
         {renderCredits(markdown)}
       </article>
     </div>
@@ -21,14 +22,14 @@ function renderCredits(markdown: string) {
   return blocks.map((block, index) => {
     if (block.startsWith('# ')) {
       return (
-        <h1 key={index} className="font-fraunces mt-0 mb-4 text-[40px]">
+        <h1 key={index} className="slide-title mt-0 mb-4 text-[56px]">
           {block.replace(/^#\s+/, '')}
         </h1>
       );
     }
     if (block.startsWith('## ')) {
       return (
-        <h2 key={index} className="font-fraunces mt-8 mb-2 text-[28px]">
+        <h2 key={index} className="slide-title mt-8 mb-2 text-[36px]">
           {block.replace(/^##\s+/, '')}
         </h2>
       );
@@ -36,7 +37,7 @@ function renderCredits(markdown: string) {
     const lines = block.split('\n');
     if (lines.every((line) => line.startsWith('- ') || line.startsWith('**'))) {
       return (
-        <ul key={index} className="font-courier m-0 list-disc pl-5 text-[15px] leading-relaxed">
+        <ul key={index} className="font-inter m-0 list-disc pl-5 text-[16px] leading-relaxed">
           {lines
             .filter((line) => line.startsWith('- '))
             .map((line) => (
@@ -46,7 +47,7 @@ function renderCredits(markdown: string) {
       );
     }
     return (
-      <p key={index} className="font-courier mt-0 mb-4 text-[15px] leading-relaxed">
+      <p key={index} className="font-inter mt-0 mb-4 text-[16px] leading-relaxed">
         {stripMd(block)}
       </p>
     );

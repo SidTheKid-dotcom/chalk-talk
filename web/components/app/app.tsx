@@ -50,7 +50,7 @@ export function App({ tokenEndpoint, credits, jrImageSrc }: AppProps) {
       </main>
       <StartAudioButton
         label="Enable session audio"
-        className="font-archivo fixed top-4 left-1/2 z-[80] min-h-11 -translate-x-1/2 rounded-none bg-[var(--blue)] px-5 text-[13px] text-[var(--sheet)]"
+        className="font-plex fixed top-4 left-1/2 z-[80] min-h-11 -translate-x-1/2 rounded-none bg-[var(--gold)] px-5 text-[15px] text-[var(--hardwood-panel)]"
       />
     </AgentSessionProvider>
   );
