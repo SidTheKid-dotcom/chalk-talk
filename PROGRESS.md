@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08, 09 (grounded presenter). Task 10 (`/player`) is fixing audit findings before its second review. The Spike 2 decision is recorded, but its harness branch failed audit and is not merged.
+Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08, 09 (grounded presenter), 10 (live `/player`). Wave 3 starts with task 11 board tools. The Spike 2 decision is recorded, but its harness branch failed audit and is not merged.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -16,6 +16,7 @@ Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08, 09 (grounded p
 - 05 token route merged: role in token, mic-only, coach room pattern, no human attribute edits, room timeouts and cap.
 - 02 deck and facts merged: 19 facts re-verified by auditor, 6 slides, 4 plays, 25 deck tests incl. basketball sanity rules.
 - 09 presenter merged: deck-generated routing and grounded tool results; acked slide 1 before greeting; startup race retries; 70 agent tests plus provider-backed behavior checks; second audit PASS.
+- 10 player page merged: Scouting Packet start/live/ended states, real RPC deck, captions and typed fallback; 49 web tests, six-slide overlap check and second audit PASS.
 
 ## Next
 | Wave | Tasks | Gate |
