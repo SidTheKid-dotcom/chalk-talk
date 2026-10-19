@@ -75,10 +75,11 @@ export function SlideView({
 
   return (
     <div
-      className={`desk flex flex-col ${shot ? 'h-[1080px] w-[1920px] overflow-hidden' : 'min-h-[100vh] w-full'}`}
+      data-slide-desk
+      className={`desk flex min-w-0 flex-col ${shot ? 'h-[1080px] w-[1920px] max-w-[1920px] overflow-hidden' : 'min-h-[100vh] w-full'}`}
     >
-      <div className="relative flex min-h-0 flex-1 items-stretch px-10 pt-4 pb-1">
-        <Sheet className="relative flex min-h-0 flex-1 flex-col px-10 pt-4 pb-3">
+      <div className="relative flex min-h-0 min-w-0 flex-1 items-stretch overflow-hidden px-10 pt-4 pb-1">
+        <Sheet className="relative flex min-h-0 w-full max-w-full min-w-0 flex-1 flex-col px-10 pt-4 pb-3">
           <div className="flex items-start justify-between">
             <LowerThird number={slide.number} section={slide.section} />
             <Stamp animate={animate} />
@@ -189,7 +190,7 @@ export function SlideView({
             ) : null}
           </div>
 
-          <div className="mt-2 flex min-w-0 items-end justify-between gap-6">
+          <div className="caption-row mt-2" data-caption-row>
             <Caption text={caption} />
             <PhotoCreditsLink />
           </div>

@@ -90,3 +90,5 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [board/play] Same-seq `overlay_state` echo after `run_play` used to replace `playAnimate:true` with the attribute seed (`false`), aborting motion after ~100 ms. Ignore same/lower seq for the same agent; animate only a new `play.seq`; keep current animation when play seq is unchanged. (source: task 11 audit)
 - [board/callout] Raw text-length precheck in `reduceAddCallout` returned 2002 MALFORMED. Length belongs to the shared trimmed rule and 2005 CALLOUT_REJECTED. (source: task 11 audit)
 - [board/callout] Whitespace-only `fact_id` must be stripped before the payload branch, or `"   "` plus text is sent as `fact_id` instead of `text`. (source: task 11 audit)
+- [player/caption] Long STT lines with `nowrap` still grow min-content width unless every ancestor from the 1920×1080 desk through the caption row has `min-width:0` and the caption uses `flex: 1 1 0%`. That growth resized the 55% court column. (task 10 follow-up)
+- [player/chrome] A bottom text-entry bar is a layout sibling of ScaledSlide, so it steals height and shifts the sheet. Overlay mic/end instead. (task 10 follow-up)

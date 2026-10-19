@@ -15,6 +15,7 @@
     "test": "vitest run",
     "sync-players": "node scripts/sync-players.mjs",
     "shoot": "node scripts/shoot.mjs",
+    "test:caption-layout": "node scripts/test-caption-layout.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "shadcn:install": "pnpm dlx shadcn@latest add --yes @agents-ui/all && pnpm format"

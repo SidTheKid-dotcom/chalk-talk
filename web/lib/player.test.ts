@@ -108,7 +108,7 @@ describe('player session lifecycle', () => {
     expect(shouldDisconnectSession('active', 'ended')).toBe(true);
   });
 
-  it('keeps an active board with no currentSlideId so typed commands stay available', () => {
+  it('keeps an active board with no currentSlideId so voice controls stay available', () => {
     expect(
       nextPlayerPhase({
         phase: 'active',
