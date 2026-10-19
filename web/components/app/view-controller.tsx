@@ -5,6 +5,7 @@ import { RoomEvent } from 'livekit-client';
 import { useAgent, useSessionContext, useSessionMessages } from '@livekit/components-react';
 import { WelcomeView } from '@/components/app/welcome-view';
 import { PhotoCreditsLink } from '@/components/deck/PhotoCredits';
+import { ScaledSlide } from '@/components/deck/ScaledSlide';
 import { SlideView } from '@/components/deck/SlideView';
 import { useDeckCommands } from '@/hooks/useDeckCommands';
 import { usePlayMotion } from '@/hooks/usePlayMotion';
@@ -33,12 +34,10 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
   const session = useSessionContext();
   const agent = useAgent();
   const commands = useDeckCommands();
-  const { messages, send, isSending } = useSessionMessages(session);
+  const { messages } = useSessionMessages(session);
   const [phase, setPhase] = useState<'ready' | 'starting' | 'active' | 'ended'>('ready');
   const [micFailure, setMicFailure] = useState<string | null>(null);
   const [startFailure, setStartFailure] = useState<string | null>(null);
-  const [question, setQuestion] = useState('');
-  const [sendFailure, setSendFailure] = useState<string | null>(null);
   const [roomConnected, setRoomConnected] = useState(session.room.state === 'connected');
   const endedRef = useRef(false);
   const phaseRef = useRef(phase);
@@ -99,7 +98,6 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
     agentWasLiveRef.current = isLiveAgentState(agent.state);
     setPhase('starting');
     setStartFailure(null);
-    setSendFailure(null);
 
     let microphoneEnabled = true;
     try {
@@ -174,42 +172,42 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
     return <EndedView notice={startFailure} onRestart={() => void restartSession()} />;
   }
 
-  const commandBar = (
-    <CommandBar
-      question={question}
-      setQuestion={setQuestion}
-      send={send}
-      isSending={isSending}
+  const sessionControls = (
+    <SessionControls
       microphoneOn={microphoneOn}
       micFailure={micFailure}
       toggleMicrophone={toggleMicrophone}
       endSession={endSession}
-      sendFailure={sendFailure}
-      setSendFailure={setSendFailure}
     />
   );
 
+  const status = agentStateLabel(agent.state);
+  const turnCount = agentTurnCount(messages);
+
   if (!commands.currentSlideId || !isSlideId(commands.currentSlideId)) {
     return (
-      <div className="flex h-svh min-h-0 flex-col bg-[var(--manila)]">
-        <MobileSessionMeta state={agentStateLabel(agent.state)} turn={agentTurnCount(messages)} />
-        <div className="flex min-h-0 flex-1 items-center justify-center p-4">
-          <SessionPaper
-            eyebrow="Film room"
-            title="Setting the board"
-            body="The assistant coach is joining and preparing the first sheet. Ask a question to bring up the opening sheet."
-            notice={micFailure}
-            compact
-          />
+      <div className="relative flex h-svh min-h-0 flex-col bg-[var(--manila)]">
+        <MobileSessionMeta state={status} turn={turnCount} />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3 px-6">
+          <p className="font-archivo m-0 text-[13px] tracking-[0.16em] text-[var(--blue)] uppercase">
+            {status} · turn {String(turnCount).padStart(2, '0')}
+          </p>
+          <p className="font-courier m-0 text-center text-[15px] text-[var(--ink-2)]">
+            Waiting for the first sheet.
+          </p>
+          {micFailure ? (
+            <p className="font-courier m-0 max-w-md border-l-4 border-[var(--rust)] pl-4 text-[14px] text-[var(--rust)]">
+              {micFailure}
+            </p>
+          ) : null}
         </div>
-        {commandBar}
+        {sessionControls}
       </div>
     );
   }
 
-  const status = agentStateLabel(agent.state);
   const caption = latestAgentLine(messages);
-  const turn = String(agentTurnCount(messages)).padStart(2, '0');
+  const turn = String(turnCount).padStart(2, '0');
   const highlights = commands.highlights as TargetId[];
   return (
     <PlayerSlide
@@ -225,9 +223,8 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
       status={status}
       turn={turn}
       notice={micFailure}
-    >
-      {commandBar}
-    </PlayerSlide>
+      controls={sessionControls}
+    />
   );
 }
 
@@ -244,7 +241,7 @@ function PlayerSlide({
   status,
   turn,
   notice,
-  children,
+  controls,
 }: {
   credits: CutoutCredit[];
   jrImageSrc: string | null;
@@ -258,12 +255,12 @@ function PlayerSlide({
   status: AgentState;
   turn: string;
   notice: string | null;
-  children: ReactNode;
+  controls: ReactNode;
 }) {
   const slide = getSlide(slideId as Parameters<typeof getSlide>[0]);
   const motion = usePlayMotion(slide.diagram, playId, playSeq, playAnimate);
   return (
-    <div className="flex h-svh min-h-0 flex-col bg-[var(--manila)]">
+    <div className="relative flex h-svh min-h-0 min-w-0 flex-col overflow-hidden bg-[var(--manila)]">
       <MobileSessionMeta state={status} turn={Number(turn)} />
       <ScaledSlide>
         <SlideView
@@ -284,35 +281,7 @@ function PlayerSlide({
           shot
         />
       </ScaledSlide>
-      {children}
-    </div>
-  );
-}
-
-function ScaledSlide({ children }: { children: React.ReactNode }) {
-  const frameRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    const frame = frameRef.current;
-    if (!frame) return;
-    const resize = () => {
-      setScale(Math.min(frame.clientWidth / 1920, frame.clientHeight / 1080));
-    };
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(frame);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={frameRef} className="relative min-h-0 flex-1 overflow-hidden">
-      <div
-        className="absolute top-1/2 left-1/2 h-[1080px] w-[1920px] origin-center"
-        style={{ transform: `translate(-50%, -50%) scale(${scale})` }}
-      >
-        {children}
-      </div>
+      {controls}
     </div>
   );
 }
@@ -328,85 +297,37 @@ function MobileSessionMeta({ state, turn }: { state: string; turn: number }) {
   );
 }
 
-function CommandBar({
-  question,
-  setQuestion,
-  send,
-  isSending,
+function SessionControls({
   microphoneOn,
   micFailure,
   toggleMicrophone,
   endSession,
-  sendFailure,
-  setSendFailure,
 }: {
-  question: string;
-  setQuestion: (value: string) => void;
-  send: (text: string) => Promise<unknown>;
-  isSending: boolean;
   microphoneOn: boolean;
   micFailure: string | null;
   toggleMicrophone: () => Promise<void>;
   endSession: () => Promise<void>;
-  sendFailure: string | null;
-  setSendFailure: (value: string | null) => void;
 }) {
-  async function submitQuestion(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const text = question.trim();
-    if (!text || isSending) return;
-    try {
-      setSendFailure(null);
-      await send(text);
-      setQuestion('');
-    } catch (error) {
-      setSendFailure(error instanceof Error ? error.message : 'Question could not be sent.');
-    }
-  }
-
   return (
-    <form
-      className="player-command-bar relative z-20 flex min-h-[62px] flex-wrap items-center gap-2 border-t-2 border-[var(--ink)] bg-[var(--sheet)] px-3 py-2 sm:px-5"
-      onSubmit={submitQuestion}
-    >
+    <div className="player-session-controls" data-player-controls>
       <button
         type="button"
+        data-player-mic
         disabled={Boolean(micFailure)}
         onClick={() => void toggleMicrophone()}
-        className="font-archivo min-h-11 shrink-0 border border-[var(--blue)] px-3 text-[12px] text-[var(--blue)] disabled:cursor-not-allowed disabled:opacity-55"
+        className="font-archivo min-h-11 shrink-0 border border-[var(--blue)] bg-[var(--sheet)] px-3 text-[12px] text-[var(--blue)] disabled:cursor-not-allowed disabled:opacity-55"
       >
         {micFailure ? 'Mic unavailable' : microphoneOn ? 'Mic on' : 'Mic off'}
       </button>
-      <label className="sr-only" htmlFor="player-question">
-        Ask the assistant coach
-      </label>
-      <input
-        id="player-question"
-        value={question}
-        onChange={(event) => setQuestion(event.target.value)}
-        placeholder="Ask the assistant coach"
-        className="font-courier min-h-11 min-w-0 flex-1 border border-[var(--ink-2)] bg-transparent px-3 text-[14px] text-[var(--ink)] placeholder:text-[var(--ink-2)]"
-      />
-      <button
-        type="submit"
-        disabled={isSending || question.trim().length === 0}
-        className="font-archivo min-h-11 shrink-0 bg-[var(--blue)] px-4 text-[12px] text-[var(--sheet)] disabled:opacity-55"
-      >
-        {isSending ? 'Sending' : 'Ask'}
-      </button>
       <button
         type="button"
+        data-player-end
         onClick={() => void endSession()}
-        className="font-archivo min-h-11 shrink-0 px-3 text-[12px] text-[var(--rust)] underline"
+        className="font-archivo min-h-11 shrink-0 bg-[var(--sheet)] px-3 text-[12px] text-[var(--rust)] underline"
       >
         End session
       </button>
-      {sendFailure ? (
-        <p className="font-courier absolute right-4 bottom-full mb-2 bg-[var(--sheet)] px-2 py-1 text-[12px] text-[var(--rust)]">
-          {sendFailure}
-        </p>
-      ) : null}
-    </form>
+    </div>
   );
 }
 
@@ -430,7 +351,6 @@ function SessionPaper({
   notice,
   action,
   onAction,
-  compact = false,
 }: {
   eyebrow: string;
   title: string;
@@ -438,12 +358,9 @@ function SessionPaper({
   notice?: string | null;
   action?: string;
   onAction?: () => void;
-  compact?: boolean;
 }) {
   return (
-    <div
-      className={`desk flex items-center justify-center p-5 sm:p-10 ${compact ? 'h-full' : 'h-svh'}`}
-    >
+    <div className="desk flex h-svh items-center justify-center p-5 sm:p-10">
       <section className="sheet relative z-10 w-full max-w-3xl px-7 py-10 sm:px-12 sm:py-14">
         <p className="font-archivo m-0 text-[12px] tracking-[0.16em] text-[var(--blue)] uppercase">
           {eyebrow}

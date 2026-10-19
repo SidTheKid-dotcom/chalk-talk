@@ -31,8 +31,7 @@ export function WelcomeView({ isStarting, error, onStartCall }: WelcomeViewProps
           {isStarting ? 'Opening film room…' : 'Start film session'}
         </button>
         <p className="font-courier mt-4 mb-0 text-[12px] text-[var(--ink-2)]">
-          Your browser will ask for microphone access. You can also type a question during the
-          session.
+          Your browser will ask for microphone access.
         </p>
         {error ? (
           <p className="font-courier mt-5 border-l-4 border-[var(--rust)] pl-4 text-[13px] text-[var(--rust)]">

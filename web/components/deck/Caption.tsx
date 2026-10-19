@@ -4,7 +4,7 @@ type CaptionProps = {
 
 export function Caption({ text }: CaptionProps) {
   return (
-    <p className="caption-line m-0 min-w-0 flex-1 truncate text-[18px]" title={text}>
+    <p className="caption-line m-0" title={text} aria-label={text || undefined}>
       {text}
     </p>
   );

@@ -87,3 +87,17 @@ Follow-up on the existing branch, preserving `79b3e04`. `opencode.json` was not 
 - Same-room reload restoration is still blocked by the per-request random player room (ADR-008).
 - `CHALK_DEBUG=1` debug_probe still does not publish `lk.agent.state`; unit tests cover that missing state is not a failure, but live debug-probe slide screenshots were not produced.
 - The Next.js dev overlay sits on top of the mobile mic button; out of scope for this audit.
+
+## Follow-up: voice-only chrome and caption layout
+
+User-reported live `/player` fixes. Branch `t3/player-caption-layout-fixes`. Not merged.
+
+- Files changed: `web/components/app/view-controller.tsx`; `web/components/app/welcome-view.tsx`; `web/components/deck/Caption.tsx`; `web/components/deck/ScaledSlide.tsx` (new); `web/components/deck/SlideView.tsx`; `web/components/deck/index.ts`; `web/styles/scouting.css`; `web/app/lab/page.tsx`; `web/scripts/test-caption-layout.mjs` (new); `web/package.json`; `web/lib/player.test.ts`; `LEARNINGS.md`; this task report.
+- Commands run and key output:
+  - `cd web && pnpm test` — exit 0; `Test Files  8 passed (8)` / `Tests  72 passed (72)`
+  - `cd web && pnpm lint` — exit 0; existing unused `error` warning in `components/agents-ui/agent-audio-visualizer-aura.tsx:34` and unnecessary `_barCount` dependency warning in `components/agents-ui/agent-audio-visualizer-radial.tsx:162`
+  - `cd web && pnpm exec tsc --noEmit` — exit 0, no output
+  - `cd web && pnpm test:caption-layout` — exit 0. Desktop 1280×800 and mobile 390×844: sheet/court/courtFrame/scaled/credits/caption-row boxes unchanged between short and long transcripts; caption `title` and `aria-label` keep the full line; `/player` welcome has no typed-question UI. Desktop court right `1228.80`; scaled `0,40 1280x720`.
+  - `cd web && pnpm shoot` — exit 0. Each of the six slides reported `fact card clears credits, cutouts, and court markers`.
+- Live `/player` (no agent worker in this worktree): Start film session connected to LiveKit, did not invent slide 1, showed status + mic/end overlay only. Desktop recovery: `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-127-0-0-1-mvf9tycc-f9ee0162.png`. Mobile 390×844 recovery with meta bar + overlay: `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-127-0-0-1-mvf9up1e-ccc87043.png`. Welcome: `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-127-0-0-1-mvf9tazj-c14e66a8.png`. Long-caption ScaledSlide: `web/screenshots/caption-desktop-long.png`, `web/screenshots/caption-mobile-long.png`.
+- Not done / not verified: no live acked `show_slide` on this follow-up (no local worker attached). Physical mic still unavailable in the embedded browser. Overlay mic/end on a live slide with an acked board was not recaptured; ScaledSlide caption geometry was verified via `/lab?scale=1`.

@@ -14,6 +14,7 @@ export { PlayerCutout } from '@/components/deck/PlayerCutout';
 export { PlayArrows } from '@/components/deck/PlayArrows';
 export { Points } from '@/components/deck/Points';
 export { PrimitivesGallery } from '@/components/deck/PrimitivesGallery';
+export { ScaledSlide } from '@/components/deck/ScaledSlide';
 export { Sheet } from '@/components/deck/Sheet';
 export { SlideView } from '@/components/deck/SlideView';
 export { Stamp } from '@/components/deck/Stamp';
