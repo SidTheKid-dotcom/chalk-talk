@@ -2,10 +2,16 @@ import {
   AccessToken,
   RoomAgentDispatch,
   RoomConfiguration,
+  TrackSource,
   type VideoGrant,
 } from 'livekit-server-sdk';
 
 export const TOKEN_TTL = '15m';
+
+export const PLAYER_ROOM_PATTERN = /^fr-[0-9a-f]{16}$/;
+export const PLAYER_EMPTY_TIMEOUT_S = 60;
+export const PLAYER_DEPARTURE_TIMEOUT_S = 20;
+export const PLAYER_MAX_PARTICIPANTS = 4;
 
 export type TokenRole = 'player' | 'coach';
 
@@ -26,6 +32,7 @@ const HUMAN_GRANTS: VideoGrant = {
   canPublish: true,
   canSubscribe: true,
   canPublishData: true,
+  canPublishSources: [TrackSource.MICROPHONE],
 };
 
 export function randomSuffix(length = 10): string {
@@ -33,7 +40,11 @@ export function randomSuffix(length = 10): string {
 }
 
 export function createRoomName(): string {
-  return `fr-${randomSuffix()}`;
+  return `fr-${randomSuffix(16)}`;
+}
+
+export function isPlayerRoomName(room: string): boolean {
+  return PLAYER_ROOM_PATTERN.test(room);
 }
 
 export function createIdentity(role: TokenRole): string {
@@ -63,6 +74,9 @@ export function parseTokenRequest(body: unknown): ParsedTokenRequest {
   if (role === 'coach') {
     if (typeof room !== 'string' || room.length === 0) {
       return { ok: false, status: 400, error: 'room is required for coach' };
+    }
+    if (!isPlayerRoomName(room)) {
+      return { ok: false, status: 400, error: 'Invalid room' };
     }
     return { ok: true, role: 'coach', room };
   }
@@ -97,6 +111,9 @@ export async function mintHumanToken(options: {
       throw new Error('AGENT_NAME is required for player dispatch');
     }
     at.roomConfig = new RoomConfiguration({
+      emptyTimeout: PLAYER_EMPTY_TIMEOUT_S,
+      departureTimeout: PLAYER_DEPARTURE_TIMEOUT_S,
+      maxParticipants: PLAYER_MAX_PARTICIPANTS,
       agents: [new RoomAgentDispatch({ agentName: options.agentName })],
     });
   }

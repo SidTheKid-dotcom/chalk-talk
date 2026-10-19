@@ -7,5 +7,5 @@ if (!process.env.LIVEKIT_URL) {
 }
 
 export default function Page() {
-  return <App tokenEndpoint="/api/token" isVideoInputSupported={true} />;
+  return <App tokenEndpoint="/api/token" isVideoInputSupported={false} />;
 }
