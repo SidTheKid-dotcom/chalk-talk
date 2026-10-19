@@ -56,6 +56,8 @@ PLAY_IDS = {
     "p_draymond_short_roll",
 }
 CARD_IDS = {"k_jr_card"}
+RIM = (50.0, 5.0)
+TRAP_RADIUS = 8.0
 
 PER_SLIDE = {
     "s1_tipoff": {
@@ -164,6 +166,128 @@ def slide_by_id(deck: dict) -> dict:
     return {slide["id"]: slide for slide in deck["slides"]}
 
 
+def dist(a, b) -> float:
+    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
+
+
+def dist_to_rim(point) -> float:
+    return dist(point, RIM)
+
+
+def team_of(deck: dict, player_id: str) -> str:
+    return deck["players"][player_id]["team"]
+
+
+def start_positions(slide: dict, play: dict) -> dict:
+    diagram = slide.get("diagram") or {}
+    positions = dict(diagram.get("markers") or {})
+    start = play.get("start") or {}
+    positions.update(start.get("positions") or {})
+    return positions
+
+
+def basketball_errors(deck: dict) -> list[str]:
+    """Basketball sanity rules from docs/ARCHITECTURE.md (ADR-023)."""
+    errors: list[str] = []
+    slides = slide_by_id(deck)
+
+    for slide in deck["slides"]:
+        diagram = slide.get("diagram")
+        if not isinstance(diagram, dict):
+            continue
+        markers = diagram.get("markers") or {}
+        matchups = diagram.get("matchups")
+        if not markers:
+            if matchups:
+                errors.append(f"{slide['id']} has matchups but no markers")
+            continue
+        if not isinstance(matchups, dict) or len(matchups) != 5:
+            errors.append(f"{slide['id']} needs five matchups")
+            continue
+        key_teams = {team_of(deck, pid) for pid in matchups}
+        val_teams = {team_of(deck, pid) for pid in matchups.values()}
+        if key_teams != {"gsw"} and key_teams != {"cle"}:
+            errors.append(f"{slide['id']} matchup keys must be one team")
+        if val_teams != {"gsw"} and val_teams != {"cle"}:
+            errors.append(f"{slide['id']} matchup values must be one team")
+        if key_teams == val_teams:
+            errors.append(f"{slide['id']} defenders must guard the other team")
+        if len(set(matchups)) != 5 or len(set(matchups.values())) != 5:
+            errors.append(f"{slide['id']} matchups must be five unique pairs")
+        unknown = (set(matchups) | set(matchups.values())) - set(markers)
+        if unknown:
+            errors.append(f"{slide['id']} matchup ids not on slide: {sorted(unknown)}")
+        for defender, offense in matchups.items():
+            if defender == offense:
+                errors.append(f"{slide['id']} {defender} guards himself")
+                continue
+            if dist_to_rim(markers[defender]) >= dist_to_rim(markers[offense]):
+                errors.append(
+                    f"{slide['id']} {defender} is not closer to the rim than {offense}"
+                )
+
+    for play in deck["plays"]:
+        slide = slides.get(play["slide_id"])
+        diagram = (slide or {}).get("diagram") or {}
+        on_slide = set(diagram.get("markers") or {})
+        matchups = diagram.get("matchups") or {}
+        start = play.get("start") or {}
+        start_pos = start.get("positions") or {}
+        extra = set(start_pos) - on_slide
+        if extra:
+            errors.append(f"{play['id']} start markers not on slide: {sorted(extra)}")
+        if start.get("ball") and start["ball"] not in on_slide:
+            errors.append(f"{play['id']} start ball {start['ball']} not on slide")
+        positions = start_positions(slide or {}, play)
+        for defender, offense in matchups.items():
+            if defender not in positions or offense not in positions:
+                continue
+            if dist_to_rim(positions[defender]) >= dist_to_rim(positions[offense]):
+                errors.append(
+                    f"{play['id']} start: {defender} is not closer to the rim than {offense}"
+                )
+        prev_ball = start.get("ball")
+        for i, step in enumerate(play.get("steps", [])):
+            end_pos = dict(positions)
+            end_pos.update(step.get("moves") or {})
+            screeners = {
+                arrow["from"]
+                for arrow in step.get("arrows", [])
+                if arrow.get("kind") == "screen"
+            }
+            ball = step.get("ball")
+            if ball in screeners:
+                errors.append(
+                    f"{play['id']} step {i}: screener {ball} holds the ball"
+                )
+            if prev_ball and ball and ball != prev_ball:
+                passed = any(
+                    arrow.get("kind") == "pass" and arrow.get("from") == prev_ball
+                    for arrow in step.get("arrows", [])
+                )
+                if not passed:
+                    errors.append(
+                        f"{play['id']} step {i}: ball changed without a pass from {prev_ball}"
+                    )
+            if "trap" in step.get("caption", "").lower():
+                if not ball or ball not in end_pos:
+                    errors.append(f"{play['id']} step {i}: trap has no ball handler")
+                else:
+                    trappers = [pid for pid in step.get("moves", {}) if pid in matchups]
+                    if len(trappers) < 2:
+                        errors.append(f"{play['id']} step {i}: trap needs two defenders")
+                    handler = end_pos[ball]
+                    for trapper in trappers:
+                        gap = dist(end_pos[trapper], handler)
+                        if gap > TRAP_RADIUS:
+                            errors.append(
+                                f"{play['id']} step {i}: {trapper} is {gap:.1f} from the ball"
+                            )
+            prev_ball = ball
+            positions = end_pos
+    return errors
+
+
 def validate_deck(deck: dict, facts: list[dict], players_dir: Path) -> list[str]:
     errors: list[str] = []
     schema = load_json(SCHEMA_PATH)
@@ -216,6 +340,13 @@ def validate_deck(deck: dict, facts: list[dict], players_dir: Path) -> list[str]
         slide = slides.get(play["slide_id"])
         diagram = (slide or {}).get("diagram") or {}
         on_slide = set(diagram.get("markers", {}))
+        start = play.get("start") or {}
+        start_used = set(start.get("positions") or {})
+        if start.get("ball"):
+            start_used.add(start["ball"])
+        start_missing = start_used - on_slide
+        if start_missing:
+            errors.append(f"{play['id']} start unknown marker on slide: {sorted(start_missing)}")
         for i, step in enumerate(play.get("steps", [])):
             caption = step.get("caption", "")
             if len(caption) > 40:
@@ -259,6 +390,7 @@ def validate_deck(deck: dict, facts: list[dict], players_dir: Path) -> list[str]
             if DIGIT.search(card.get("caption", "")):
                 errors.append(f"{slide['id']} card caption has a digit")
 
+    errors.extend(basketball_errors(deck))
     return errors
 
 
@@ -341,6 +473,74 @@ def test_build_facts_duplicate_id_fails():
     )
     with pytest.raises(SystemExit, match="duplicate"):
         build_facts.parse_facts_md(text)
+
+
+def test_defenders_closer_to_rim_than_their_man(deck):
+    errors = [
+        e
+        for e in basketball_errors(deck)
+        if "closer to the rim" in e
+    ]
+    assert errors == []
+
+
+def test_defender_behind_man_fails(deck):
+    bad = copy.deepcopy(deck)
+    slide = next(s for s in bad["slides"] if s["id"] == "s2_lebron")
+    slide["diagram"]["markers"]["gsw_iguodala"] = [50, 90]
+    errors = basketball_errors(bad)
+    assert any("gsw_iguodala is not closer to the rim than cle_james" in e for e in errors)
+
+
+def test_screener_does_not_hold_the_ball(deck):
+    errors = [e for e in basketball_errors(deck) if "screener" in e]
+    assert errors == []
+
+
+def test_screener_holding_ball_fails(deck):
+    bad = copy.deepcopy(deck)
+    play = next(p for p in bad["plays"] if p["id"] == "p_steph_stagger")
+    play["steps"][1]["ball"] = "gsw_green"
+    errors = basketball_errors(bad)
+    assert any("screener gsw_green holds the ball" in e for e in errors)
+
+
+def test_ball_changes_only_via_pass(deck):
+    errors = [e for e in basketball_errors(deck) if "ball changed without a pass" in e]
+    assert errors == []
+
+
+def test_ball_change_without_pass_fails(deck):
+    bad = copy.deepcopy(deck)
+    play = next(p for p in bad["plays"] if p["id"] == "p_draymond_short_roll")
+    play["steps"][1]["arrows"] = [
+        arrow for arrow in play["steps"][1]["arrows"] if arrow["kind"] != "pass"
+    ]
+    errors = basketball_errors(bad)
+    assert any("ball changed without a pass from gsw_curry" in e for e in errors)
+
+
+def test_trappers_within_eight_of_ball(deck):
+    errors = [
+        e
+        for e in basketball_errors(deck)
+        if "from the ball" in e or "trap needs two defenders" in e
+    ]
+    assert errors == []
+
+
+def test_trap_too_far_from_ball_fails(deck):
+    bad = copy.deepcopy(deck)
+    play = next(p for p in bad["plays"] if p["id"] == "p_draymond_short_roll")
+    play["steps"][0]["moves"]["cle_james"] = [20, 90]
+    play["steps"][0]["arrows"] = [
+        {"from": "cle_james", "to": [20, 90], "kind": "rotate"}
+        if arrow["from"] == "cle_james"
+        else arrow
+        for arrow in play["steps"][0]["arrows"]
+    ]
+    errors = basketball_errors(bad)
+    assert any("cle_james is" in e and "from the ball" in e for e in errors)
 
 
 def test_build_facts_missing_url_fails():
