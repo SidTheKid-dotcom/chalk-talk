@@ -5,7 +5,7 @@ Player, lobby and reusable slide primitives adopt the Hardwood Broadcast directi
 
 ## Context
 - Design source: `docs/DESIGN-BRIEF.md`, ADR-027, `design/hardwood/`
-- Interaction reference: a private reference demo in `docs/DESIGN-BRIEF.md#what-to-learn-from-the-reference-demo`
+- Interaction reference: `docs/DESIGN-BRIEF.md#interaction-lessons-from-voice-slide-demos`
 - Existing behavior: merged tasks 09-11
 - User feedback: current fonts are too small; current UI fits poorly; remove visible speech captions and use Listening/Speaking state only; preserve the bottom text-entry removal; add a strong slide transition.
 - The untracked main-workspace concepts are readable at `/home/sidvish/Documents/Work/Personal/synthio-take-home/design/hardwood/`. Do not copy concept cutouts without complete per-file attribution; use `design/players/` in the product.
