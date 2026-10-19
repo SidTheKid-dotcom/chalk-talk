@@ -617,10 +617,10 @@ class CoachSwitcher:
                 return
 
             try:
+                # Realtime server turn detection drops allow_interruptions=False.
                 speech = self._session.generate_reply(
                     instructions=handoff_line_instructions(briefing),
                     tool_choice="none",
-                    allow_interruptions=False,
                 )
                 await speech
                 if error := speech.exception():
