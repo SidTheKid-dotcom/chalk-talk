@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Literal
 
 from dotenv import load_dotenv
 from livekit.agents import (
@@ -9,10 +10,15 @@ from livekit.agents import (
     AgentSession,
     JobContext,
     cli,
+    function_tool,
     inference,
     room_io,
 )
 from livekit.plugins import ai_coustics
+
+from debug_probe import debug_enabled, run_debug_job
+from deck_data import assert_slide_ids_match_deck
+from slide_commander import SlideCommander
 
 logger = logging.getLogger("agent")
 
@@ -25,15 +31,35 @@ AGENT_NAME = os.environ.get("AGENT_NAME")
 if not AGENT_NAME:
     raise RuntimeError("AGENT_NAME is required for explicit agent dispatch")
 
+assert_slide_ids_match_deck()
+
+SlideId = Literal[
+    "s1_tipoff",
+    "s2_lebron",
+    "s3_kyrie",
+    "s4_offense",
+    "s5_xfactors",
+    "s6_last_two",
+]
+
 
 class Assistant(Agent):
-    def __init__(self) -> None:
+    def __init__(self, commander: SlideCommander | None = None) -> None:
+        self._commander = commander
         super().__init__(
             instructions=(
                 "You are the Warriors' assistant coach before Game 7 of the 2016 NBA "
-                "Finals. Greet the player in one sentence."
+                "Finals. Greet the player in one sentence. "
+                "Call show_slide before you speak about a slide."
             ),
         )
+
+    @function_tool
+    async def show_slide(self, slide_id: SlideId) -> str:
+        """Show this slide on the player's board before you speak about it."""
+        if self._commander is None:
+            return "FAILED: slide not shown (commander missing). Do not describe it as on screen."
+        return await self._commander.show_slide(slide_id)
 
 
 server = AgentServer()
@@ -45,6 +71,14 @@ async def my_agent(ctx: JobContext):
         "room": ctx.room.name,
         "agent_name": AGENT_NAME,
     }
+
+    commander = SlideCommander(ctx.room)
+
+    if debug_enabled():
+        # Spike 3 live driver: skip GPT Realtime so this job does not consume
+        # inference credit. debug_probe calls SlideCommander directly.
+        await run_debug_job(ctx, commander)
+        return
 
     # GPT Realtime is turn-based speech-to-speech. The model's own turn
     # detection (semantic VAD by default) owns turn boundaries, so the
@@ -60,7 +94,7 @@ async def my_agent(ctx: JobContext):
     )
 
     await session.start(
-        agent=Assistant(),
+        agent=Assistant(commander),
         room=ctx.room,
         room_options=room_io.RoomOptions(
             audio_input=room_io.AudioInputOptions(
