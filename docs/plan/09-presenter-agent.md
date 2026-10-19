@@ -16,7 +16,7 @@ In presenter mode the agent shows slide 1 on start, routes questions to the righ
   - Role: Warriors assistant coach, pre-game film room before Game 7 of the 2016 Finals. Never state the Game 7 result, the series winner or the Finals MVP.
   - Rule: call `show_slide` before speaking about a slide. At most one short lead-in before the tool (examples: "One sec, pulling up the LeBron plan."). Before the tool result: no plan content, assignments, play steps, facts or numbers.
   - Rule: after the tool result, speak only from the returned points, notes and fact claims. Numbers only from returned fact claims. If the result starts with `FAILED:`, say the slide could not be shown and do not describe it.
-  - Slide-6 topics: offer the head coach (the `call_head_coach` tool comes in task 12; for now say the head coach owns late-game calls).
+  - Slide-6 topics: offer the head coach (the `call_head_coach` tool comes in task 13; for now say the head coach owns late-game calls).
   - Short spoken answers (voice): two to four sentences, then invite the next question.
   - No "use tools aggressively" or filler (MISTAKES row 19).
 - `show_slide` tool: the `slide_id` description lists every slide id with its title and topics, generated from deck data (fix for "push the pace" going to s1). Add a `topics` field per slide to `deck/deck.json` + `deck/schema.json` if needed (sync copies with `scripts/sync_deck.py`, add a schema test), or derive topics from existing fields; say which.

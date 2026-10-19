@@ -35,11 +35,11 @@ Full spec: `docs/PRODUCT.md`.
 Full contracts: `docs/ARCHITECTURE.md`. Decisions: `DECISIONS.md`.
 
 ## UI design
-- Direction: Scouting Packet. A printed scouting sheet on a manila desk, blue ink, gold highlighter, rust stamps.
+- Direction: Hardwood Broadcast. A dimmed basketball court, broadcast scoreboard, large condensed type, matte coaching panels and gold on-court annotation.
 - Source of truth for all UI: `docs/DESIGN-BRIEF.md` and `design/`. Read the brief before any UI task.
-- `design/concepts/` images guide the look only. They have glitches. Draw courts, markers and plays in code from deck data. Take names and facts from `FACTS.md` and deck data, never from images.
+- `design/hardwood/` is the main visual reference; `docs/DESIGN-BRIEF-SCOUTING-PACKET.md` archives the old direction. Draw courts, markers and plays in code from deck data. Take names and facts from `FACTS.md` and deck data, never from images.
 - `design/refs/` shows the target taste.
-- `design/players/` holds licensed Wikimedia Commons player photos as plain transparent cutouts, plus `CREDITS.md`. The app draws the paper border, shadow, rotation and caption. Never add a photo without a credits row.
+- `design/players/` holds licensed Wikimedia Commons player photos as plain transparent cutouts, plus `CREDITS.md`. The app draws the broadcast shadow and lower-third caption. Never add a photo without a credits row.
 - `local-assets/` (gitignored, optional) holds the slide 6 meme image, which cannot be licensed. It is never committed. If it is missing, slide 6 shows a text-only fallback card.
 
 ## Repo map (planned)

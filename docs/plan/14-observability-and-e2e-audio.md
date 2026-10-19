@@ -1,4 +1,4 @@
-# 13 — Observability and full browser-room audio E2E
+# 14 — Observability and full browser-room audio E2E
 
 ## Goal
 The complete demo is exercised through real audio in a real LiveKit Cloud room with the browser player, a separately connected coach process, interruption, handoff, clicker commands and recovery, with durable evidence for every step.
@@ -8,7 +8,7 @@ The complete demo is exercised through real audio in a real LiveKit Cloud room w
 - Contract: `docs/ARCHITECTURE.md#sequence-interruption`, `#observability-for-the-panel`
 - Decisions: ADR-003, ADR-006, ADR-009, ADR-010, ADR-024, ADR-025, ADR-026
 - LiveKit docs: debugger audio mode cannot interrupt; use a real room participant or audio simulation for barge-in.
-- Depends on merged tasks 09-12.
+- Depends on merged tasks 09-13.
 
 ## Scope
 - Finish the player status panel with measured turn count, agent state, available realtime end-to-end latency, interruption count and heard-text trace. Show `—` when a metric is unavailable.

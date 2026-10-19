@@ -181,3 +181,10 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Cost:** A lead-in can promise a slide that then fails to show; the tool returns FAILED and the model must say so. Grounding is enforced by prompt and eval, not by code.
 - **Found in the same run:** With a title-only stub result, the model invented slide content ("three keys" not in the deck). The real tool result must carry the slide's points, notes and fact claims, and the prompt must say to speak only from them. "Push or slow it down?" went to s1 instead of s5 five times: tool descriptions must list each slide's topics from deck data.
 - **Open:** Audio check (10 spoken turns) not done; needs a human mic (`evals/spikes/audio_check.sh`).
+
+## ADR-027: Hardwood Broadcast replaces Scouting Packet
+- **Decision:** Redesign only the frontend around the Hardwood Broadcast direction in `docs/DESIGN-BRIEF.md`: fixed 16:9 hardwood stage, large condensed headlines, dark matte coaching panels, scoreboard/rail chrome, no visible speech captions or typed question bar, and short horizontal push transitions. Player and coach video tiles remain outside the slide geometry. Agent, deck, facts, RPC and tool contracts do not change.
+- **Why:** User testing found the Scouting Packet type too small and long captions could influence layout. A private reference demo showed a better interaction hierarchy: stable fitted canvas, fewer larger groups, state-only voice chrome, visible human presence and spatial slide transitions. The existing `design/hardwood/` concepts already express that hierarchy in the basketball theme.
+- **Rejected:** Keep polishing the paper layout (does not solve the preference mismatch). Copy the reference demo's visual theme (wrong product). Let the model rewrite slide text like the reference demo's editable house rules (conflicts with sourced, approved game-plan content).
+- **Cost:** A focused frontend rewrite and new visual regression baseline. Existing deck, board tools and handoff logic remain reusable.
+- **Guardrail:** Static slide copy stays immutable. The agent may highlight, run prepared plays and add guarded callouts only.
