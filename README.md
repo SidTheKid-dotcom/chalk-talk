@@ -4,7 +4,9 @@ Chalk Talk is a voice AI assistant coach named Floppy. It walks a Warriors playe
 
 ![Slide 2, "How do we stop LeBron?": the three keys on the left, both lineups on the half court, and a sourced fact card the agent posted when asked about Game 6](docs/images/stop-lebron-board.jpg)
 
-**Status: work in progress.** This README only describes what is built and verified. Sections below are filled in as the work lands.
+**Demo video (4:00):** [youtu.be/3dlApJA9j4Y](https://youtu.be/3dlApJA9j4Y)
+
+This README only describes what is built and verified.
 
 ## What it does
 - Presents a fixed six-slide Game 7 plan by voice. It opens on slide 1 only after the browser confirms the slide is on screen.
@@ -25,7 +27,9 @@ Chalk Talk is a voice AI assistant coach named Floppy. It walks a Warriors playe
 | Tool choice, text turns, 26 utterances x 3 runs | correct tool 96-100%; slide content spoken before the slide tool: 0 of 344 pre-tool lines | `DECISIONS.md` ADR-026 |
 
 ## Try it
-_Live link and demo video: to be added._
+[![Watch the Chalk Talk demo on YouTube (4:00)](https://img.youtube.com/vi/3dlApJA9j4Y/maxresdefault.jpg)](https://youtu.be/3dlApJA9j4Y)
+
+The video is one continuous session, trimmed at the ends with no cuts in between: the player asks questions, Floppy moves the deck and works the board, the head coach joins from a phone and drives the board by voice. There is no hosted deployment; to run it yourself, follow "Run locally" below with your own LiveKit Cloud and OpenAI keys.
 
 ## Run locally
 Secrets live in `.env` (repo root) and `web/.env.local`. Copy them from the private machine env; never commit them.
