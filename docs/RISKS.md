@@ -5,9 +5,9 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 ## Spike 1: Agent hears the coach after handoff (highest risk)
 - **Question:** Can the agent switch its audio input from the player to the coach mid-session, with GPT Realtime as the model?
 - **Known:** `AgentSession` links to one participant (default: the first to join). `RoomIO.set_participant(identity)` and `session.room_io.set_participant(...)` are documented in Python (sessions doc, turns doc, `livekit/agents` `examples/voice_agents/toggle_io.py`).
-- **Unknown:** Does it work cleanly with the realtime model mid-session? Can the agent hear both humans at once? `[VERIFIED]` No: `set_participant` takes one identity, so the agent hears one human at a time. Fallback A is the expected design. Unknown: clean switch mid-session with GPT Realtime. `[UNVERIFIED]`
+- **Unknown:** Does it work cleanly with the realtime model mid-session? Can the agent hear both humans at once? `[VERIFIED]` No: `set_participant` takes one identity, so the agent hears one human at a time. Fallback A is the expected design. Mid-session switch with GPT Realtime 2.1 (OpenAI plugin): `[VERIFIED - Spike 1 / task 06]` clean; no session reset; player audio ignored; switch 46.23 ms. Coach leave does not fall back to the player: default `close_on_disconnect=True` closes the session (`PARTICIPANT_DISCONNECTED`).
 - **Test:** Room with two browser tabs (player, coach). After a trigger, call `set_participant(coach_identity)`. Coach says "Assistant, show the Kyrie slide."
-- **Pass:** Agent responds to the coach's speech and calls `show_slide`. No crash. Agent ignores the player's audio (or hears both, note which).
+- **Pass:** Agent responds to the coach's speech and calls `show_slide`. No crash. Agent ignores the player's audio (or hears both, note which). **Result: PASS.**
 - **Fail fallback A:** Agent listens only to the coach after handoff (acceptable).
 - **Fail fallback B:** Coach taps slides on the phone. Agent stays silent in clicker mode.
 

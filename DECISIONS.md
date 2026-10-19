@@ -70,7 +70,7 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Decision:** After handoff the agent stays in the room, stays quiet, changes slides as topics come up, and speaks only when addressed as "Assistant".
 - **Why:** The humans keep a synced deck without touching anything. It shows the agent supporting the human, not replacing them.
 - **Rejected:** Agent leaves the room (slides stop following). Moving participants between rooms (cut for scope).
-- **Cost:** Depends on switching audio input to the coach (Spike 1). Risk of the agent speaking when not addressed.
+- **Cost:** Depends on switching audio input to the coach (Spike 1). Risk of the agent speaking when not addressed. Spike 1 (task 06) passed: mid-session `set_participant` works with GPT Realtime; the agent then hears only the coach. Coach leave currently closes the session (default `close_on_disconnect`); fallback-to-player is proposed, not built.
 - **Fallback:** The coach taps slides on the phone.
 
 ## ADR-011: Fixed hand-built deck, not generated

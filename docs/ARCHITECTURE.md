@@ -382,7 +382,7 @@ Exact switch trigger: the agent sees a participant join with `role=coach` (event
 2. `send_text` the briefing to the coach only.
 3. Say the one handoff line ("Coach, they're worried about Kyrie. We're on slide 3.").
 4. Update instructions to clicker mode (`agent.update_instructions(...)`). Set attribute `mode=clicker`.
-5. Switch audio input to the coach: `session.room_io.set_participant(coach_identity)`. This method is documented (sessions doc, turns doc, `toggle_io.py` example). `[VERIFIED]` signature: `RoomIO.set_participant(participant_identity: str | None)`, "Switch audio and video streams to specified participant" (`room_io.py`). It takes one identity, so the agent hears one human at a time. Behavior mid-session with GPT Realtime: `[UNVERIFIED - Spike 1]`.
+5. Switch audio input to the coach: `session.room_io.set_participant(coach_identity)`. This method is documented (sessions doc, turns doc, `room_io.py`). `[VERIFIED]` signature: `RoomIO.set_participant(participant_identity: str | None)`, "Switch audio and video streams to specified participant". It takes one identity, so the agent hears one human at a time. Behavior mid-session with GPT Realtime 2.1: `[VERIFIED - Spike 1 / task 06]` switch is clean (0.66 ms for `set_participant`, 46.23 ms including clicker instructions and `mode=clicker`); no realtime session reset. Default `close_on_disconnect=True` then closes the session if that coach leaves; no automatic fallback to the player.
 
 If a coach joins without a handoff request: still brief and switch (the link only exists after the request, so this is unlikely).
 
