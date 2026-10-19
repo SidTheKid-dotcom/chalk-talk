@@ -8,17 +8,13 @@ The film session happens directly on a dimmed hardwood court, framed by a broadc
 
 Reference implementation and visual target: `design/hardwood/`. It is a concept source, not a content source. Copy, facts, ids, play geometry and licensed player assets still come from deck data, `FACTS.md` and `design/players/`.
 
-## What to learn from Sara's Loom
-Reference: `https://www.loom.com/share/7b3d49954bac4469a869c26ad20af1ab`.
-
-The recording succeeds because it:
+## Interaction lessons from voice-slide demos
+A good voice-driven deck:
 - Keeps one stable, centered 16:9 slide canvas instead of allowing content to resize the application frame.
 - Uses a strong headline and few large content groups. It is readable before the narration explains it.
 - Keeps voice chrome minimal: a human camera bubble, one listening/speaking state and one mic control. It does not mirror user or agent speech as captions.
 - Uses a quick horizontal push between slides. The outgoing slide exits left while the incoming slide enters from the right, so navigation feels spatial rather than like a page refresh.
 - Uses restrained progressive emphasis to show what changed without rebuilding the whole screen.
-
-Do not copy her theme, editable-rule behavior or exact layout. Apply the interaction lessons to our basketball product.
 
 ## Design DNA
 1. **One physical metaphor:** arena hardwood plus broadcast graphics.

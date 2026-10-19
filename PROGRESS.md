@@ -1,7 +1,8 @@
 # Progress
 
 ## Now
-Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08, 09 (grounded presenter), 10 (live `/player`), 11 (board tools), player voice-only controls/caption stability. Task 12 Hardwood frontend redesign is running, followed by task 13 camera-aware head-coach handoff and task 14 realtime E2E. The Spike 2 decision is recorded, but its harness branch failed audit and is not merged.
+SPEED MODE (user records the demo tonight). One audit per task; fix rounds are verified by the planner, not re-audited. Cut: task 14 automated E2E driver, task 04 harness merge, status-panel metrics beyond "—".
+Running: 12 Hardwood fixes, 13A handoff-core fixes (Grok 4.7). Next: merge 12 + 13A, then 13B (coach link + /coach page + briefing card; video rail only if cheap), then deploy (LiveKit Cloud agent + Vercel), README, Loom.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -40,7 +41,12 @@ Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08, 09 (grounded p
 - Move `CoachSwitcher`, `find_by_role`, `participant_role` to `agent/src/coach_switcher.py`; `SlideCommander.find_player` uses `find_by_role`. Move the four debug `session.on` loggers out of `agent.py` or behind debug (they log transcripts at INFO).
 - Tests: attributes-changed path, coach present at attach, second coach after leave, failing `update_instructions` logged; add `drain()` instead of reading `_tasks`.
 
+## Lane B (task 13) must include (audit 13A)
+- Live check: speaker change, then "Assistant, ..." command. The floor router may clip the first words of a new speaker (active-speaker detection + debounce + new stream). If the command is lost, take the ADR-028 fallback (coach-only ear after handoff).
+- README known limit: if the briefing or handoff line fails, the coach is ignored until they rejoin.
+
 ## Ship checklist (collected from audits)
+- BEFORE ANY PUBLIC PUSH: git history contains a private name and a private Loom link (commits from the Hardwood planning, e.g. `44e82be`). Current files are clean. Rewrite or squash history before the first push to a public remote, then run `secret_scan.sh` and `git log -p | grep -i -E 'sara|mafia|loom.com/share'` to confirm.
 - README Known limits: coach link is a bearer link (anyone with it joins as coach); no rate limit on the token route; free-tier cold start and minute caps.
 - Vercel: set `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `AGENT_NAME` for build and runtime (page checks env at build).
 - LiveKit Cloud agent: `AGENT_NAME` must be a secret (`lk agent secrets`), or the worker crash-loops.
