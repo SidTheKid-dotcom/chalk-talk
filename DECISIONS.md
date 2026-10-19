@@ -152,3 +152,9 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Why:** The participant-attributes doc says a participant with `canUpdateOwnMetadata` can update its own attributes. A player could then claim `role=coach`. The starter's production guard exists because its route mints open tokens; a role-checked route with short TTL and no admin grants is the deliberate fix, not a deleted guard.
 - **Rejected:** Patch the starter route (keeps its open shape). Deleting the guard without a replacement.
 - **Cost:** The browser cannot set its own attributes. Not needed: the agent owns all state.
+
+## ADR-023: Plays carry their own start formation; slides carry matchups
+- **Decision:** A play may set `start` (marker positions and ball holder). Slides with markers set `matchups` (defender to player). The deck test enforces simple basketball rules: defenders between their man and the rim at start, no screener holds the ball, the ball moves only by a pass, trappers stay near the ball.
+- **Why:** Slide 4 has two plays that need different formations (stagger with Curry low; pick-and-roll with Curry up top). The first deck draft broke basic basketball (a defender behind his man, a ball handler setting a screen). A reviewer who knows basketball sees that at once. Rules in a test stop it from coming back.
+- **Rejected:** One slide per play (more slides than the brief allows). Freehand per-play layout chosen by the model (ADR-015).
+- **Cost:** One more short animation step before a play. A few more schema fields.
