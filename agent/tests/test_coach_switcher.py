@@ -2,7 +2,9 @@ import json
 from typing import Any
 
 import pytest
+from livekit import rtc
 from livekit.agents.llm import ChatContext
+from livekit.agents.voice.room_io.types import DEFAULT_CLOSE_ON_DISCONNECT_REASONS
 from livekit.rtc import RpcError
 
 from coach_switcher import (
@@ -22,9 +24,16 @@ CLICKER = "clicker instructions"
 
 
 class FakeRemote:
-    def __init__(self, identity: str, role: str | None) -> None:
+    def __init__(
+        self,
+        identity: str,
+        role: str | None,
+        *,
+        disconnect_reason: rtc.DisconnectReason.ValueType | None = None,
+    ) -> None:
         self.identity = identity
         self.attributes = {"role": role} if role is not None else {}
+        self.disconnect_reason = disconnect_reason
 
 
 class FakeLocal:
@@ -486,8 +495,9 @@ async def test_coach_leave_restores_presenter_and_allows_second_coach() -> None:
 @pytest.mark.asyncio
 async def test_session_ends_only_after_last_player_leaves() -> None:
     events: list[str] = []
-    first = FakeRemote("player-first", "player")
-    second = FakeRemote("player-second", "player")
+    reason = rtc.DisconnectReason.CLIENT_INITIATED
+    first = FakeRemote("player-first", "player", disconnect_reason=reason)
+    second = FakeRemote("player-second", "player", disconnect_reason=reason)
     room = FakeRoom([first, second], events)
     switcher, session, _, _ = make_switcher(room, events, linked=first)
     switcher.attach()
@@ -498,6 +508,41 @@ async def test_session_ends_only_after_last_player_leaves() -> None:
 
     room.disconnect(second)
     await switcher.drain()
+    assert session.shutdown_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_network_disconnect_keeps_the_session() -> None:
+    events: list[str] = []
+    player = FakeRemote(
+        "player",
+        "player",
+        disconnect_reason=rtc.DisconnectReason.CONNECTION_TIMEOUT,
+    )
+    room = FakeRoom([player], events)
+    switcher, session, _, _ = make_switcher(room, events, linked=player)
+    switcher.attach()
+
+    room.disconnect(player)
+    await switcher.drain()
+
+    assert session.shutdown_calls == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("reason", DEFAULT_CLOSE_ON_DISCONNECT_REASONS)
+async def test_close_reason_ends_session_when_no_player_remains(
+    reason: rtc.DisconnectReason.ValueType,
+) -> None:
+    events: list[str] = []
+    player = FakeRemote("player", "player", disconnect_reason=reason)
+    room = FakeRoom([player], events)
+    switcher, session, _, _ = make_switcher(room, events, linked=player)
+    switcher.attach()
+
+    room.disconnect(player)
+    await switcher.drain()
+
     assert session.shutdown_calls == 1
 
 

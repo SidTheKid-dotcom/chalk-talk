@@ -11,6 +11,7 @@ from typing import Any, Protocol
 from urllib.parse import quote, urlparse
 
 from livekit.agents.llm import ChatMessage
+from livekit.agents.voice.room_io.types import DEFAULT_CLOSE_ON_DISCONNECT_REASONS
 from livekit.rtc import RpcError
 
 logger = logging.getLogger("agent")
@@ -528,7 +529,11 @@ class CoachSwitcher:
     def _on_participant_disconnected(self, participant: RemoteParticipantLike) -> None:
         role = participant_role(participant)
         if role == "player":
-            self._schedule(self._end_if_no_player(), "end_if_no_player")
+            # close_on_disconnect=False turns off the library filter, so apply
+            # the same reason set here. A network drop must not end the session.
+            reason = getattr(participant, "disconnect_reason", None)
+            if reason in DEFAULT_CLOSE_ON_DISCONNECT_REASONS:
+                self._schedule(self._end_if_no_player(), "end_if_no_player")
             return
         if role != "coach" and participant.identity != self._switched_to:
             return
