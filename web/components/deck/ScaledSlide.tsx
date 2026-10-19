@@ -20,7 +20,15 @@ type RailBox = {
   height: number;
 };
 
-export function ScaledSlide({ children, rail }: { children: ReactNode; rail?: ReactNode }) {
+export function ScaledSlide({
+  children,
+  rail,
+  portraitHint = true,
+}: {
+  children: ReactNode;
+  rail?: ReactNode;
+  portraitHint?: boolean;
+}) {
   const frameRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -128,7 +136,7 @@ export function ScaledSlide({ children, rail }: { children: ReactNode; rail?: Re
         </div>
         {portrait ? null : railNode}
       </div>
-      {portrait ? (
+      {portrait && portraitHint ? (
         <div className="portrait-chrome" data-portrait-chrome>
           <p className="rotate-hint" data-rotate-hint>
             Rotate your phone or open on a laptop
