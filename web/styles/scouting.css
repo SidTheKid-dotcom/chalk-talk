@@ -53,6 +53,8 @@
 }
 
 .cutout-caption {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -262,6 +264,9 @@
   font-style: italic;
   font-weight: 400;
   color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .draw-stroke {
@@ -351,6 +356,11 @@ html:has([data-scouting]) body > div.group.fixed {
 .player-command-bar input:focus-visible {
   outline: 2px solid var(--blue);
   outline-offset: -2px;
+}
+
+.player-mobile-meta .photo-credits-link {
+  color: var(--sheet);
+  font-size: 13px;
 }
 
 @media (max-width: 520px) {

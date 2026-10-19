@@ -57,29 +57,34 @@ for (const shot of shots) {
   }
   await page.waitForTimeout(400);
   if (shot.name.startsWith('slide-')) {
-    const fact = await page.locator('[data-note-kind="fact"]').first().boundingBox();
-    const obstacles = await page
-      .locator('.photo-credits-link, .cutout-photo, .cutout-caption, .slide-court circle')
-      .evaluateAll((elements) =>
-        elements.map((element) => ({
-          label:
-            element.getAttribute('aria-label') ||
-            element.getAttribute('alt') ||
-            element.textContent?.trim() ||
-            element.tagName.toLowerCase(),
-          box: element.getBoundingClientRect().toJSON(),
-        }))
-      );
-    if (!fact) {
-      errors.push(`${shot.name}: fact card is missing`);
+    const creditsCount = await page.locator('.photo-credits-link').count();
+    if (creditsCount === 0) {
+      errors.push(`${shot.name}: photo credits link is missing`);
     } else {
-      const collisions = obstacles
-        .filter(({ box }) => box.width > 0 && box.height > 0 && overlaps(fact, box))
-        .map(({ label }) => label);
-      if (collisions.length > 0) {
-        errors.push(`${shot.name}: fact card overlaps ${collisions.join(', ')}`);
+      const fact = await page.locator('[data-note-kind="fact"]').first().boundingBox();
+      const obstacles = await page
+        .locator('.photo-credits-link, .cutout-photo, .cutout-caption, .slide-court circle')
+        .evaluateAll((elements) =>
+          elements.map((element) => ({
+            label:
+              element.getAttribute('aria-label') ||
+              element.getAttribute('alt') ||
+              element.textContent?.trim() ||
+              element.tagName.toLowerCase(),
+            box: element.getBoundingClientRect().toJSON(),
+          }))
+        );
+      if (!fact) {
+        errors.push(`${shot.name}: fact card is missing`);
       } else {
-        console.log(`${shot.name}: fact card clears credits, cutouts, and court markers`);
+        const collisions = obstacles
+          .filter(({ box }) => box.width > 0 && box.height > 0 && overlaps(fact, box))
+          .map(({ label }) => label);
+        if (collisions.length > 0) {
+          errors.push(`${shot.name}: fact card overlaps ${collisions.join(', ')}`);
+        } else {
+          console.log(`${shot.name}: fact card clears credits, cutouts, and court markers`);
+        }
       }
     }
   }

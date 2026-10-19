@@ -176,7 +176,7 @@ export function SlideView({
             ) : null}
           </div>
 
-          <div className="mt-2 flex items-end justify-between gap-6">
+          <div className="mt-2 flex min-w-0 items-end justify-between gap-6">
             <Caption text={caption} />
             <PhotoCreditsLink />
           </div>

@@ -41,10 +41,10 @@
 ## Checklist
 - [x] Implemented
 - [x] Lint and typecheck pass
-- [x] Tests pass (40 tests across 6 files)
-- [ ] Acceptance checks pass with evidence (live model slide change, mic failure, desktop/mobile, end state, and six-slide overlap checks passed; limitations below)
+- [x] Tests pass (49 tests across 6 files)
+- [ ] Acceptance checks pass with evidence (prior live model slide change plus this round's lifecycle/mobile/overlap checks; remaining E2E gaps below)
 - [x] Screenshots captured (UI task)
-- [x] LEARNINGS.md updated (debug-probe startup state and same-room reload/token behavior)
+- [x] LEARNINGS.md updated (debug-probe startup state, same-room reload/token behavior, start-lifecycle race, mobile meta bar)
 - [ ] Docs updated (README / DECISIONS / FACTS) if affected
 
 ## Report (executor fills)
@@ -65,3 +65,25 @@
   - The task’s debug-only no-model `debug_probe` could register in a real room, but the starter `session.start()` remained on “Opening film room…” because the debug worker does not publish the agent state required by the starter hook. The production-style realtime agent path was verified with a real slide RPC instead. No debug-probe slide screenshots were produced.
   - A page reload cannot rejoin the same player room with the current token flow: `/api/token` creates a new random room for every `role=player` request. Attribute seeding on connect/reconnect remains covered by the deck command tests, but same-room reload restoration was not demonstrated.
   - No product docs, source facts, or architecture contracts changed.
+
+## Audit round (lifecycle / mobile / overlap)
+
+Follow-up on the existing branch, preserving `79b3e04`. `opencode.json` was not modified.
+
+- Files changed this round: `web/components/app/view-controller.tsx`; `web/lib/player.ts`; `web/lib/player.test.ts`; `web/components/deck/Caption.tsx`; `web/components/deck/PhotoCredits.tsx`; `web/components/deck/PlayerCutout.tsx`; `web/components/deck/SlideView.tsx`; `web/styles/scouting.css`; `web/scripts/shoot.mjs`; `LEARNINGS.md`; this task report.
+- Commands run and key output:
+  - `cd web && pnpm test` — exit 0; 6 test files passed, 49 tests passed.
+  - `cd web && pnpm exec tsc --noEmit` — exit 0, no output.
+  - `cd web && pnpm lint` — exit 0; same existing agents-ui warnings as above.
+  - `cd web && pnpm shoot` — exit 0. Each of the six slides first required `.photo-credits-link` to exist, then reported `fact card clears credits, cutouts, and court markers`.
+- Lifecycle (unit): missing `lk.agent.state` stays `starting` and does not disconnect; an arrived slide or room connect goes `active` without inventing slide 1; explicit `failed` disconnects; `isFinished` disconnects only after a live agent was seen.
+- Lifecycle (browser): after room connect, `/player` left WelcomeView without a local slide 1 and showed `Setting the board` plus the typed command bar, mic-blocked copy, and End session. Clicking End session called `session.end()` and rendered `The film session ended.` Desktop: `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-127-0-0-1-mvf7tfoq-f1a7089d.png`. Mobile (iPhone 12 Pro 390×844): readable `— · turn 00` and Photo credits (13px sheet-colored link), End session 44px-tall and visible; `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-127-0-0-1-mvf7v8c5-64193157.png`. Ended after End session: `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-127-0-0-1-mvf7vlbw-3ce4eadb.png`.
+- Caption: `.caption-line` is `white-space: nowrap; overflow: hidden; text-overflow: ellipsis`. Lab s2 evaluate: credits exist, caption does not overlap credits.
+- Task-09 compatibility: player never assigns `s1_tipoff` locally (`web/components/app` has no `s1_tipoff` references). Deck state stays on `useDeckCommands` RPC/attributes only.
+
+### Unresolved E2E-only gaps
+- This round did not re-capture a live acked `show_slide(s2_lebron)` because the running worker (other worktree) did not attach before LiveKit reported agent `failed` (~20s). No local slide-1 fallback was used. Prior-round s2 evidence remains in the report above.
+- Physical microphone voice turns are still impossible in the embedded browser.
+- Same-room reload restoration is still blocked by the per-request random player room (ADR-008).
+- `CHALK_DEBUG=1` debug_probe still does not publish `lk.agent.state`; unit tests cover that missing state is not a failure, but live debug-probe slide screenshots were not produced.
+- The Next.js dev overlay sits on top of the mobile mic button; out of scope for this audit.

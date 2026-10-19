@@ -44,7 +44,7 @@ export function PlayerCutout({
         </div>
       ) : null}
       {caption ? (
-        <figcaption className="cutout-caption font-courier relative z-10 mt-4 bg-[#f6f1e4] px-2 py-0.5 text-center text-[11px] leading-tight tracking-wide text-[#191714] uppercase">
+        <figcaption className="cutout-caption font-courier relative z-10 mt-4 max-w-full truncate bg-[#f6f1e4] px-2 py-0.5 text-center text-[11px] leading-tight tracking-wide text-[#191714] uppercase">
           {caption}
         </figcaption>
       ) : null}
