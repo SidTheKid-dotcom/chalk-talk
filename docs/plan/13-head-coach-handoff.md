@@ -10,7 +10,12 @@ A player can request the head coach, a coach can join the same room from `/coach
 - Design: `docs/DESIGN-BRIEF.md#coach-view`, `#voice-and-camera-chrome`, `#slide-transitions`
 - Spike evidence and required fixes: `docs/plan/06-spike-coach-audio.md`, `PROGRESS.md#handoff-task-must-include-audit-06`
 - Current LiveKit docs: React `useTracks([Track.Source.Camera])` + `VideoTrack` render camera tracks; `RoomEvent.ActiveSpeakersChanged` / `ParticipantEvent.IsSpeakingChanged` identify speakers. Python `AgentSession` still has one linked participant, changed with `RoomIO.set_participant()`.
-- Depends on merged tasks 09-12.
+- Core/control-plane lane depends on merged tasks 09-11 and may run in parallel with task 12. Frontend integration depends on merged task 12.
+
+## Parallelization boundary
+- **Lane A — core now:** agent `call_head_coach`, handoff state, briefing delivery, coach switch/refactor, active-speaker floor router, coach-leave recovery, camera token grants and unit tests. It must not edit React pages, slide components or Hardwood styles.
+- **Lane B — after task 12:** player coach-link/QR UI, camera publication controls, two-person video rail, active-speaker styling, private coach page and browser acceptance checks.
+- Lane A may use fakes for unit tests but must defer production-deployment live checks while another task owns a local LiveKit worker. Lane B owns the final integrated room check.
 
 ## Scope
 - Reuse the merged task-12 Hardwood player/lobby primitives for `/coach`; do not introduce a second visual language.
