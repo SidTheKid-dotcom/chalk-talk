@@ -121,6 +121,16 @@ Shape (sketch; planner fixes the final format):
   }]
 }
 ```
+Formations (ADR-023):
+- `diagram.matchups` (slides with markers): map of each defender id to the player he guards, for all five defenders.
+- `play.start` (optional): marker positions and `ball` holder at the start of the play. Markers not listed keep the slide position. When a play runs, markers first move to `start` in one short step that has no caption. Two plays on one slide can then start from different formations.
+
+Basketball sanity rules (planner check; the rim is at about [50, 5]):
+- At slide start and play start, each defender is closer to the rim than the player he guards.
+- A player who sets a screen in a step does not hold the ball in that step.
+- `ball` changes only through a `pass` arrow from the previous holder in that step.
+- In a trap step, both trapping defenders end within 8 units of the ball handler.
+
 Rules for the deck schema test:
 - Coordinates are half-court percent: x 0-100 left to right, y 0 at the baseline to 100 at half court.
 - Every marker in a play's `moves`, `arrows` and `ball` exists on the play's slide.
