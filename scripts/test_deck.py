@@ -384,6 +384,12 @@ def validate_deck(deck: dict, facts: list[dict], players_dir: Path) -> list[str]
         for fact_id in slide.get("fact_ids", []):
             if fact_id not in fact_ids:
                 errors.append(f"{slide['id']} unknown fact_id {fact_id}")
+        featured = slide.get("featured_fact_id")
+        if featured:
+            if featured not in slide.get("fact_ids", []):
+                errors.append(f"{slide['id']} featured_fact_id {featured} not in fact_ids")
+            elif featured not in fact_ids:
+                errors.append(f"{slide['id']} unknown featured_fact_id {featured}")
         for cutout in slide.get("cutouts", []):
             if not (players_dir / cutout).is_file():
                 errors.append(f"{slide['id']} missing cutout {cutout}")
@@ -662,3 +668,17 @@ def test_missing_ball_fails(deck, facts):
     del bad["plays"][0]["steps"][0]["ball"]
     errors = validate_deck(bad, facts, PLAYERS_DIR)
     assert any("ball" in e.lower() for e in errors)
+
+
+def test_featured_fact_id_is_on_the_slide(deck):
+    for slide in deck["slides"]:
+        featured = slide.get("featured_fact_id")
+        if featured:
+            assert featured in slide["fact_ids"], slide["id"]
+
+
+def test_featured_fact_id_not_on_slide_fails(deck, facts):
+    bad = copy.deepcopy(deck)
+    bad["slides"][0]["featured_fact_id"] = "F07"
+    errors = validate_deck(bad, facts, PLAYERS_DIR)
+    assert any("featured_fact_id" in e and "not in fact_ids" in e for e in errors)

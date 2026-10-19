@@ -35,6 +35,7 @@
       ],
       "notes": "Welcome them as a player in the room before the last game. The series is even and we are at home. Preview the three keys that map to the next slides: stop their best player, contain their isolation guard, and get our shooters going while watching the swing factors. Invite questions.",
       "fact_ids": ["F01", "F08", "F14"],
+      "featured_fact_id": "F08",
       "cutouts": [
         "stephen-curry.png",
         "klay-thompson.png",
@@ -62,6 +63,7 @@
       ],
       "notes": "Primary is Iguodala on James. Green is the helper. When the screen comes at the top we trap the ball, tag the roller, and rotate the weak side. The thing we do not allow is a downhill drive to the paint. Board play is the blitz.",
       "fact_ids": ["F06", "F07", "F12", "F16"],
+      "featured_fact_id": "F07",
       "cutouts": ["lebron-james.png"],
       "diagram": {
         "kind": "half_court",
@@ -100,6 +102,7 @@
       ],
       "notes": "Irving wants isolation on the wing. Thompson is the first body. We switch the screen so the new defender stays in front. Help stays home on the shooters; do not crash and leave a corner. Board play is the switch.",
       "fact_ids": ["F09", "F16"],
+      "featured_fact_id": "F16",
       "cutouts": ["kyrie-irving.png"],
       "diagram": {
         "kind": "half_court",
@@ -138,6 +141,7 @@
       ],
       "notes": "Offense is screens for the shooters and Green as the playmaker. Curry starts low and runs a stagger. If they trap Curry, he finds Green in the high post and Green plays the short roll: lob, corner, or drive. Look for that early.",
       "fact_ids": ["F10", "F11"],
+      "featured_fact_id": "F11",
       "cutouts": ["stephen-curry.png", "draymond-green.png", "klay-thompson.png"],
       "diagram": {
         "kind": "half_court",
@@ -176,6 +180,7 @@
       ],
       "notes": "Walk the swing factors. Love was productive in Game One and inactive in Game Three. Green missed a game under suspension and then played with fouls; we need him on the floor. Our bench can swing it. We can push; our regular-season pace was high. No court on this slide.",
       "fact_ids": ["F13", "F15", "F17", "F18", "F19"],
+      "featured_fact_id": "F15",
       "cutouts": [
         "kevin-love.png",
         "shaun-livingston.png",
@@ -197,6 +202,7 @@
       ],
       "notes": "This decision belongs to the head coach. Offer to call him. If they ask about the clock, the score, or closing, reveal the JR card after it acks and say one short line: know the score and the clock. Don't be JR. At most once. The card is a later-year joke; it does not speak to this series result.",
       "fact_ids": ["F08"],
+      "featured_fact_id": "F08",
       "cutouts": [],
       "diagram": {
         "kind": "half_court",

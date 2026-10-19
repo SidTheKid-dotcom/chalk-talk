@@ -79,6 +79,7 @@ export type DeckSlide = {
   points: string[];
   notes: string;
   fact_ids: string[];
+  featured_fact_id?: string;
   cutouts: string[];
   diagram: SlideDiagram | null;
   cards: SlideCard[];

@@ -27,6 +27,11 @@ export function factsForSlide(slide: DeckSlide): Fact[] {
     .filter((fact): fact is Fact => Boolean(fact));
 }
 
+export function featuredFact(slide: DeckSlide): Fact | undefined {
+  if (!slide.featured_fact_id) return undefined;
+  return facts.find((fact) => fact.id === slide.featured_fact_id);
+}
+
 export function firstSentence(text: string): string {
   const trimmed = text.trim();
   const match = trimmed.match(/^.+?[.](?=\s|$)/);
