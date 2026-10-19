@@ -38,16 +38,40 @@ Player, lobby and reusable slide primitives adopt the Hardwood Broadcast directi
 | Responsive | 1280x800 and 390x844 | no hidden controls; bounded camera reserve |
 
 ## Checklist
-- [ ] Implemented
-- [ ] Tests, lint and typecheck pass
-- [ ] Six slides verified at required sizes
-- [ ] Motion and interruption checks pass
-- [ ] Asset credits updated
-- [ ] Screenshots/recording attached outside git
-- [ ] LEARNINGS and task report updated
+- [x] Implemented
+- [x] Tests, lint and typecheck pass
+- [x] Six slides verified at required sizes
+- [x] Motion and interruption checks pass
+- [x] Asset credits updated
+- [x] Screenshots/recording attached outside git
+- [x] LEARNINGS and task report updated
 
 ## Report (executor fills)
 - Files changed:
+  - Tracked assets: `web/fonts/hardwood/*.woff2`, `web/public/hardwood/floor.jpg`, `web/public/hardwood/CREDITS.md`
+  - Chrome: `web/app/hardwood-fonts.ts`, `web/styles/hardwood.css`, `web/components/hardwood/*`, `web/lib/slide-transition.ts`, `web/lib/slide-transition.test.ts`, `web/app/player/layout.tsx`, `web/app/coach/layout.tsx`, `web/app/lab/layout.tsx`
+  - Surfaces: `web/components/deck/*` primitives + `SlideView.tsx`, `web/components/app/{app,view-controller,welcome-view}.tsx`, `web/app/{lab,coach}/**`, `web/lib/deck/credits.server.ts`
+  - Checks: `web/scripts/{shoot,shoot-motion,test-caption-layout}.mjs`, `web/package.json`
+  - Docs: `LEARNINGS.md`, `docs/plan/12-hardwood-frontend.md`
 - Commands run and key output:
-- Evidence paths:
+  - `pnpm test` — 9 files, 78 passed
+  - `pnpm lint` — pass; only pre-existing agents-ui warnings
+  - `pnpm exec tsc --noEmit` — pass
+  - `python3 scripts/sync_deck.py --check` — `sync check passed`
+  - `pnpm shoot` — 6 slides at 1920/1280/480, tool/state/responsive stills, contact sheet; geometry rows 6
+  - `pnpm test:geometry` — stage 1920×1080 / 1280×720 / 390×219.375; camera yes; no captions or text input
+  - `pnpm shoot:motion` — forward/backward/rapid/reduced passed (rAF transform samples + webm)
+- Evidence paths (gitignored / tmp, not committed):
+  - Stills: `web/screenshots/*.png` and `/tmp/task12-evidence/*.png`
+  - 25% sheet: `/tmp/task12-evidence/contact-sheet-25pct.png`
+  - Geometry: `/tmp/task12-evidence/geometry.json`
+  - Motion frames: `/tmp/task12-evidence/push-{forward,backward,rapid,reduced}/`
+  - Motion video: `/tmp/task12-evidence/push-{forward,backward,rapid,reduced}.webm`
+- Asset credits:
+  - Floor: Poly Haven “Laminate Floor 02”, CC0 → `web/public/hardwood/floor.jpg`
+  - Fonts (OFL): Bebas Neue, Inter, IBM Plex Sans Condensed, Kalam, DSEG7/14 Classic in `web/fonts/hardwood/`
+  - Cutouts: existing `design/players/` + `/lab/credits` (hardwood concept cutouts and JR image not copied)
 - Not done / not verified:
+  - Live `/player` stills (needs `LIVEKIT_URL`; lobby/ended captured via `/lab`)
+  - JR local meme remains gitignored; fallback card verified
+  - Did not merge

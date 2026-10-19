@@ -92,3 +92,7 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [board/callout] Whitespace-only `fact_id` must be stripped before the payload branch, or `"   "` plus text is sent as `fact_id` instead of `text`. (source: task 11 audit)
 - [player/caption] Long STT lines with `nowrap` still grow min-content width unless every ancestor from the 1920×1080 desk through the caption row has `min-width:0` and the caption uses `flex: 1 1 0%`. That growth resized the 55% court column. (task 10 follow-up)
 - [player/chrome] A bottom text-entry bar is a layout sibling of ScaledSlide, so it steals height and shifts the sheet. Overlay mic/end instead. (task 10 follow-up)
+- [web/fonts] DSEG7 Classic has no readable glyph for digit 1 at scoreboard size, so slide n uses Bebas Neue. DSEG14 renders `/` like a colon, so the rail `n/6` reads as `n:6`. (task 12)
+- [web/layout] Title + 28px points + fact at brief scale overflow a 952px clip if a 168px cutout stays in the left column. Park one cutout in the court-column gutter instead of stacking it under the copy. (task 12)
+- [web/motion] A 16ms enter→present CSS transition is easy to miss in Playwright screenshots (~300ms each). Keep enter/exit for the full 320ms with keyframe animation, sample `getComputedStyle().transform` on rAF, and record webm. (task 12)
+- [web/lab] `/player` 500s without `LIVEKIT_URL`. Lobby and ended shots go through `/lab?view=lobby|ended`. Hide `nextjs-portal` / `[data-next-badge-root]` in Playwright or the N badge lands on every still. (task 12)
