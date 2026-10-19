@@ -30,9 +30,23 @@ from livekit.plugins import ai_coustics
 from pydantic import Field
 
 from debug_probe import DebugSlideCommander, debug_enabled, run_debug_job
-from deck_data import SlideId, assert_slide_ids_match_deck, load_deck, load_facts
+from deck_data import (
+    FactId,
+    PlayId,
+    SlideId,
+    TargetId,
+    assert_slide_ids_match_deck,
+    load_deck,
+    load_facts,
+)
 from model import RealtimeConfig, build_realtime_model, load_realtime_config
-from prompts import presenter_instructions, show_slide_tool_description
+from prompts import (
+    add_callout_tool_description,
+    highlight_tool_description,
+    presenter_instructions,
+    run_play_tool_description,
+    show_slide_tool_description,
+)
 from slide_commander import SlideCommander
 
 logger = logging.getLogger("agent")
@@ -51,6 +65,9 @@ DECK = load_deck()
 FACTS = load_facts()
 PRESENTER_INSTRUCTIONS = presenter_instructions(DECK, FACTS)
 SHOW_SLIDE_DESCRIPTION = show_slide_tool_description(DECK)
+HIGHLIGHT_DESCRIPTION = highlight_tool_description(DECK)
+RUN_PLAY_DESCRIPTION = run_play_tool_description(DECK)
+ADD_CALLOUT_DESCRIPTION = add_callout_tool_description(FACTS)
 
 
 def load_worker_realtime_config() -> RealtimeConfig | None:
@@ -64,7 +81,9 @@ REALTIME_CONFIG = load_worker_realtime_config()
 
 CLICKER_INSTRUCTIONS = (
     "Do not present. Stay silent unless addressed as Assistant. "
-    "Call show_slide when the humans move to a topic on another slide."
+    "Call show_slide when the humans move to a topic on another slide. "
+    "When addressed, you may call highlight, run_play, or add_callout; "
+    "run_play is also allowed when the humans clearly discuss a prepared play."
 )
 
 STARTUP_SLIDE_ID = "s1_tipoff"
@@ -419,6 +438,50 @@ class Assistant(Agent):
         if self._commander is None:
             return "FAILED: slide not shown (commander missing). Do not describe it as on screen."
         return await self._commander.show_slide(slide_id)
+
+    @function_tool(description=HIGHLIGHT_DESCRIPTION)
+    async def highlight(
+        self,
+        target: Annotated[TargetId, Field(description=HIGHLIGHT_DESCRIPTION)],
+    ) -> str:
+        if self._commander is None:
+            return (
+                "FAILED: highlight not shown (commander missing). "
+                "Do not say it is highlighted."
+            )
+        return await self._commander.highlight(target)
+
+    @function_tool(description=RUN_PLAY_DESCRIPTION)
+    async def run_play(
+        self,
+        play_id: Annotated[PlayId, Field(description=RUN_PLAY_DESCRIPTION)],
+    ) -> str:
+        if self._commander is None:
+            return (
+                "FAILED: play not shown (commander missing). "
+                "Do not describe it as on screen."
+            )
+        return await self._commander.run_play(play_id)
+
+    @function_tool(description=ADD_CALLOUT_DESCRIPTION)
+    async def add_callout(
+        self,
+        fact_id: Annotated[
+            FactId | None, Field(default=None, description=ADD_CALLOUT_DESCRIPTION)
+        ] = None,
+        text: Annotated[
+            str | None,
+            Field(
+                default=None,
+                description=(
+                    "Short coaching instruction. No digits or spelled-out numbers."
+                ),
+            ),
+        ] = None,
+    ) -> str:
+        if self._commander is None:
+            return "FAILED: callout not shown (commander missing)."
+        return await self._commander.add_callout(fact_id, text)
 
 
 def _on_realtime_availability(ev: RealtimeAvailabilityChangedEvent) -> None:

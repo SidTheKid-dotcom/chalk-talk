@@ -16,6 +16,8 @@ SlideId = Literal[
     "s6_last_two",
 ]
 
+PLAY_SLIDE_IDS: frozenset[str] = frozenset(("s2_lebron", "s3_kyrie", "s4_offense"))
+
 SLIDE_IDS: tuple[str, ...] = (
     "s1_tipoff",
     "s2_lebron",
@@ -71,6 +73,58 @@ def plays_on_slide(
     return [
         play for play in data.get("plays") or [] if play.get("slide_id") == slide_id
     ]
+
+
+def all_target_ids(deck: dict[str, Any] | None = None) -> tuple[str, ...]:
+    data = deck if deck is not None else load_deck()
+    ids = list((data.get("players") or {}).keys())
+    ids.extend((data.get("zones") or {}).keys())
+    for slide in data["slides"]:
+        for card in slide.get("cards") or []:
+            if card.get("id"):
+                ids.append(str(card["id"]))
+    return tuple(ids)
+
+
+def all_play_ids(deck: dict[str, Any] | None = None) -> tuple[str, ...]:
+    data = deck if deck is not None else load_deck()
+    return tuple(str(play["id"]) for play in data.get("plays") or [])
+
+
+def all_fact_ids(facts: list[dict[str, Any]] | None = None) -> tuple[str, ...]:
+    rows = facts if facts is not None else load_facts()
+    return tuple(str(row["id"]) for row in rows)
+
+
+def get_play(play_id: str, deck: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    data = deck if deck is not None else load_deck()
+    for play in data.get("plays") or []:
+        if play.get("id") == play_id:
+            return play
+    return None
+
+
+def play_duration_ms(play: dict[str, Any]) -> int:
+    return sum(int(step.get("duration_ms") or 0) for step in play.get("steps") or [])
+
+
+def play_narration(play: dict[str, Any]) -> str:
+    captions = [str(step.get("caption") or "") for step in play.get("steps") or []]
+    return (
+        f"Title: {play['title']}\n"
+        f"Steps: {' | '.join(captions)}\n"
+        f"Duration: {play_duration_ms(play)} ms\n"
+        "The play is running on screen. Walk through the steps in order, briefly."
+    )
+
+
+def _as_literal(values: tuple[str, ...]) -> Any:
+    return Literal.__getitem__(values)
+
+
+TargetId = _as_literal(all_target_ids())
+PlayId = _as_literal(all_play_ids())
+FactId = _as_literal(all_fact_ids())
 
 
 def target_label(target: str, deck: dict[str, Any] | None = None) -> str:

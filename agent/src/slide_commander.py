@@ -9,11 +9,14 @@ from typing import Any, Protocol
 
 from livekit.rtc import RpcError
 
+from callout import callout_rule_reason, rejected_callout
 from deck_data import (
     SLIDE_IDS,
     empty_overlay,
+    get_play,
     get_slide,
     load_deck,
+    play_narration,
     slide_narration,
     target_label,
     targets_on_slide,
@@ -28,6 +31,8 @@ FAILED_SLIDE = "FAILED: slide not shown ({reason}). Do not describe it as on scr
 FAILED_HIGHLIGHT = (
     "FAILED: highlight not shown ({reason}). Do not say it is highlighted."
 )
+FAILED_PLAY = "FAILED: play not shown ({reason}). Do not describe it as on screen."
+FAILED_CALLOUT = "FAILED: callout not shown ({reason})."
 
 _RPC_REASONS: dict[int, str] = {
     1400: "unsupported method",
@@ -150,6 +155,16 @@ class SlideCommander:
         async with self._lock:
             return await self._highlight_locked(target)
 
+    async def run_play(self, play_id: str) -> str:
+        async with self._lock:
+            return await self._run_play_locked(play_id)
+
+    async def add_callout(
+        self, fact_id: str | None = None, text: str | None = None
+    ) -> str:
+        async with self._lock:
+            return await self._add_callout_locked(fact_id, text)
+
     async def _show_slide_locked(self, slide_id: str) -> str:
         if slide_id not in SLIDE_IDS or get_slide(slide_id, self._deck) is None:
             return FAILED_SLIDE.format(reason=f"unknown slide_id {slide_id}")
@@ -187,8 +202,53 @@ class SlideCommander:
         label = target_label(target, self._deck)
         return f"Highlighted {label}. Refer to it as highlighted."
 
+    async def _run_play_locked(self, play_id: str) -> str:
+        play = get_play(play_id, self._deck)
+        if play is None:
+            return FAILED_PLAY.format(reason=f"unknown play_id {play_id}")
+        play_slide = str(play["slide_id"])
+        if self._current_slide != play_slide:
+            slide_result = await self._show_slide_locked(play_slide)
+            if slide_result.startswith("FAILED:"):
+                return slide_result
+        self._seq += 1
+        payload = {
+            "slide_id": play_slide,
+            "seq": self._seq,
+            "play_id": play_id,
+        }
+        result = await self._rpc("run_play", payload, kind="play")
+        applied, failure = _applied_or_failure(result, FAILED_PLAY)
+        if not applied:
+            return failure or result
+        return play_narration(play)
+
+    async def _add_callout_locked(self, fact_id: str | None, text: str | None) -> str:
+        if self._current_slide is None:
+            return FAILED_CALLOUT.format(
+                reason="no slide on screen. Call show_slide first"
+            )
+        rule = callout_rule_reason(fact_id, text)
+        if rule is not None:
+            return rejected_callout(rule)
+        self._seq += 1
+        payload: dict[str, Any] = {
+            "slide_id": self._current_slide,
+            "seq": self._seq,
+            "callout_id": f"c{self._seq}",
+        }
+        if fact_id:
+            payload["fact_id"] = fact_id
+        else:
+            payload["text"] = text
+        result = await self._rpc("add_callout", payload, kind="callout")
+        applied, failure = _applied_or_failure(result, FAILED_CALLOUT)
+        if not applied:
+            return failure or result
+        return "Callout is on both screens."
+
     async def _rpc(self, method: str, payload: dict[str, Any], *, kind: str) -> str:
-        fail = FAILED_SLIDE if kind == "slide" else FAILED_HIGHLIGHT
+        fail = _fail_template(kind)
         player = self.find_player()
         if player is None:
             self._log_roundtrip(
@@ -307,9 +367,64 @@ class SlideCommander:
                 "play": (self._overlay or {}).get("play"),
                 "callouts": (self._overlay or {}).get("callouts") or [],
             }
-            attrs = {"overlay_state": json.dumps(overlay, separators=(",", ":"))}
-            await self._set_attributes(attrs, method=method, seq=seq)
-            self._overlay = overlay
+            await self._write_overlay(overlay, method=method, seq=seq)
+            return
+
+        if method == "run_play":
+            slide_id = self._current_slide or str(payload.get("slide_id") or "")
+            overlay = {
+                "v": 1,
+                "slide_id": slide_id,
+                "seq": seq,
+                "highlights": (self._overlay or {}).get("highlights") or [],
+                "play": {"play_id": str(payload["play_id"]), "seq": seq},
+                "callouts": (self._overlay or {}).get("callouts") or [],
+            }
+            await self._write_overlay(overlay, method=method, seq=seq)
+            return
+
+        if method == "add_callout":
+            slide_id = self._current_slide or str(payload.get("slide_id") or "")
+            incoming: dict[str, Any] = {"callout_id": str(payload["callout_id"])}
+            if payload.get("fact_id"):
+                incoming["fact_id"] = str(payload["fact_id"])
+            if payload.get("text") is not None:
+                incoming["text"] = str(payload["text"])
+            previous = (self._overlay or {}).get("callouts") or []
+            by_id = {
+                str(item.get("callout_id")): item
+                for item in previous
+                if isinstance(item, dict)
+            }
+            by_id[incoming["callout_id"]] = incoming
+            active = ack.get("active")
+            if isinstance(active, list) and active:
+                callouts = [by_id[str(item)] for item in active if str(item) in by_id][
+                    :3
+                ]
+            else:
+                kept = [
+                    item
+                    for item in previous
+                    if item.get("callout_id") != incoming["callout_id"]
+                ]
+                callouts = [*kept, incoming][-3:]
+            overlay = {
+                "v": 1,
+                "slide_id": slide_id,
+                "seq": seq,
+                "highlights": (self._overlay or {}).get("highlights") or [],
+                "play": (self._overlay or {}).get("play"),
+                "callouts": callouts,
+            }
+            await self._write_overlay(overlay, method=method, seq=seq)
+
+    async def _write_overlay(
+        self, overlay: dict[str, Any], *, method: str, seq: int
+    ) -> None:
+        attrs = {"overlay_state": json.dumps(overlay, separators=(",", ":"))}
+        await self._set_attributes(attrs, method=method, seq=seq)
+        self._overlay = overlay
 
     async def _set_attributes(
         self, attrs: dict[str, str], *, method: str, seq: int
@@ -355,6 +470,10 @@ class SlideCommander:
         }
         if payload.get("target") is not None:
             line["target"] = payload["target"]
+        if payload.get("play_id") is not None:
+            line["play_id"] = payload["play_id"]
+        if payload.get("callout_id") is not None:
+            line["callout_id"] = payload["callout_id"]
         if code is not None:
             line["code"] = code
         if reason is not None:
@@ -366,6 +485,16 @@ class SlideCommander:
         if ok and applied:
             self.round_trips_ms.append(round(round_trip_ms, 1))
         logger.info(json.dumps(line))
+
+
+def _fail_template(kind: str) -> str:
+    if kind == "highlight":
+        return FAILED_HIGHLIGHT
+    if kind == "play":
+        return FAILED_PLAY
+    if kind == "callout":
+        return FAILED_CALLOUT
+    return FAILED_SLIDE
 
 
 def _applied_or_failure(result: str, fail: str) -> tuple[bool, str | None]:

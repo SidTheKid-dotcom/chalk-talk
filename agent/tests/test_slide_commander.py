@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 
 import pytest
 from livekit.rtc import RpcError
 
+from callout import CALLOUT_REJECTED, RULE_TEXT_DIGIT, RULE_TEXT_SPELLED
 from slide_commander import (
+    FAILED_CALLOUT,
     FAILED_HIGHLIGHT,
+    FAILED_PLAY,
     FAILED_SLIDE,
     RPC_MAX_ROUND_TRIP_S,
     RPC_TIMEOUT_S,
@@ -73,6 +77,26 @@ class FakeLocal:
                     "applied": True,
                 }
             )
+        if method == "run_play":
+            return json.dumps(
+                {
+                    "ok": True,
+                    "seq": body["seq"],
+                    "applied": True,
+                    "play_id": body.get("play_id"),
+                    "duration_ms": 5000,
+                }
+            )
+        if method == "add_callout":
+            return json.dumps(
+                {
+                    "ok": True,
+                    "seq": body["seq"],
+                    "applied": True,
+                    "callout_id": body.get("callout_id"),
+                    "active": [body.get("callout_id")],
+                }
+            )
         return json.dumps(
             {
                 "ok": True,
@@ -123,7 +147,10 @@ async def test_show_slide_ack_writes_attributes_after_applied() -> None:
     assert "How do we stop LeBron?" in result
     assert room.local_participant.calls[0]["destination_identity"] == "player-bbb"
     assert room.local_participant.calls[0]["response_timeout"] == RPC_TIMEOUT_S
-    assert room.local_participant.calls[0]["max_round_trip_latency"] == RPC_MAX_ROUND_TRIP_S
+    assert (
+        room.local_participant.calls[0]["max_round_trip_latency"]
+        == RPC_MAX_ROUND_TRIP_S
+    )
     assert len(room.local_participant.attribute_calls) == 1
     attrs = room.local_participant.attribute_calls[0]
     assert attrs["current_slide"] == "s2_lebron"
@@ -192,6 +219,10 @@ async def test_stale_ack_does_not_write_attributes() -> None:
         (1505, "slide"),
         (2004, "highlight"),
         (2007, "highlight"),
+        (2006, "play"),
+        (1502, "play"),
+        (2005, "callout"),
+        (1503, "callout"),
     ],
 )
 async def test_rpc_error_maps_to_failure_string(code: int, kind: str) -> None:
@@ -202,6 +233,14 @@ async def test_rpc_error_maps_to_failure_string(code: int, kind: str) -> None:
         commander._current_slide = "s2_lebron"
         result = await commander.highlight("cle_james")
         assert result == FAILED_HIGHLIGHT.format(reason=reason_for_code(code))
+    elif kind == "play":
+        commander._current_slide = "s2_lebron"
+        result = await commander.run_play("p_blitz_lebron_pnr")
+        assert result == FAILED_PLAY.format(reason=reason_for_code(code))
+    elif kind == "callout":
+        commander._current_slide = "s2_lebron"
+        result = await commander.add_callout(text="Iguodala on LeBron")
+        assert result == FAILED_CALLOUT.format(reason=reason_for_code(code))
     else:
         result = await commander.show_slide("s1_tipoff")
         assert result == FAILED_SLIDE.format(reason=reason_for_code(code))
@@ -314,3 +353,151 @@ async def test_set_attributes_failure_still_returns_narration() -> None:
     assert commander.current_slide == "s2_lebron"
     highlight = await commander.highlight("cle_james")
     assert "Highlighted James" in highlight
+
+
+@pytest.mark.asyncio
+async def test_run_play_from_other_slide_changes_slide_first() -> None:
+    room = _room_with_coach_first()
+    commander = SlideCommander(room)
+    await commander.show_slide("s1_tipoff")
+    result = await commander.run_play("p_blitz_lebron_pnr")
+    assert "Blitz the LeBron pick-and-roll" in result
+    assert "Screen comes at the top" in result
+    methods = [call["method"] for call in room.local_participant.calls]
+    assert methods[-2:] == ["show_slide", "run_play"]
+    slide_payload = json.loads(room.local_participant.calls[-2]["payload"])
+    play_payload = json.loads(room.local_participant.calls[-1]["payload"])
+    assert slide_payload["slide_id"] == "s2_lebron"
+    assert play_payload["play_id"] == "p_blitz_lebron_pnr"
+    assert play_payload["seq"] == slide_payload["seq"] + 1
+    last = room.local_participant.attribute_calls[-1]
+    overlay = json.loads(last["overlay_state"])
+    assert overlay["play"] == {
+        "play_id": "p_blitz_lebron_pnr",
+        "seq": play_payload["seq"],
+    }
+    assert overlay["highlights"] == []
+
+
+@pytest.mark.asyncio
+async def test_run_play_does_not_send_when_slide_change_fails() -> None:
+    room = _room_with_coach_first()
+
+    async def fail_slide(
+        _identity: str, method: str, payload: str, _timeout: float | None
+    ) -> str:
+        body = json.loads(payload)
+        if method == "show_slide":
+            raise RpcError(1502, "Response timeout")
+        return json.dumps(
+            {
+                "ok": True,
+                "seq": body["seq"],
+                "applied": True,
+                "play_id": body.get("play_id"),
+                "duration_ms": 1,
+            }
+        )
+
+    room.local_participant.set_handler(fail_slide)
+    commander = SlideCommander(room)
+    result = await commander.run_play("p_blitz_lebron_pnr")
+    assert result == FAILED_SLIDE.format(reason="response timeout")
+    assert [call["method"] for call in room.local_participant.calls] == ["show_slide"]
+    assert room.local_participant.attribute_calls == []
+
+
+@pytest.mark.asyncio
+async def test_unknown_play_does_not_send_rpc() -> None:
+    room = _room_with_coach_first()
+    commander = SlideCommander(room)
+    await commander.show_slide("s2_lebron")
+    rpc_count = len(room.local_participant.calls)
+    result = await commander.run_play("p_invented")
+    assert result == FAILED_PLAY.format(reason="unknown play_id p_invented")
+    assert len(room.local_participant.calls) == rpc_count
+
+
+@pytest.mark.asyncio
+async def test_add_callout_writes_overlay_only_after_ack() -> None:
+    room = _room_with_coach_first()
+    commander = SlideCommander(room)
+    await commander.show_slide("s2_lebron")
+    result = await commander.add_callout(text="Iguodala on LeBron")
+    assert result == "Callout is on both screens."
+    payload = json.loads(room.local_participant.calls[-1]["payload"])
+    assert payload["text"] == "Iguodala on LeBron"
+    assert payload["callout_id"] == f"c{payload['seq']}"
+    overlay = json.loads(room.local_participant.attribute_calls[-1]["overlay_state"])
+    assert overlay["callouts"] == [
+        {"callout_id": payload["callout_id"], "text": "Iguodala on LeBron"}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_invalid_callout_does_not_send_rpc() -> None:
+    room = _room_with_coach_first()
+    commander = SlideCommander(room)
+    await commander.show_slide("s2_lebron")
+    rpc_count = len(room.local_participant.calls)
+    writes = list(room.local_participant.attribute_calls)
+    digit = await commander.add_callout(text="He scores 40 a night")
+    spelled = await commander.add_callout(text="LeBron scores forty a night")
+    assert digit == CALLOUT_REJECTED.format(rule=RULE_TEXT_DIGIT)
+    assert spelled == CALLOUT_REJECTED.format(rule=RULE_TEXT_SPELLED)
+    assert len(room.local_participant.calls) == rpc_count
+    assert room.local_participant.attribute_calls == writes
+
+
+@pytest.mark.asyncio
+async def test_stale_play_ack_does_not_write_overlay() -> None:
+    room = _room_with_coach_first()
+
+    async def stale_play(
+        _identity: str, method: str, payload: str, _timeout: float | None
+    ) -> str:
+        body = json.loads(payload)
+        if method == "run_play":
+            return json.dumps(
+                {
+                    "ok": True,
+                    "seq": body["seq"],
+                    "applied": False,
+                    "reason": "stale",
+                    "play_id": body.get("play_id"),
+                    "duration_ms": 5000,
+                }
+            )
+        return json.dumps(
+            {
+                "ok": True,
+                "slide_id": body["slide_id"],
+                "seq": body["seq"],
+                "applied": True,
+            }
+        )
+
+    room.local_participant.set_handler(stale_play)
+    commander = SlideCommander(room)
+    await commander.show_slide("s2_lebron")
+    writes = list(room.local_participant.attribute_calls)
+    result = await commander.run_play("p_blitz_lebron_pnr")
+    assert result == FAILED_PLAY.format(reason="stale")
+    assert room.local_participant.attribute_calls == writes
+
+
+@pytest.mark.asyncio
+async def test_one_lock_keeps_highlight_on_slide_after_show_slide() -> None:
+    room = _room_with_coach_first()
+    commander = SlideCommander(room)
+    slide_result, highlight_result = await asyncio.gather(
+        commander.show_slide("s2_lebron"),
+        commander.highlight("cle_james"),
+    )
+    assert "How do we stop LeBron?" in slide_result
+    assert "Highlighted James" in highlight_result
+    methods = [call["method"] for call in room.local_participant.calls]
+    assert methods == ["show_slide", "highlight"]
+    overlay = json.loads(room.local_participant.attribute_calls[-1]["overlay_state"])
+    assert overlay["highlights"] == ["cle_james"]
+    assert overlay["slide_id"] == "s2_lebron"
