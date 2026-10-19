@@ -15,6 +15,7 @@ from livekit.agents import (
     ConversationItemAddedEvent,
     FunctionToolsExecutedEvent,
     JobContext,
+    JobRequest,
     UserInputTranscribedEvent,
     cli,
     function_tool,
@@ -25,7 +26,6 @@ from livekit.agents.llm import (
     RealtimeAvailabilityChangedEvent,
     RealtimeModelFallbackAdapter,
 )
-from livekit.plugins import ai_coustics
 from pydantic import Field
 
 from coach_switcher import (
@@ -88,10 +88,17 @@ def load_worker_realtime_config() -> RealtimeConfig | None:
 REALTIME_CONFIG = load_worker_realtime_config()
 
 CLICKER_INSTRUCTIONS = (
-    "Do not present. Stay silent unless addressed as Assistant. "
-    "Call show_slide when the humans move to a topic on another slide. "
-    "When addressed, you may call highlight, run_play, or add_callout; "
-    "run_play is also allowed when the humans clearly discuss a prepared play."
+    "Do not present. Stay silent unless addressed as Floppy or Assistant. "
+    "Call show_slide when the humans move to a topic on another slide, including X-factors. "
+    "When addressed, you may call show_slide, highlight, run_play, or add_callout; "
+    "run_play is also allowed when the humans clearly discuss a prepared play. "
+    "If they ask where a player attacks from, highlight that player. "
+    "If they ask who guards a player, highlight the defender."
+)
+
+OPENING_GREETING = (
+    "I'm Floppy, your head coach sent me to prep you up for Game 7 of the "
+    "Warriors versus Cavs Finals."
 )
 
 STARTUP_SLIDE_ID = "s1_tipoff"
@@ -145,19 +152,12 @@ def is_startup_retryable(result: str) -> bool:
     return any(reason in result for reason in STARTUP_RETRYABLE_REASONS)
 
 
-def startup_reply_instructions(result: str) -> str:
-    if result.startswith("FAILED:"):
-        return (
-            "The opening slide could not be shown. Tell the player that in one or two "
-            "short sentences. Do not describe any slide content, assignments, or facts. "
-            "Invite them to try again.\n\n"
-            f"{result}"
-        )
+def startup_reply_instructions() -> str:
     return (
-        "Greet the player and present the opening slide in exactly three short "
-        "sentences, using only this show_slide result. The last sentence must "
-        "invite their next question.\n\n"
-        f"{result}"
+        f"Say exactly this greeting, then stop and wait: {OPENING_GREETING!r} "
+        "The board stays blank. Do not walk the plan, keys, points, or any slide "
+        "content. Do not call a tool. Do not say your name again after that line. "
+        "Do not invite with a long question."
     )
 
 
@@ -228,34 +228,28 @@ async def show_startup_slide(
     return last
 
 
-async def greet_after_startup(session: Any, result: str) -> None:
+async def greet_after_startup(session: Any) -> None:
     await session.generate_reply(
-        instructions=startup_reply_instructions(result),
+        instructions=startup_reply_instructions(),
         tool_choice="none",
     )
 
 
 async def present_opening_slide(
     session: Any,
-    commander: _SlideShower,
     room: _RoomLike,
     *,
     player_timeout_s: float = STARTUP_PLAYER_WAIT_S,
-    attempts: int = STARTUP_RETRY_ATTEMPTS,
-    delay_s: float = STARTUP_RETRY_DELAY_S,
-    sleep: Any = asyncio.sleep,
 ) -> str:
     player = await wait_for_player(room, timeout_s=player_timeout_s)
     _log(
         "startup_player_wait",
         found=player is not None,
         identity=getattr(player, "identity", None),
+        board="blank",
     )
-    result = await show_startup_slide(
-        commander, attempts=attempts, delay_s=delay_s, sleep=sleep
-    )
-    await greet_after_startup(session, result)
-    return result
+    await greet_after_startup(session)
+    return OPENING_GREETING
 
 
 class Assistant(Agent):
@@ -383,10 +377,14 @@ def _on_session_close(ev: CloseEvent) -> None:
     )
 
 
+async def accept_job(req: JobRequest) -> None:
+    await req.accept(name="Floppy")
+
+
 server = AgentServer()
 
 
-@server.rtc_session(agent_name=AGENT_NAME)
+@server.rtc_session(agent_name=AGENT_NAME, on_request=accept_job)
 async def my_agent(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
@@ -409,9 +407,11 @@ async def my_agent(ctx: JobContext):
     # GPT Realtime is turn-based speech-to-speech. The model's own turn
     # detection (semantic VAD by default) owns turn boundaries, so the
     # starter pipeline STT/TTS, TurnDetector, adaptive interruption, and
-    # preemptive_generation were removed. Kept: noise cancellation on the
-    # room audio input. Docs: https://docs.livekit.io/agents/models/realtime/openai
+    # preemptive_generation were removed. Docs:
+    # https://docs.livekit.io/agents/models/realtime/openai
     # and https://docs.livekit.io/agents/logic/turns#realtime-models
+    # No server-side enhancer: ai-coustics blocked the event loop for up to 1s on
+    # credential refresh, which stutters agent audio. Browser AEC/NS stays on.
     llm = build_realtime_model(REALTIME_CONFIG)
     logger.info("realtime providers=%s", ",".join(REALTIME_CONFIG.providers))
     if isinstance(llm, RealtimeModelFallbackAdapter):
@@ -426,11 +426,6 @@ async def my_agent(ctx: JobContext):
         agent=assistant,
         room=ctx.room,
         room_options=room_io.RoomOptions(
-            audio_input=room_io.AudioInputOptions(
-                noise_cancellation=ai_coustics.audio_enhancement(
-                    model=ai_coustics.EnhancerModel.QUAIL_VF_S
-                ),
-            ),
             close_on_disconnect=False,
         ),
     )
@@ -448,6 +443,7 @@ async def my_agent(ctx: JobContext):
         handoff_state,
         presenter_instructions=PRESENTER_INSTRUCTIONS,
         clicker_instructions=CLICKER_INSTRUCTIONS,
+        briefing_send_delay_s=0.4,
     )
     switcher.attach()
 
@@ -458,7 +454,7 @@ async def my_agent(ctx: JobContext):
     session.on("close", _on_close)
 
     await ctx.connect()
-    await present_opening_slide(session, commander, ctx.room)
+    await present_opening_slide(session, ctx.room)
 
 
 if __name__ == "__main__":

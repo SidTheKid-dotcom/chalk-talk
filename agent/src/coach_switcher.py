@@ -14,9 +14,12 @@ from livekit.agents.llm import ChatMessage
 from livekit.agents.voice.room_io.types import DEFAULT_CLOSE_ON_DISCONNECT_REASONS
 from livekit.rtc import RpcError
 
+from deck_data import slides_by_id
+
 logger = logging.getLogger("agent")
 
 COACH_BRIEFING_TOPIC = "coach-briefing"
+COACH_BRIEFING_ATTRIBUTE = "coach_briefing"
 COACH_LINK_RESULT = "Coach link is on screen. Say one short line, then wait."
 COACH_LINK_FAILED = "FAILED: coach link not shown ({reason})."
 COACH_LINK_RPC_TIMEOUT_S = 3.0
@@ -269,6 +272,43 @@ class CoachLinkCommander:
         _log("coach_link_rpc", **fields)
 
 
+_CONCERN_NOTES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (
+        ("plan tonight", "what's the plan", "whats the plan", "the plan"),
+        "Wanted the Game 7 plan",
+    ),
+    (("lebron", "james", "best player"), "How to stop LeBron"),
+    (("kyrie", "irving"), "Kyrie coverage"),
+    (("trap", "blitz"), "Wanted the LeBron trap shown"),
+    (("x-factor", "x factor", "xfactors"), "Wanted the X-factors"),
+    (("curry", "steph"), "How to get Curry a look"),
+    (("head coach", "the coach"), "Asked to bring you in"),
+)
+
+
+def paraphrase_player_turn(text: str) -> str:
+    compact = " ".join(text.split())
+    if not compact:
+        return compact
+    lower = compact.lower()
+    for needles, note in _CONCERN_NOTES:
+        if any(needle in lower for needle in needles):
+            return note
+    if compact.endswith("?"):
+        compact = compact[:-1]
+    if len(compact) > 72:
+        compact = compact[:69].rstrip() + "…"
+    return compact[0].upper() + compact[1:] if compact else compact
+
+
+def _slide_label(slide_id: str | None) -> str:
+    if not slide_id:
+        return "an unknown slide"
+    slide = slides_by_id().get(slide_id)
+    title = str((slide or {}).get("title") or "").strip()
+    return title or slide_id
+
+
 def build_coach_briefing(
     session: SessionLike,
     current_slide: str | None,
@@ -281,10 +321,26 @@ def build_coach_briefing(
     else:
         # The recorded count includes the request turn. Later turns stay out.
         relevant = user_turns[: max(user_turn_count - 1, 0)]
-    asked = relevant[-3:]
+    notes: list[str] = []
+    for turn in relevant:
+        note = paraphrase_player_turn(turn)
+        if note and note not in notes:
+            notes.append(note)
+    asked = notes[-3:]
     main_worry = asked[-1] if asked else "No specific concern was captured."
     slide = current_slide or "unknown"
-    summary = f"Main concern: {main_worry} Current slide: {slide}."
+    label = _slide_label(current_slide)
+    if asked:
+        topics = ", then ".join(asked)
+        summary = (
+            f"They're in the film room on {label}. "
+            f"Topics so far: {topics}. Focus: {main_worry}."
+        )
+    else:
+        summary = (
+            f"They're in the film room on {label}. "
+            "No specific concern was captured before they asked for you."
+        )
     return {
         "asked": asked,
         "main_worry": main_worry,
@@ -466,6 +522,7 @@ class CoachSwitcher:
         presenter_instructions: str,
         clicker_instructions: str,
         floor_debounce_s: float = FLOOR_DEBOUNCE_S,
+        briefing_send_delay_s: float = 0.0,
     ) -> None:
         self._session = session
         self._agent = agent
@@ -474,6 +531,7 @@ class CoachSwitcher:
         self._state = state
         self._presenter_instructions = presenter_instructions
         self._clicker_instructions = clicker_instructions
+        self._briefing_send_delay_s = briefing_send_delay_s
         self._tasks: set[asyncio.Task[None]] = set()
         self._lock = asyncio.Lock()
         self._switched_to: str | None = None
@@ -556,20 +614,23 @@ class CoachSwitcher:
             if reason in DEFAULT_CLOSE_ON_DISCONNECT_REASONS:
                 self._schedule(self._end_if_no_player(), "end_if_no_player")
             return
-        if role != "coach" and participant.identity != self._switched_to:
+        left_identity = participant.identity
+        was_linked = left_identity == self._linked_identity()
+        was_active_coach = left_identity in {
+            self._switched_to,
+            self._state.active_coach_identity,
+        }
+        remaining_coach = find_by_role(self._room, "coach")
+        if (
+            remaining_coach is not None
+            and remaining_coach.identity != left_identity
+            and not was_linked
+            and not was_active_coach
+        ):
             return
-        if participant.identity != self._switched_to:
-            _log(
-                "coach_left",
-                identity=participant.identity,
-                role=role,
-                switched_to=self._switched_to,
-                action="ignored_duplicate",
-            )
+        if role != "coach" and not was_linked and not was_active_coach:
             return
-        self._schedule(
-            self._recover_to_player(participant.identity), "recover_to_player"
-        )
+        self._schedule(self._recover_to_player(left_identity), "recover_to_player")
 
     async def _switch_to_coach(self, identity: str) -> None:
         async with self._lock:
@@ -605,15 +666,8 @@ class CoachSwitcher:
                 self._slide_state.current_slide,
                 user_turn_count=self._state.user_turn_count,
             )
-            try:
-                await self._room.local_participant.send_text(
-                    json.dumps(briefing, separators=(",", ":")),
-                    topic=COACH_BRIEFING_TOPIC,
-                    destination_identities=[identity],
-                )
-                _log("coach_briefing_sent", identity=identity)
-            except Exception as exc:
-                self._log_switch_failure(identity, "briefing", exc)
+            stored = await self._store_and_send_briefing(identity, briefing)
+            if not stored:
                 return
 
             try:
@@ -716,6 +770,8 @@ class CoachSwitcher:
                 return
 
             try:
+                # Drop the dead coach ear first so RoomIO can attach the player track.
+                self._session.room_io.set_participant(None)
                 self._session.room_io.set_participant(player.identity)
             except Exception as exc:
                 errors.append(f"set_participant:{type(exc).__name__}")
@@ -761,6 +817,38 @@ class CoachSwitcher:
             identity=coach_identity,
             errors=rollback_errors,
         )
+
+    async def _store_and_send_briefing(
+        self, identity: str, briefing: Mapping[str, object]
+    ) -> bool:
+        payload = json.dumps(briefing, separators=(",", ":"))
+        stored = False
+        try:
+            await self._room.local_participant.set_attributes(
+                {COACH_BRIEFING_ATTRIBUTE: payload}
+            )
+            stored = True
+            _log("coach_briefing_stored", identity=identity)
+        except Exception as exc:
+            self._log_switch_failure(identity, "briefing_attribute", exc)
+
+        if self._briefing_send_delay_s > 0:
+            await asyncio.sleep(self._briefing_send_delay_s)
+
+        try:
+            await self._room.local_participant.send_text(
+                payload,
+                topic=COACH_BRIEFING_TOPIC,
+                destination_identities=[identity],
+            )
+            _log("coach_briefing_sent", identity=identity)
+            return True
+        except Exception as exc:
+            self._log_switch_failure(identity, "briefing", exc)
+            if stored:
+                _log("coach_briefing_stream_failed_attribute_ok", identity=identity)
+                return True
+            return False
 
     def _log_switch_failure(
         self, identity: str, stage: str, exc: BaseException
