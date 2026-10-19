@@ -42,7 +42,60 @@
 .font-archivo {
   font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
+  font-variation-settings: 'wdth' 100;
+}
+
+.marker-label {
+  font-variation-settings: 'wdth' 72;
+  font-stretch: condensed;
+  text-transform: uppercase;
+}
+
+.cutout-caption {
+  white-space: nowrap;
+}
+
+.slide-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 55%;
+  gap: 0.75rem;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.slide-court {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.slide-court-frame {
+  position: relative;
+  flex: none;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 100%;
+}
+
+.slide-court-frame > svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.slide-cutouts-edge {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  z-index: 2;
+  pointer-events: none;
+  transform: translate(-18%, -50%);
 }
 
 .font-courier {
@@ -149,6 +202,11 @@
 .status-strip {
   background: #191714;
   color: #f6f1e4;
+  letter-spacing: 0;
+  font-feature-settings:
+    'liga' 0,
+    'calt' 0;
+  white-space: nowrap;
 }
 
 .coach-pill {
@@ -181,10 +239,10 @@
 .cutout-photo {
   display: block;
   filter:
-    drop-shadow(7px 0 0 #f6f1e4) drop-shadow(-7px 0 0 #f6f1e4) drop-shadow(0 7px 0 #f6f1e4)
-    drop-shadow(0 -7px 0 #f6f1e4) drop-shadow(5px 5px 0 #f6f1e4) drop-shadow(-5px 5px 0 #f6f1e4)
+    drop-shadow(7px 0 0 #f6f1e4) drop-shadow(-7px 0 0 #f6f1e4) drop-shadow(0 6px 0 #f6f1e4)
+    drop-shadow(0 -7px 0 #f6f1e4) drop-shadow(5px 4px 0 #f6f1e4) drop-shadow(-5px 4px 0 #f6f1e4)
     drop-shadow(5px -5px 0 #f6f1e4) drop-shadow(-5px -5px 0 #f6f1e4)
-    drop-shadow(4px 10px 8px rgba(25, 23, 20, 0.22));
+    drop-shadow(3px 6px 6px rgba(25, 23, 20, 0.18));
 }
 
 .cutout-tape {

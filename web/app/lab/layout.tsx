@@ -11,7 +11,7 @@ const fraunces = Fraunces({
 
 const archivo = Archivo({
   subsets: ['latin'],
-  weight: ['400', '600', '700'],
+  axes: ['wdth'],
   variable: '--font-archivo',
   display: 'swap',
 });

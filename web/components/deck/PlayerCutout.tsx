@@ -25,12 +25,12 @@ export function PlayerCutout({
   const showImage = !missing && !forceMissing;
 
   return (
-    <figure
-      className={`relative m-0 inline-flex flex-col items-center ${className}`}
-      style={{ width: size, transform: `rotate(${tilt}deg)` }}
-    >
+    <figure className={`relative m-0 inline-flex flex-col items-center ${className}`}>
       {showImage ? (
-        <div className="relative px-1 pt-2">
+        <div
+          className="relative px-1 pt-2"
+          style={{ width: size, transform: `rotate(${tilt}deg)` }}
+        >
           <span className="cutout-tape" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -43,9 +43,11 @@ export function PlayerCutout({
           />
         </div>
       ) : null}
-      <figcaption className="font-courier mt-2 max-w-full bg-[#f6f1e4] px-1.5 py-0.5 text-center text-[10px] leading-tight tracking-wide text-[#191714] uppercase">
-        {caption}
-      </figcaption>
+      {caption ? (
+        <figcaption className="cutout-caption font-courier relative z-10 mt-4 bg-[#f6f1e4] px-2 py-0.5 text-center text-[11px] leading-tight tracking-wide text-[#191714] uppercase">
+          {caption}
+        </figcaption>
+      ) : null}
     </figure>
   );
 }
