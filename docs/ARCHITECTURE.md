@@ -129,7 +129,10 @@ Basketball sanity rules (planner check; the rim is at about [50, 5]):
 - At slide start and play start, each defender is closer to the rim than the player he guards.
 - A player who sets a screen in a step does not hold the ball in that step.
 - `ball` changes only through a `pass` arrow from the previous holder in that step.
-- In a trap step, both trapping defenders end within 8 units of the ball handler.
+- In a trap step, both trapping defenders end within 8 units of the ball handler. A trap step is marked `"action": "trap"`; the test keys on the field, not the caption.
+- Every step sets `ball`.
+- An arrow with `"option": true` is a read the ball handler may make, not a move that happens. The renderer draws it faint and dashed. The ball rule ignores option arrows.
+- Zones on the free-throw line sit above the paint: paint y 0-38; elbows and high post y 38-50; top of the key starts at y 52.
 
 Rules for the deck schema test:
 - Coordinates are half-court percent: x 0-100 left to right, y 0 at the baseline to 100 at half court.

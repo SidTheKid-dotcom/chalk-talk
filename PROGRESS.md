@@ -1,13 +1,14 @@
 # Progress
 
 ## Now
-Wave 0 delegated: 01 setup, 02 deck and facts. Waiting for executor reports and audit.
+01 merged (audited). 02 in audit. 05 token route delegated. 03, 04, 07 start when 02 merges.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
 - `lk` CLI installed and authed to project `chalk-talk`. LiveKit agent skills and docs MCP config added.
 - `[UNVERIFIED]` pass on ARCHITECTURE and RISKS with `lk docs`. ADR-019 to ADR-022.
 - Task files 01-07 written.
+- 01 setup merged: agent on gpt-realtime-2.1 with explicit dispatch, web starter, Makefile. Spoken mic turn not yet verified (no mic in executor browser).
 
 ## Next
 | Wave | Tasks | Gate |

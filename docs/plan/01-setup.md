@@ -44,15 +44,66 @@ A Python agent (from `agent-starter-python`) and a Next.js app (from `agent-star
 | No secrets committed | `git status`, `git diff --cached` before each commit; `~/.agents/skills/hackathon-playbook/scripts/secret_scan.sh` | scan output |
 
 ## Checklist
-- [ ] Implemented
-- [ ] Lint and typecheck pass
-- [ ] Tests pass (list)
-- [ ] Acceptance checks pass with evidence
-- [ ] Screenshots attached (UI tasks)
-- [ ] LEARNINGS.md updated (if any surprise)
-- [ ] Docs updated (README / DECISIONS / FACTS) if affected
+- [x] Implemented
+- [x] Lint and typecheck pass
+- [x] Tests pass (list)
+- [x] Acceptance checks pass with evidence
+- [x] Screenshots attached (UI tasks)
+- [x] LEARNINGS.md updated (if any surprise)
+- [x] Docs updated (README / DECISIONS / FACTS) if affected
 
 ## Report (executor fills)
 - Files changed:
+  - `agent/` from `lk agent init agent --template agent-starter-python` (no nested `.git`). Customized `agent/src/agent.py` for `inference.RealtimeModel(model="openai/gpt-realtime-2.1")`, `agent_name` from `AGENT_NAME`, short Warriors coach instructions, `generate_reply` greeting. Dropped starter STT/TTS/TurnDetector (conflicts with GPT Realtime). Kept ai-coustics noise cancellation.
+  - `agent/tests/test_agent.py` smoke tests (starter pytest file was fully commented; bare `pytest` exited 5).
+  - `agent/.env.example` now includes `AGENT_NAME=chalk-talk-agent`. `agent/uv.lock` committed.
+  - `web/` cloned from `agent-starter-react`, nested `.git` deleted. Dispatch via starter `agentName={process.env.AGENT_NAME}` in `web/app/page.tsx`. Token route **not** rewritten (production guard left as-is).
+  - `web/.env.example` `AGENT_NAME=chalk-talk-agent`.
+  - Root `Makefile` (`agent-dev`, `web-dev`, `agent-test`, `web-lint`, `web-typecheck`).
+  - `AGENTS.md` Commands block (task 01), `README.md` Run locally, `LEARNINGS.md`.
+  - Not committed: `.env`, `agent/.env.local`, `web/.env.local`, `agent/.venv`, `web/node_modules`, `web/.next`.
 - Commands run and key output:
+  - `lk agent init agent --template agent-starter-python --install=false --skills=false --yes` — created `agent/` against project `chalk-talk`.
+  - `cd agent && uv sync` — livekit-agents 1.8.8, 79 packages.
+  - `cd agent && uv run ruff check src tests` — All checks passed.
+  - `cd agent && uv run pytest -v` — `2 passed` (`test_explicit_dispatch_name_is_set`, `test_assistant_greets_as_warriors_coach`).
+  - `cd web && pnpm install` — 758 packages, pnpm 9.15.9 (from packageManager).
+  - `cd web && pnpm lint && pnpm exec tsc --noEmit` — lint exit 0 (2 starter warnings in agents-ui visualizers, not touched); tsc exit 0.
+  - `lk agent dev --deployment production --log-level INFO` (CLI 2.19 registers a random `dev-` deployment by default; no cloud agent exists, so production was used).
+    - `registered worker {"agent_name": "chalk-talk-agent", "deployment": "", ...}`
+    - `received job request {"job_id": "AJ_sQUy3CdV2W5q", "room": "voice_assistant_room_6744", "agent_name": "chalk-talk-agent", ...}`
+    - `RoomIO linked to participant {"lk.pii.participant_identity": "voice_assistant_user_3296", "lk.pii.room_name": "voice_assistant_room_6744", ...}`
+  - `cd web && pnpm dev` — Ready at http://localhost:3000.
+  - Browser: START CALL connected to LiveKit Cloud; text box "hello" (no mic in this environment). UI transcript:
+    - Agent: "Hey, let’s lock in—this is your moment, and we’ve got your back every second out there."
+    - User: "hello"
+    - Agent: "Hey, welcome in—take a breath, and let’s focus on what we can control tonight."
+  - `bash ~/.agents/skills/hackathon-playbook/scripts/secret_scan.sh` — no key patterns; no `.env` tracked. Flags existing tracked `AGENTS.md` / `CLAUDE.md` / `.agents/` / `.claude/` (pre-existing, not secrets).
 - Not done / not verified:
+  - Spoken mic turn: this preview has no usable microphone. Round trip was live-room **text** chat, not voice. Debugger was not needed after the live room connected.
+  - Worker INFO logs do not print the assistant transcript; transcript evidence is the web UI. Job + RoomIO link are in the agent log.
+  - `lk agent debugger` not run (live room already showed a full turn).
+  - Did not deploy (`lk agent create`) or change the token route.
+  - First job warned ~918ms blocked importing `openai.types.realtime`; not prewarmed this task.
+- Branch: `t3/project-setup`
+- Commits (`git log --oneline main..HEAD`):
+  - `56348de` Add Makefile and document local agent and web commands.
+  - `29e3798` Scaffold Next.js web app from LiveKit React starter.
+  - `f597826` Scaffold Python agent from LiveKit starter with GPT Realtime.
+  - plus this report/learnings commit.
+
+### Acceptance evidence
+| Check | Result |
+|---|---|
+| Agent deps + tests | `uv sync` ok; `uv run pytest -v` **2 passed** |
+| Web lint + typecheck | `pnpm lint` exit 0 (2 starter warnings); `tsc --noEmit` exit 0 |
+| Explicit agent name | `registered worker {"agent_name": "chalk-talk-agent", ...}` |
+| Round trip | job `AJ_sQUy3CdV2W5q` for `voice_assistant_room_6744`; `RoomIO linked`; UI transcript of greeting + "hello" + reply. Screenshots: welcome, connected listening, hello turn. |
+| Model | `agent/src/agent.py` `model="openai/gpt-realtime-2.1"` against https://docs.livekit.io/agents/models/realtime/openai (`inference.RealtimeModel(model="openai/gpt-realtime-2.1", voice="marin")`) |
+| No secrets | `.env*` ignored; scan found no key patterns in history |
+
+Screenshots (not committed):
+- `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mvf1y0dy-c1fe1911.png` (welcome)
+- `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mvf1ybsk-67014f5a.png` (connected)
+- `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mvf1z9fn-943a7121.png` (hello turn)
+
