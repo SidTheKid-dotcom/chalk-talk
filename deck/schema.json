@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chalk-talk.local/deck.schema.json",
+  "title": "Chalk Talk deck",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["players", "zones", "slides", "plays"],
+  "properties": {
+    "players": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gsw_curry",
+        "gsw_thompson",
+        "gsw_green",
+        "gsw_iguodala",
+        "gsw_barnes",
+        "cle_james",
+        "cle_irving",
+        "cle_love",
+        "cle_smith",
+        "cle_tthompson"
+      ],
+      "properties": {
+        "gsw_curry": {"$ref": "#/$defs/player"},
+        "gsw_thompson": {"$ref": "#/$defs/player"},
+        "gsw_green": {"$ref": "#/$defs/player"},
+        "gsw_iguodala": {"$ref": "#/$defs/player"},
+        "gsw_barnes": {"$ref": "#/$defs/player"},
+        "cle_james": {"$ref": "#/$defs/player"},
+        "cle_irving": {"$ref": "#/$defs/player"},
+        "cle_love": {"$ref": "#/$defs/player"},
+        "cle_smith": {"$ref": "#/$defs/player"},
+        "cle_tthompson": {"$ref": "#/$defs/player"}
+      }
+    },
+    "zones": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "z_paint",
+        "z_top_key",
+        "z_left_wing",
+        "z_right_wing",
+        "z_left_corner",
+        "z_right_corner",
+        "z_left_elbow",
+        "z_right_elbow",
+        "z_high_post"
+      ],
+      "properties": {
+        "z_paint": {"$ref": "#/$defs/zone"},
+        "z_top_key": {"$ref": "#/$defs/zone"},
+        "z_left_wing": {"$ref": "#/$defs/zone"},
+        "z_right_wing": {"$ref": "#/$defs/zone"},
+        "z_left_corner": {"$ref": "#/$defs/zone"},
+        "z_right_corner": {"$ref": "#/$defs/zone"},
+        "z_left_elbow": {"$ref": "#/$defs/zone"},
+        "z_right_elbow": {"$ref": "#/$defs/zone"},
+        "z_high_post": {"$ref": "#/$defs/zone"}
+      }
+    },
+    "slides": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {"$ref": "#/$defs/slide"}
+    },
+    "plays": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {"$ref": "#/$defs/play"}
+    }
+  },
+  "$defs": {
+    "coord": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "point": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {"$ref": "#/$defs/coord"}
+    },
+    "playerId": {
+      "type": "string",
+      "enum": [
+        "gsw_curry",
+        "gsw_thompson",
+        "gsw_green",
+        "gsw_iguodala",
+        "gsw_barnes",
+        "cle_james",
+        "cle_irving",
+        "cle_love",
+        "cle_smith",
+        "cle_tthompson"
+      ]
+    },
+    "zoneId": {
+      "type": "string",
+      "enum": [
+        "z_paint",
+        "z_top_key",
+        "z_left_wing",
+        "z_right_wing",
+        "z_left_corner",
+        "z_right_corner",
+        "z_left_elbow",
+        "z_right_elbow",
+        "z_high_post"
+      ]
+    },
+    "slideId": {
+      "type": "string",
+      "enum": [
+        "s1_tipoff",
+        "s2_lebron",
+        "s3_kyrie",
+        "s4_offense",
+        "s5_xfactors",
+        "s6_last_two"
+      ]
+    },
+    "playId": {
+      "type": "string",
+      "enum": [
+        "p_blitz_lebron_pnr",
+        "p_switch_kyrie",
+        "p_steph_stagger",
+        "p_draymond_short_roll"
+      ]
+    },
+    "player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "team"],
+      "properties": {
+        "label": {"type": "string", "minLength": 1},
+        "team": {"type": "string", "enum": ["gsw", "cle"]}
+      }
+    },
+    "zone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "shape", "box"],
+      "properties": {
+        "label": {"type": "string", "minLength": 1},
+        "shape": {"type": "string", "enum": ["rect"]},
+        "box": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {"$ref": "#/$defs/coord"}
+        }
+      }
+    },
+    "slide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "number",
+        "section",
+        "title",
+        "points",
+        "notes",
+        "fact_ids",
+        "cutouts",
+        "diagram",
+        "cards"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/slideId"},
+        "number": {"type": "integer", "minimum": 1, "maximum": 6},
+        "section": {"type": "string", "minLength": 1},
+        "title": {"type": "string", "minLength": 1},
+        "points": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "notes": {"type": "string", "minLength": 1},
+        "fact_ids": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^F[0-9]{2}$"}
+        },
+        "cutouts": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^[a-z0-9-]+\\.png$"}
+        },
+        "diagram": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/diagram"}
+          ]
+        },
+        "cards": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/card"}
+        }
+      }
+    },
+    "markerMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(gsw_curry|gsw_thompson|gsw_green|gsw_iguodala|gsw_barnes|cle_james|cle_irving|cle_love|cle_smith|cle_tthompson)$": {
+          "$ref": "#/$defs/point"
+        }
+      }
+    },
+    "diagram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "markers", "zones"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["half_court"]},
+        "markers": {"$ref": "#/$defs/markerMap"},
+        "matchups": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 5,
+          "maxProperties": 5,
+          "patternProperties": {
+            "^(gsw_curry|gsw_thompson|gsw_green|gsw_iguodala|gsw_barnes|cle_james|cle_irving|cle_love|cle_smith|cle_tthompson)$": {
+              "$ref": "#/$defs/playerId"
+            }
+          }
+        },
+        "zones": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/zoneId"}
+        }
+      },
+      "if": {
+        "properties": {"markers": {"minProperties": 1}},
+        "required": ["markers"]
+      },
+      "then": {
+        "required": ["matchups"]
+      }
+    },
+    "card": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "hidden", "caption"],
+      "properties": {
+        "id": {"type": "string", "enum": ["k_jr_card"]},
+        "hidden": {"type": "boolean"},
+        "caption": {"type": "string", "minLength": 3, "maxLength": 60}
+      }
+    },
+    "play": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "slide_id", "title", "steps"],
+      "properties": {
+        "id": {"$ref": "#/$defs/playId"},
+        "slide_id": {"$ref": "#/$defs/slideId"},
+        "title": {"type": "string", "minLength": 1},
+        "start": {"$ref": "#/$defs/playStart"},
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 5,
+          "items": {"$ref": "#/$defs/step"}
+        }
+      }
+    },
+    "playStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ball", "positions"],
+      "properties": {
+        "ball": {"$ref": "#/$defs/playerId"},
+        "positions": {"$ref": "#/$defs/markerMap"}
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["caption", "duration_ms", "ball", "moves", "arrows"],
+      "properties": {
+        "caption": {"type": "string", "minLength": 3, "maxLength": 40},
+        "duration_ms": {"type": "integer", "minimum": 300, "maximum": 3000},
+        "ball": {"$ref": "#/$defs/playerId"},
+        "action": {"type": "string", "enum": ["trap"]},
+        "moves": {"$ref": "#/$defs/markerMap"},
+        "arrows": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/arrow"}
+        }
+      }
+    },
+    "arrow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "kind"],
+      "properties": {
+        "from": {"$ref": "#/$defs/playerId"},
+        "to": {"$ref": "#/$defs/point"},
+        "kind": {"type": "string", "enum": ["cut", "dribble", "pass", "screen", "rotate"]},
+        "option": {"type": "boolean"}
+      }
+    }
+  }
+}
