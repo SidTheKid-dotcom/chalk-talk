@@ -56,14 +56,39 @@ A player can request the head coach, a coach can join the same room from `/coach
 
 ## Checklist
 - [ ] Implemented
-- [ ] Lint and typecheck pass
-- [ ] Tests pass (list)
+- [x] Lint and typecheck pass
+- [x] Tests pass (list)
 - [ ] Acceptance checks pass with evidence
 - [ ] Screenshots attached
-- [ ] LEARNINGS.md updated if needed
-- [ ] Docs updated if behavior changed
+- [x] LEARNINGS.md updated if needed
+- [x] Docs updated if behavior changed
 
 ## Report (executor fills)
-- Files changed:
-- Commands run and key output:
-- Not done / not verified:
+- Lane A files changed:
+  - `agent/src/coach_switcher.py` — role lookup, acked room-bound coach-link command, handoff state, deterministic private briefing, ordered coach switch with rollback, leave recovery and debounced trusted-human floor router.
+  - `agent/src/agent.py`, `agent/src/prompts.py`, `agent/src/slide_commander.py` — `call_head_coach` tool and wiring, `close_on_disconnect=False`, presenter/clicker integration, shared role lookup and opt-in transcript debug logging.
+  - `agent/tests/test_coach_switcher.py`, `agent/tests/test_agent.py`, `agent/tests/conftest.py` — core handoff, failure, duplicate, attributes, privacy, floor and lifecycle coverage.
+  - `web/lib/token.ts`, `web/lib/token.test.ts`, `web/app/api/token/route.test.ts` — microphone + camera grants only, with exact-claims tests.
+  - `agent/.env.example`, `docs/ARCHITECTURE.md`, `DECISIONS.md` — public app URL requirement and implemented control-plane contracts.
+- Lane A commands run and key output:
+  - `cd agent && uv run pytest -q` — **110 passed, 2 skipped** (provider-backed behavior checks are opt-in).
+  - `cd agent && uv run ruff check .` — **All checks passed**.
+  - `cd agent && uv run ruff format --check src/agent.py src/coach_switcher.py src/slide_commander.py src/prompts.py tests/test_agent.py tests/test_coach_switcher.py` — **6 files already formatted**. A repository-wide format check still reports pre-existing formatting in untouched `tests/test_debug_probe.py`.
+  - `cd web && pnpm test` — **8 files, 72 tests passed** (including both token layers).
+  - `cd web && pnpm exec tsc --noEmit` — passed.
+  - `cd web && pnpm lint` — passed with two pre-existing warnings in agent audio visualizer components.
+  - `cd web && pnpm exec prettier --check lib/token.ts lib/token.test.ts app/api/token/route.test.ts` — passed.
+  - `python3 scripts/sync_deck.py --check` — passed.
+- Lane A not done / not verified:
+  - No production worker or live room was started. Shared-floor switch latency, first-word clipping, interruption behavior and coach-leave recovery still need the Lane B integrated phone/laptop acceptance run.
+  - No player coach-link/QR UI, coach briefing handler/card, camera controls, video rail, active-speaker styling or visual checks; these remain Lane B.
+  - Realtime cannot guarantee verbatim scripted speech without a separate TTS. The handoff uses an awaited, tool-disabled `generate_reply` with one-line instructions before clicker mode and participant switching.
+- Lane A round 2 (audit 13A):
+  - Player disconnect ends the session only for `DEFAULT_CLOSE_ON_DISCONNECT_REASONS`, and only when no player remains.
+  - Briefing uses the user-turn count recorded when the request succeeds, so a later "ok thanks" does not replace the concern.
+  - Floor debounce failures use the same done-callback error log as `_schedule`. A 50 ms A/B/A flip does not switch; a held speaker switches once.
+  - Dropped `allow_interruptions=False` on the handoff line. Realtime server turn detection ignores it.
+  - `docs/ARCHITECTURE.md` switch trigger and close-on-disconnect text match the code. ADR-022 records the camera grant.
+  - `cd agent && uv run pytest -q` — **117 passed, 2 skipped**. `uv run ruff check` — **All checks passed**.
+  - `cd web && pnpm test` — **8 files, 72 tests passed**. `pnpm exec tsc --noEmit` — passed.
+  - Lane B UI and the live room check are still not done.

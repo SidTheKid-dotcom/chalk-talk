@@ -32,7 +32,7 @@ const HUMAN_GRANTS: VideoGrant = {
   canPublish: true,
   canSubscribe: true,
   canPublishData: true,
-  canPublishSources: [TrackSource.MICROPHONE],
+  canPublishSources: [TrackSource.MICROPHONE, TrackSource.CAMERA],
 };
 
 export function randomSuffix(length = 10): string {
