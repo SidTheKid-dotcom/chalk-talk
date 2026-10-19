@@ -1,8 +1,8 @@
 # Progress
 
 ## Now
-Planner: Claude Code (Opus 5.5). Executor: Cursor Grok 4.7. Auditor: Claude.
-Merged: 01-03, 05-11 and player control/caption fixes. In audit: 12 Hardwood frontend (branch done), 13 Lane A handoff core (branch done). Running: 14 prework (E2E audio driver). Blocked: 04 harness merge (audit findings). Next after audits: 13 Lane B (coach page, video rail, coach link UI), then 14 full E2E, deploy, freeze.
+SPEED MODE (user records the demo tonight). One audit per task; fix rounds are verified by the planner, not re-audited. Cut: task 14 automated E2E driver, task 04 harness merge, status-panel metrics beyond "—".
+Running: 12 Hardwood fixes, 13A handoff-core fixes (Grok 4.7). Next: merge 12 + 13A, then 13B (coach link + /coach page + briefing card; video rail only if cheap), then deploy (LiveKit Cloud agent + Vercel), README, Loom.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
