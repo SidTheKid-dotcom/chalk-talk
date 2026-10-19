@@ -1,0 +1,292 @@
+/* Chalk Talk lab: scouting packet primitives. Semantic color only. */
+
+[data-scouting] {
+  --manila: #eadfc4;
+  --sheet: #f6f1e4;
+  --ink: #191714;
+  --ink-2: #57514a;
+  --blue: #1d428a;
+  --gold: #ffc72c;
+  --wine: #860038;
+  --rust: #a23b1f;
+  --ease-draw: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-display: var(--font-fraunces), 'Times New Roman', serif;
+  --font-ui: var(--font-archivo), 'Arial Narrow', Arial, sans-serif;
+  --font-body: var(--font-courier-prime), 'Courier New', Courier, monospace;
+  --font-marker: var(--font-kalam), cursive;
+  background: var(--manila);
+  color: var(--ink);
+  font-family: var(--font-body);
+  min-height: 100vh;
+}
+
+[data-scouting] *,
+[data-scouting] *::before,
+[data-scouting] *::after {
+  box-sizing: border-box;
+}
+
+[data-scouting] a:focus-visible,
+[data-scouting] button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.font-fraunces {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+.font-archivo {
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.font-courier {
+  font-family: var(--font-body);
+}
+
+.font-kalam {
+  font-family: var(--font-marker);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.desk {
+  position: relative;
+  min-height: 100vh;
+  background: var(--manila);
+  overflow: hidden;
+}
+
+.desk::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.28;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.52  0 0 0 0 0.44  0 0 0 0 0.3  0 0 0 0.4 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+.sheet {
+  position: relative;
+  background: var(--sheet);
+  color: var(--ink);
+  border-radius: 1px;
+  transform: rotate(-0.4deg);
+  box-shadow:
+    0 1px 0 rgba(25, 23, 20, 0.04),
+    0 8px 14px rgba(25, 23, 20, 0.08),
+    0 22px 40px rgba(25, 23, 20, 0.12);
+}
+
+.sheet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.6  0 0 0 0 0.54  0 0 0 0 0.4  0 0 0 0.26 0'/></filter><rect width='100%25' height='100%25' filter='url(%23p)'/></svg>");
+}
+
+.lower-third {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 16px 0 8px;
+  background: #1d428a;
+  color: #f6f1e4;
+}
+
+.lower-third__tick {
+  width: 8px;
+  height: 16px;
+  background: #ffc72c;
+}
+
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 11px 6px;
+  border: 2.5px solid #a23b1f;
+  color: #a23b1f;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transform: rotate(3.6deg);
+  mix-blend-mode: multiply;
+  background: rgba(162, 59, 31, 0.04);
+}
+
+.checkbox-ink {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.highlighter {
+  background: #ffc72c;
+  mix-blend-mode: multiply;
+}
+
+.note-card {
+  position: relative;
+  background: var(--sheet);
+  box-shadow:
+    0 1px 1px rgba(25, 23, 20, 0.05),
+    0 8px 16px rgba(25, 23, 20, 0.1);
+  transform: rotate(0.45deg);
+}
+
+.status-strip {
+  background: #191714;
+  color: #f6f1e4;
+}
+
+.coach-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: #1d428a;
+  color: #f6f1e4;
+}
+
+.hold-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  background: #1d428a;
+  color: #f6f1e4;
+  border: 0;
+  cursor: pointer;
+}
+
+.photo-credits-link {
+  color: var(--ink-2);
+  text-underline-offset: 3px;
+}
+
+.cutout-photo {
+  display: block;
+  filter:
+    drop-shadow(7px 0 0 #f6f1e4) drop-shadow(-7px 0 0 #f6f1e4) drop-shadow(0 7px 0 #f6f1e4)
+    drop-shadow(0 -7px 0 #f6f1e4) drop-shadow(5px 5px 0 #f6f1e4) drop-shadow(-5px 5px 0 #f6f1e4)
+    drop-shadow(5px -5px 0 #f6f1e4) drop-shadow(-5px -5px 0 #f6f1e4)
+    drop-shadow(4px 10px 8px rgba(25, 23, 20, 0.22));
+}
+
+.cutout-tape {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  z-index: 2;
+  width: 52px;
+  height: 15px;
+  background: rgba(226, 210, 170, 0.7);
+  border: 1px solid rgba(87, 81, 74, 0.18);
+  transform: translateX(-50%) rotate(-8deg);
+  box-shadow: inset 0 1px 0 rgba(246, 241, 228, 0.8);
+}
+
+.caption-line {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.draw-stroke {
+  stroke-dasharray: var(--dash);
+  stroke-dashoffset: var(--dash);
+  animation: draw-on 900ms var(--ease-draw) forwards;
+}
+
+.swipe-in {
+  transform-origin: left center;
+  animation: swipe 700ms var(--ease-draw) forwards;
+}
+
+.stamp-in {
+  animation: stamp-press 420ms var(--ease-draw) both;
+}
+
+.settle-in {
+  animation: settle 480ms var(--ease-draw) both;
+}
+
+@keyframes draw-on {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes swipe {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes stamp-press {
+  from {
+    transform: rotate(3.6deg) scale(1.12);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(3.6deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes settle {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draw-stroke,
+  .swipe-in,
+  .stamp-in,
+  .settle-in {
+    animation: none !important;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+
+  .swipe-in {
+    transform: scaleX(1);
+  }
+
+  .stamp-in {
+    transform: rotate(3.6deg);
+  }
+
+  .settle-in {
+    transform: none;
+  }
+}
+
+html:has([data-scouting]) header.fixed,
+html:has([data-scouting]) body > div.group.fixed {
+  display: none !important;
+}

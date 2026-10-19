@@ -40,3 +40,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated local copies of licensed cutouts (source: ../design/players)
+/public/players
+
+# unlicensed local-only meme (source: local-assets/)
+/public/local
+
+# Playwright lab screenshots
+/screenshots
