@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-01 and 02 merged (audited). Running: 05 token route (resumed after provider error), 04 spike tool order, 07 UI lab. 03 RPC spike starts when 05 merges (needs the role attribute).
+01, 02, 05 merged (audited). Running: 04 spike tool order, 07 UI lab, 03 RPC spike. Open decision: model billing (own OpenAI key vs LiveKit Inference credit; free tier = $2.50 credit, 5 concurrent Inference sessions).
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -9,6 +9,7 @@
 - `[UNVERIFIED]` pass on ARCHITECTURE and RISKS with `lk docs`. ADR-019 to ADR-022.
 - Task files 01-07 written.
 - 01 setup merged: agent on gpt-realtime-2.1 with explicit dispatch, web starter, Makefile. Spoken mic turn not yet verified (no mic in executor browser).
+- 05 token route merged: role in token, mic-only, coach room pattern, no human attribute edits, room timeouts and cap.
 - 02 deck and facts merged: 19 facts re-verified by auditor, 6 slides, 4 plays, 25 deck tests incl. basketball sanity rules.
 
 ## Next

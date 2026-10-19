@@ -42,3 +42,4 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [web/token] `canPublishSources` is a `TrackSource[]` on mint and strings in the JWT (`microphone`). Assert the decoded string, not the enum number. (source: task 05 r2; livekit-server-sdk grants.ts)
 - [web/token] `RoomConfiguration` JWT includes protobuf defaults (`name`, `restartPolicy`, empty `tags`). Assert named fields, not `toEqual` on the whole config. (source: task 05 r2)
 - [web/token] Coach room format `^fr-[0-9a-f]{16}$` is checked in `parseTokenRequest`, so invalid ids 400 before `listRooms`. (source: task 05 r2)
+- [livekit/inference] Free plan: 5 concurrent Inference sessions and $2.50 credit (about 50 realtime minutes). A parallel eval run hit 429 and a usage alert. Run evals at concurrency 1 and stop stale runs. (lk docs pricing-info)
