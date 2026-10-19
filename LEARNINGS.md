@@ -17,3 +17,7 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [deck] Architecture sketch caption "Two defenders jump the ball" fails callout rule 5 (spelled-out number). Use "Both defenders jump the ball". (source: task 02)
 - [facts] Page titles contain a pipe before "Basketball-Reference.com". Drop the site suffix in the Verified cell so the markdown table still has five columns. (source: task 02)
 - [tooling] This worktree has `python3` and `uv`, not `python`. Deck commands in AGENTS.md use `python3`. (source: task 02)
+- [deck] Two plays on s4 need different formations. `play.start` (ADR-023) lets the short-roll begin as a pick-and-roll instead of the stagger. (source: task 02 round 2)
+- [deck] A stagger screener cannot hold the ball. Put Klay at the top as the passer; Curry only gets it on a pass. (source: task 02 round 2)
+- [deck] Trap geometry: both trappers finish beside the handler toward the rim, not above him toward half court. (source: task 02 round 2)
+- [deck] Slide 5 pace is F19 (Warriors). Say "our pace", not theirs. Love copy can only use F13 + F17. (source: task 02 round 2)

@@ -143,3 +143,45 @@ copy differs: web/lib/deck/facts.json
 check_exit=1
 ```
 Recopy restored `sync check passed`.
+
+## Round 2 (planner review)
+
+Planner findings after ADR-023: Kyrie switch defender behind his man; stagger screener held the ball; short-roll had no start formation and a trap above Curry; s5 notes mis-attributed F19 and overclaimed Love; missing `diagram.matchups`; schema/tests did not cover basketball sanity rules.
+
+### Files changed (round 2)
+- `docs/ARCHITECTURE.md`, `DECISIONS.md` — from `git merge main` (planner ADR-023)
+- `deck/deck.json` — matchups on s2/s3/s4; stagger and short-roll redesign; Kyrie switch Green at [77,35]; s5 notes/points
+- `deck/schema.json` — `diagram.matchups`, optional `play.start`
+- `scripts/test_deck.py` — basketball sanity rules, each with a failing fixture
+- `agent/data/deck.json`, `web/lib/deck/deck.json` — synced copies
+- `LEARNINGS.md` — formation, trap, and s5 gotchas
+- `docs/plan/02-deck-and-facts.md` — this round 2 report
+
+### Play motion (plain words)
+- `p_blitz_lebron_pnr`: Tristan screens for LeBron at the top; Iguodala and Green trap LeBron; Barnes tags the roller; Curry rotates from the weak side.
+- `p_switch_kyrie`: Love screens for Irving on the wing; Green and Klay switch; Irving turns the corner and Green stays between him and the rim; help stays home.
+- `p_steph_stagger`: Klay holds the ball at the top; Curry runs low to wing off Iguodala then Green; Klay passes to Curry; Iguodala slips to the paint.
+- `p_draymond_short_roll`: Starts as a pick-and-roll (Curry up top, Green screening). Irving and James trap Curry beside him; Curry passes to Green rolling to the nail; Green plays the four-on-three.
+
+### Acceptance evidence (round 2)
+Schema, rules, negative fixtures (`uv run --with pytest --with jsonschema pytest scripts -v`):
+```
+scripts/test_deck.py::test_schema_and_rules_pass PASSED
+scripts/test_deck.py::test_points_notes_captions_have_no_digits PASSED
+scripts/test_deck.py::test_bad_caption_fails PASSED
+scripts/test_deck.py::test_unknown_marker_fails PASSED
+scripts/test_deck.py::test_too_many_steps_fails PASSED
+scripts/test_deck.py::test_facts_json_matches_verified_markdown PASSED
+scripts/test_deck.py::test_build_facts_duplicate_id_fails PASSED
+scripts/test_deck.py::test_defenders_closer_to_rim_than_their_man PASSED
+scripts/test_deck.py::test_defender_behind_man_fails PASSED
+scripts/test_deck.py::test_screener_does_not_hold_the_ball PASSED
+scripts/test_deck.py::test_screener_holding_ball_fails PASSED
+scripts/test_deck.py::test_ball_changes_only_via_pass PASSED
+scripts/test_deck.py::test_ball_change_without_pass_fails PASSED
+scripts/test_deck.py::test_trappers_within_eight_of_ball PASSED
+scripts/test_deck.py::test_trap_too_far_from_ball_fails PASSED
+scripts/test_deck.py::test_build_facts_missing_url_fails PASSED
+============================== 16 passed in 0.22s ==============================
+```
+Sync check: `python3 scripts/sync_deck.py --check` → `sync check passed`.
