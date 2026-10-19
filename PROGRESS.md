@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-01 merged (audited). 02 in audit. 05 token route delegated. 03, 04, 07 start when 02 merges.
+01, 02, 05 merged (audited). Model traffic moves to our OpenAI key (ADR-024). Running: 08 OpenAI plugin switch, 03 RPC spike, 07 UI lab. 04 spike paused (harness committed on its branch); resumes on the OpenAI key after 08 merges.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -9,6 +9,8 @@
 - `[UNVERIFIED]` pass on ARCHITECTURE and RISKS with `lk docs`. ADR-019 to ADR-022.
 - Task files 01-07 written.
 - 01 setup merged: agent on gpt-realtime-2.1 with explicit dispatch, web starter, Makefile. Spoken mic turn not yet verified (no mic in executor browser).
+- 05 token route merged: role in token, mic-only, coach room pattern, no human attribute edits, room timeouts and cap.
+- 02 deck and facts merged: 19 facts re-verified by auditor, 6 slides, 4 plays, 25 deck tests incl. basketball sanity rules.
 
 ## Next
 | Wave | Tasks | Gate |
@@ -23,3 +25,11 @@
 
 ## Blocked
 - None.
+
+## Ship checklist (collected from audits)
+- README Known limits: coach link is a bearer link (anyone with it joins as coach); no rate limit on the token route; free-tier cold start and minute caps.
+- Vercel: set `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `AGENT_NAME` for build and runtime (page checks env at build).
+- LiveKit Cloud agent: `AGENT_NAME` must be a secret (`lk agent secrets`), or the worker crash-loops.
+- After `lk agent create`: local dev must stop using `--deployment production` (set `LIVEKIT_AGENT_DEPLOYMENT`).
+- Agent: cap session length (cost guard).
+- Decide whether planning files (`CLAUDE.md`, `AGENTS.md`, `.claude/`, `.agents/`, `docs/plan/`) stay public.
