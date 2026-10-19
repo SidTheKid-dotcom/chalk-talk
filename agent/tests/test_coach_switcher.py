@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Any
 
@@ -183,6 +184,7 @@ def make_switcher(
     *,
     state: HandoffState | None = None,
     linked: FakeRemote | None = None,
+    floor_debounce_s: float = 0,
 ) -> tuple[CoachSwitcher, FakeSession, FakeAgent, HandoffState]:
     player = find_by_role(room, "player")
     session = FakeSession(
@@ -201,7 +203,7 @@ def make_switcher(
         handoff_state,
         presenter_instructions=PRESENTER,
         clicker_instructions=CLICKER,
-        floor_debounce_s=0,
+        floor_debounce_s=floor_debounce_s,
     )
     return switcher, session, agent, handoff_state
 
@@ -504,6 +506,60 @@ async def test_simultaneous_speech_holds_current_floor_and_ignores_untrusted() -
 
     assert session.room_io.calls == []
     assert session.room_io.linked_participant is coach
+
+
+@pytest.mark.asyncio
+async def test_floor_debounce_drops_a_fast_flip_and_switches_once() -> None:
+    events: list[str] = []
+    player = FakeRemote("player", "player")
+    coach = FakeRemote("coach", "coach")
+    room = FakeRoom([player], events)
+    switcher, session, _, _ = make_switcher(room, events, floor_debounce_s=0.05)
+    switcher.attach()
+    add_and_emit(room, coach)
+    await switcher.drain()
+    session.room_io.calls.clear()
+
+    # A is the linked coach. A/B/A inside the debounce must not switch.
+    room.emit("active_speakers_changed", [coach])
+    room.emit("active_speakers_changed", [player])
+    room.emit("active_speakers_changed", [coach])
+    await asyncio.sleep(0.12)
+    assert session.room_io.calls == []
+
+    room.emit("active_speakers_changed", [player])
+    await asyncio.sleep(0.12)
+    assert session.room_io.calls == ["player"]
+
+
+@pytest.mark.asyncio
+async def test_floor_debounce_task_logs_exceptions(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    events: list[str] = []
+    player = FakeRemote("player", "player")
+    coach = FakeRemote("coach", "coach")
+    room = FakeRoom([player], events)
+    switcher, _, _, _ = make_switcher(room, events)
+    switcher.attach()
+    add_and_emit(room, coach)
+    await switcher.drain()
+
+    async def explode(_identity: str, _observed_at: float) -> None:
+        raise RuntimeError("floor debounce failed")
+
+    switcher._floor._switch_after_debounce = explode  # type: ignore[method-assign]
+
+    with caplog.at_level("ERROR", logger="agent"):
+        room.emit("active_speakers_changed", [player])
+        pending = switcher._floor._pending
+        assert pending is not None
+        with pytest.raises(RuntimeError, match="floor debounce failed"):
+            await pending
+
+    assert '"event": "async_task_failed"' in caplog.text
+    assert "active_speaker_floor_switch" in caplog.text
+    assert "floor debounce failed" in caplog.text
 
 
 @pytest.mark.asyncio
