@@ -7,6 +7,6 @@ type SheetProps = {
   rotate?: boolean;
 };
 
-export function Sheet({ children, className, rotate = true }: SheetProps) {
-  return <div className={cn('sheet', !rotate && '[transform:none]', className)}>{children}</div>;
+export function Sheet({ children, className }: SheetProps) {
+  return <div className={cn('sheet card', className)}>{children}</div>;
 }

@@ -1,6 +1,5 @@
 import { HalfCourt } from '@/components/deck/HalfCourt';
-import { BinderClip } from '@/components/deck/Paperclip';
-import { Stamp } from '@/components/deck/Stamp';
+import { CameraReserve } from '@/components/hardwood/CameraReserve';
 import type { Deck, DeckSlide } from '@/lib/deck/types';
 
 type CoachBriefingProps = {
@@ -23,54 +22,46 @@ export function CoachBriefing({
   jumpHref,
 }: CoachBriefingProps) {
   return (
-    <div className="flex min-h-[844px] w-[390px] flex-col bg-[var(--manila)] text-[var(--ink)]">
-      <header className="flex min-h-11 items-center gap-3 bg-[var(--blue)] px-4 text-[var(--sheet)]">
+    <div
+      className="flex min-h-[844px] w-[390px] flex-col bg-[#000] text-[var(--ink)]"
+      data-coach-briefing
+    >
+      <header className="flex min-h-11 items-center gap-3 bg-[var(--blue)] px-4">
         <span className="h-3 w-2 bg-[var(--gold)]" aria-hidden />
-        <p className="font-archivo m-0 text-[13px] tracking-[0.08em]">Head coach · private</p>
+        <p className="font-plex m-0 text-[14px] tracking-[0.08em] text-[var(--ink)]">
+          Head coach · private
+        </p>
       </header>
-
-      <p className="font-archivo mt-3 mb-2 px-4 text-[12px] tracking-wide text-[var(--ink)]">
+      <p className="font-plex mt-3 mb-2 px-4 text-[14px] tracking-wide text-[var(--ink-2)]">
         Live · Slide {slide.number} / 6 · {slide.title}
       </p>
+      <div className="mx-4 mb-3 flex justify-end">
+        <CameraReserve />
+      </div>
 
       {slide.diagram ? (
-        <div className="mx-4 mb-1 w-[60%]">
+        <div className="mx-4 mb-3 w-[70%]">
           <HalfCourt deck={deck} diagram={slide.diagram} />
         </div>
       ) : null}
 
-      <div className="relative mx-4 mt-6">
-        <div className="absolute top-[-22px] left-1/2 z-10 -translate-x-1/2">
-          <BinderClip />
-        </div>
-        <div className="absolute top-[-28px] right-1 z-10">
-          <Stamp label="Briefing" className="text-[13px]" />
-        </div>
-        <div className="note-card [transform:none] px-5 pt-9 pb-6">
-          <h1 className="font-fraunces m-0 w-full text-[32px] leading-[1.05]">
-            Before you take over
-          </h1>
-
-          <Field label="They asked" text={theyAsked} />
-          <Field label="Main worry" text={mainWorry} highlight />
-          <Field label="Now on" text={nowOn} />
-        </div>
+      <div className="card mx-4 mt-2 px-5 pt-6 pb-5">
+        <h1 className="slide-title m-0 text-[52px]">Before you take over</h1>
+        <Field label="They asked" text={theyAsked} />
+        <Field label="Main worry" text={mainWorry} highlight />
+        <Field label="Now on" text={nowOn} />
       </div>
 
       <div className="mt-auto px-4 pt-6 pb-3">
-        <button type="button" className="hold-button font-archivo text-[16px] tracking-wide">
+        <button type="button" className="hold-button">
           Hold to take the floor
         </button>
         <p className="mt-3 mb-0 text-center">
-          <a href={jumpHref} className="font-courier text-[14px] text-[var(--ink)] underline">
+          <a href={jumpHref} className="font-inter text-[16px] text-[var(--ink)] underline">
             Jump to slide {jumpSlideNumber}
           </a>
         </p>
       </div>
-
-      <p className="font-archivo px-4 pb-4 text-[12px] text-[var(--ink)]">
-        — · latency — ms · interruptions —
-      </p>
     </div>
   );
 }
@@ -85,11 +76,13 @@ function Field({
   highlight?: boolean;
 }) {
   return (
-    <div className="border-b border-[var(--ink)]/20 py-3">
-      <p className="font-archivo m-0 text-[12px] tracking-[0.04em]">
-        <span className={highlight ? 'highlighter px-1' : undefined}>{label}</span>
+    <div className="border-b border-[var(--card-line)] py-3">
+      <p className="lab m-0">
+        <span className={highlight ? 'highlighter px-1 text-[var(--hardwood-panel)]' : undefined}>
+          {label}
+        </span>
       </p>
-      <p className="font-courier mt-1 mb-0 text-[15px] leading-snug">{text}</p>
+      <p className="font-inter mt-1 mb-0 text-[18px] leading-snug">{text}</p>
     </div>
   );
 }

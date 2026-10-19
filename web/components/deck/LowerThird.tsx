@@ -1,17 +1,19 @@
-import { padSlideNumber } from '@/lib/deck/load';
-
 type LowerThirdProps = {
-  number: number;
+  name: string;
+  team: 'gsw' | 'cle';
+  sub?: string;
+  number?: number;
   total?: number;
-  section: string;
+  section?: string;
 };
 
-export function LowerThird({ number, total = 6, section }: LowerThirdProps) {
+export function LowerThird({ name, team, sub }: LowerThirdProps) {
   return (
-    <div className="lower-third font-archivo text-[15px] tracking-[0.04em]">
-      <span className="lower-third__tick" aria-hidden />
-      <span>
-        {padSlideNumber(number)} / {padSlideNumber(total)} · {section}
+    <div className={`lower-third ${team}`}>
+      <span className="num">{team === 'gsw' ? 'GSW' : 'CLE'}</span>
+      <span className="nm">
+        <b>{name}</b>
+        {sub ? <s>{sub}</s> : null}
       </span>
     </div>
   );

@@ -24,28 +24,22 @@ export function JrCard({
   if (!revealed) return null;
 
   return (
-    <figure
-      className={`note-card settle-in m-0 w-[220px] px-3 pt-5 pb-3 ${className}`}
-      style={{ transform: 'rotate(-1.8deg)' }}
-    >
-      <span className="cutout-tape" />
+    <figure className={`note-card settle-in m-0 w-[280px] ${className}`}>
+      <p className="lab m-0">Coach card</p>
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imageSrc ?? ''}
           alt=""
-          className="cutout-photo mx-auto h-auto w-[170px] object-contain"
+          className="cutout-photo mx-auto mt-4 h-auto w-[220px] object-contain"
           onError={() => setMissing(true)}
         />
       ) : (
-        <div className="flex h-[150px] items-center justify-center bg-[var(--sheet)] px-3">
-          <KalamNote text={caption} className="text-center text-[20px]" />
+        <div className="mt-6 flex min-h-[160px] items-center justify-center px-2">
+          <KalamNote text={caption} className="text-center text-[28px]" />
         </div>
       )}
-      {showImage ? <KalamNote text={caption} className="mt-3 text-center text-[18px]" /> : null}
-      <p className="font-courier mt-1 mb-0 text-center text-[11px] text-[var(--ink-2)]">
-        see: 2018
-      </p>
+      {showImage ? <KalamNote text={caption} className="mt-4 text-center text-[24px]" /> : null}
     </figure>
   );
 }

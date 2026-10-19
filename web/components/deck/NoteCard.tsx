@@ -1,4 +1,3 @@
-import { Paperclip } from '@/components/deck/Paperclip';
 import type { Fact } from '@/lib/deck/types';
 
 type NoteCardProps =
@@ -17,16 +16,13 @@ export function NoteCard(props: NoteCardProps) {
   const meta = props.kind === 'fact' ? props.fact.source_domain : null;
 
   return (
-    <aside className="note-card w-[240px] px-4 pt-5 pb-4" data-note-kind={props.kind}>
-      <span className="absolute -top-4 right-5">
-        <Paperclip />
-      </span>
-      <p className="font-archivo m-0 text-[12px] tracking-wide text-[var(--ink-2)] uppercase">
-        {label}
-      </p>
-      <p className="font-courier mt-2 mb-0 text-[14px] leading-snug text-[var(--ink)]">{body}</p>
+    <aside className="note-card" data-note-kind={props.kind}>
+      <p className="lab m-0">{label}</p>
+      <p className="row-detail mt-3 mb-0 text-[21px] text-[var(--ink)]">{body}</p>
       {meta ? (
-        <p className="font-courier mt-2 mb-0 text-[11px] text-[var(--ink-2)]">{meta}</p>
+        <p className="lab mt-3 mb-0" style={{ color: 'var(--ink-3)' }}>
+          {meta}
+        </p>
       ) : null}
     </aside>
   );

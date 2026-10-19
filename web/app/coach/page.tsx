@@ -121,7 +121,7 @@ function CoachJoin() {
     : '(none)';
 
   return (
-    <div data-testid="coach-deck" style={{ padding: 24, fontFamily: 'monospace' }}>
+    <div data-testid="coach-deck" className="min-h-svh bg-black p-6 text-[var(--ink)]">
       <p>{view.status}</p>
       <p>slide: {view.slideTitle ?? view.slideId ?? '(none)'}</p>
       <p>seq: {view.seq ?? '(none)'}</p>

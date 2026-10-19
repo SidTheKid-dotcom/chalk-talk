@@ -1,4 +1,3 @@
-import { Caption } from '@/components/deck/Caption';
 import { Highlighter } from '@/components/deck/Highlighter';
 import { JrCard } from '@/components/deck/JrCard';
 import { KalamNote } from '@/components/deck/KalamNote';
@@ -11,9 +10,7 @@ import { PlayArrows } from '@/components/deck/PlayArrows';
 import { PlayerCutout } from '@/components/deck/PlayerCutout';
 import { Points } from '@/components/deck/Points';
 import { Sheet } from '@/components/deck/Sheet';
-import { Stamp } from '@/components/deck/Stamp';
-import { StatusStrip } from '@/components/deck/StatusStrip';
-import { creditForFile, cutoutCaption } from '@/lib/deck/credits';
+import { creditForFile } from '@/lib/deck/credits';
 import { deck, facts } from '@/lib/deck/load';
 import type { CutoutCredit } from '@/lib/deck/types';
 
@@ -31,14 +28,13 @@ export function PrimitivesGallery({ credits, jrImageSrc }: PrimitivesGalleryProp
   const textNote = deck.slides[2]?.points[1] ?? '';
 
   return (
-    <div className="flex flex-col gap-10 px-10 py-10">
-      <h2 className="font-fraunces m-0 text-[44px]">Primitives</h2>
+    <div className="relative z-10 flex flex-col gap-10 px-10 py-10">
+      <h2 className="slide-title m-0 text-[72px]">Primitives</h2>
       <div className="flex flex-wrap items-start gap-8">
-        <LowerThird number={2} section="Scouting report" />
-        <Stamp />
-        <span className="coach-pill font-archivo text-[13px]">Private to the coach</span>
+        <LowerThird name="Stephen Curry" team="gsw" sub="GSW" />
+        <span className="coach-pill font-plex text-[13px]">Private to the coach</span>
       </div>
-      <Sheet className="max-w-xl px-8 py-6" rotate={false}>
+      <Sheet className="max-w-xl">
         <Points points={samplePoints} />
       </Sheet>
       <svg viewBox="0 0 100 40" className="h-32 w-[420px]">
@@ -59,20 +55,17 @@ export function PrimitivesGallery({ credits, jrImageSrc }: PrimitivesGalleryProp
         <NoteCard kind="text" text={textNote} />
         <KalamNote text={textNote} />
       </div>
-      <Caption text={deck.slides[0]?.notes ? deck.slides[0].notes.split('.')[0] + '.' : ''} />
       {curry ? (
         <PlayerCutout
           file={curry.file}
-          caption={cutoutCaption(curry)}
+          caption={curry.teamAbbrev}
           name={curry.name}
-          size={140}
+          team="gsw"
+          size={180}
         />
       ) : null}
       <JrCard caption={jrCaption} imageSrc={jrImageSrc} />
       <PhotoCreditsLink />
-      <div className="overflow-hidden">
-        <StatusStrip />
-      </div>
       <MotionDemo />
     </div>
   );

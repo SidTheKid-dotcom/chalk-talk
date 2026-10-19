@@ -6,9 +6,6 @@ type HeadlineProps = {
 };
 
 export function Headline({ children, className }: HeadlineProps) {
-  return (
-    <h1 className={cn('font-fraunces text-[var(--ink)]', className ?? 'text-[58px]')}>
-      {children}
-    </h1>
-  );
+  const sizeClass = children.length > 42 ? 'is-long' : children.length < 28 ? 'is-hero' : undefined;
+  return <h1 className={cn('slide-title', sizeClass, className)}>{children}</h1>;
 }
