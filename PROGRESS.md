@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08. Spike 2 measurement is complete; its independent audit is running before the harness merge. Wave 2 tasks 09 (presenter agent) and 10 (`/player`) are running in parallel.
+Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08. Wave 2 tasks 09 (presenter agent) and 10 (`/player`) are running in parallel. The Spike 2 decision is recorded, but its harness branch failed audit and is not merged.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -28,7 +28,7 @@ Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08. Spike 2 measur
 | 5 | freeze: E2E, README, secret scan, UI audit, Loom | deploy |
 
 ## Blocked
-- None.
+- Task 04 harness merge: fix multi-tool scoring, reconcile metric labels/manual-review evidence, clear ruff, and complete the human audio/interruption checks.
 
 ## Handoff task must include (audit 06)
 - `RoomOptions(close_on_disconnect=False)`; on coach leave clear the switched state, `set_participant(player)` by role, restore presenter mode (ADR-025).
