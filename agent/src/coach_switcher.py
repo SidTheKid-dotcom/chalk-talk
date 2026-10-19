@@ -108,6 +108,24 @@ def _log(event: str, **fields: object) -> None:
     logger.info(json.dumps({"event": event, **fields}))
 
 
+def _log_unhandled_task_error(done: asyncio.Task[None], name: str) -> None:
+    if done.cancelled():
+        return
+    exc = done.exception()
+    if exc is None:
+        return
+    logger.error(
+        json.dumps(
+            {
+                "event": "async_task_failed",
+                "task": name,
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+        ),
+        exc_info=exc,
+    )
+
+
 def participant_role(participant: object) -> str | None:
     attributes = getattr(participant, "attributes", None) or {}
     role = attributes.get("role")
@@ -348,10 +366,14 @@ class ActiveSpeakerFloorRouter:
         self._cancel_pending()
         self._pending_identity = candidate.identity
         observed_at = time.perf_counter()
-        self._pending = asyncio.create_task(
+        pending = asyncio.create_task(
             self._switch_after_debounce(candidate.identity, observed_at),
             name="active_speaker_floor_switch",
         )
+        pending.add_done_callback(
+            lambda done: _log_unhandled_task_error(done, "active_speaker_floor_switch")
+        )
+        self._pending = pending
 
     async def drain(self) -> None:
         task = self._pending
@@ -501,20 +523,7 @@ class CoachSwitcher:
 
         def _done(done: asyncio.Task[None]) -> None:
             self._tasks.discard(done)
-            if done.cancelled():
-                return
-            exc = done.exception()
-            if exc is not None:
-                logger.error(
-                    json.dumps(
-                        {
-                            "event": "async_task_failed",
-                            "task": name,
-                            "error": f"{type(exc).__name__}: {exc}",
-                        }
-                    ),
-                    exc_info=exc,
-                )
+            _log_unhandled_task_error(done, name)
 
         task.add_done_callback(_done)
 
