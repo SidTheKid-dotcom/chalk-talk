@@ -8,7 +8,7 @@ Chalk Talk is a voice AI assistant coach. It walks a Warriors player through a s
 - Presents a fixed six-slide Game 7 plan by voice. It opens on slide 1 only after the browser confirms the slide is on screen.
 - Moves the deck from natural questions ("their best guy keeps getting downhill") to the right slide. The model picks from slide ids and topics defined in the deck data.
 - Speaks only from the slide's points, notes and verified facts. Every number on screen traces to a row in `FACTS.md` with a source URL.
-- Works the board with three bounded tools: `highlight` a player, zone or card; `run_play` animates one of four prepared plays; `add_callout` posts a sourced fact card or a short coaching note. The model chooses ids; it never writes layout or numbers.
+- Works the board with three bounded tools: `highlight` a player, zone or card; `run_play` animates one of four prepared plays while the agent talks through each caption; `add_callout` posts a sourced fact card or a short coaching note. The model chooses ids; it never writes layout or numbers.
 - Refuses unsourced claims on screen: a free-text note with a digit, `%` or a spelled-out number is rejected in the agent and again in the browser.
 - Stops at once when you talk over it (LiveKit Agents handles barge-in and history truncation).
 - Hands off to a human: "Get me the head coach" shows a room-bound join link and QR. A coach on `/coach` gets a private briefing, the agent becomes a quiet clicker, and both screens stay on the same board. If the coach leaves, it returns to the player. Shared camera tiles are not built.
@@ -79,3 +79,4 @@ See `DECISIONS.md`.
 - The slide 6 joke image cannot be licensed, so the public build shows a text-only card.
 - The player view is built for a laptop; on a phone in portrait it asks you to rotate.
 - Player and coach do not show camera tiles yet. Voice still works.
+- Play steps follow `lk.agent.state === speaking` on a scripted clock (five seconds of speech stays on "Tag the roller behind"; the old wall clock is already on the last step). That has not been timed in a live microphone room.
