@@ -1,6 +1,6 @@
 # Chalk Talk
 
-Chalk Talk is a voice AI assistant coach. It walks a Warriors player through a six-slide game plan for Game 7 of the 2016 NBA Finals. The slides follow your questions, and you can cut the coach off at any time. When you ask for the head coach, a real person joins the call from a phone, gets a private briefing, and takes over while the AI runs the slides.
+Chalk Talk is a voice AI assistant coach named Floppy. It walks a Warriors player through a six-slide game plan for Game 7 of the 2016 NBA Finals. The slides follow your questions, and you can cut the coach off at any time. When you ask for the head coach, a real person joins the call from a phone, gets a private briefing, and takes over while the AI runs the slides.
 
 **Status: work in progress.** This README only describes what is built and verified. Sections below are filled in as the work lands.
 
@@ -8,10 +8,10 @@ Chalk Talk is a voice AI assistant coach. It walks a Warriors player through a s
 - Presents a fixed six-slide Game 7 plan by voice. It opens on slide 1 only after the browser confirms the slide is on screen.
 - Moves the deck from natural questions ("their best guy keeps getting downhill") to the right slide. The model picks from slide ids and topics defined in the deck data.
 - Speaks only from the slide's points, notes and verified facts. Every number on screen traces to a row in `FACTS.md` with a source URL.
-- Works the board with three bounded tools: `highlight` a player, zone or card; `run_play` animates one of four prepared plays while the agent talks through each caption; `add_callout` posts a sourced fact card or a short coaching note. The model chooses ids; it never writes layout or numbers.
+- Works the board with three bounded tools: `highlight` a player, zone or card (a highlighted Kyrie also lights the wing he attacks from); `run_play` animates one of four prepared plays while the agent talks through each caption; `add_callout` posts a sourced fact card or a short coaching note. The model chooses ids; it never writes layout or numbers.
 - Refuses unsourced claims on screen: a free-text note with a digit, `%` or a spelled-out number is rejected in the agent and again in the browser.
 - Stops at once when you talk over it (LiveKit Agents handles barge-in and history truncation).
-- Hands off to a human: "Get me the head coach" shows a room-bound join link and QR. A coach on `/coach` gets a private briefing, the agent becomes a quiet clicker, and both screens stay on the same board. If the coach leaves, it returns to the player. Shared camera tiles are not built.
+- Hands off to a human: "Get me the head coach" shows a room-bound join link and QR. A coach on `/coach` gets a private briefing, the agent becomes a quiet clicker, and both screens stay on the same board. If the coach leaves, it returns to the player. Player, coach and any other human in the room appear on a camera rail to the right of the slide, so video never covers the board; the current speaker gets a gold border. The agent has no camera tile.
 
 ## Measured in development
 | What | Result | Where |
@@ -76,7 +76,7 @@ See `DECISIONS.md`.
 - After handoff the agent hears one human at a time; a speaker change can clip the first words.
 - If the briefing or the handoff line fails, the coach is ignored until they rejoin.
 - The LiveKit Inference fallback is only as available as the free-tier Inference credit.
-- The slide 6 joke image cannot be licensed, so the public build shows a text-only card.
+- The slide 6 joke image and the two team logos cannot be licensed, so they load only from a gitignored `local-assets/` folder. The public build shows a text-only card and drawn GSW/CLE badges.
 - The player view is built for a laptop; on a phone in portrait it asks you to rotate.
-- Player and coach do not show camera tiles yet. Voice still works.
-- Play steps follow `lk.agent.state === speaking` on a scripted clock (five seconds of speech stays on "Tag the roller behind"; the old wall clock is already on the last step). That has not been timed in a live microphone room.
+- Camera permission is optional. If it is blocked, voice still works and the tile shows a role fallback.
+- Play steps follow `lk.agent.state === speaking`. Captioned steps hold 4–10s of speech each and freeze if the model pauses. A clicker-silent play still finishes at deck speed after 700ms.
