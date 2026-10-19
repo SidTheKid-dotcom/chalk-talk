@@ -188,8 +188,9 @@ export function isPlayClockDone(segments: PlayMotionSegment[], clock: PlayClock)
  * `speaking === undefined` is wall-clock (lab, or no agent). A boolean follows
  * the speaking clock: captioned steps move only while `speaking` is true.
  * `false` is listening or any other non-speaking state: the frame freezes.
- * After {@link SPEAKING_START_GRACE_MS} without speech, or that long after
- * speech stops with steps left, the rest plays at deck `duration_ms` (hold 0).
+ * After {@link SPEAKING_START_GRACE_MS} with no speech at all, remaining steps
+ * play at deck `duration_ms` (clicker-silent). A pause after speech stays frozen
+ * so a gap between captions cannot dump the rest of the play.
  */
 export function advancePlayClock(
   clock: PlayClock,
@@ -226,11 +227,8 @@ export function advancePlayClock(
   const speechElapsed = startMs + paceMs;
   const incomplete = speechElapsed < speechTimelineMs(segments);
   const neverSpoke = !sawSpeaking && wallMs >= SPEAKING_START_GRACE_MS;
-  const speechStopped = sawSpeaking && quietMs >= SPEAKING_START_GRACE_MS;
-  if (incomplete && (neverSpoke || speechStopped)) {
-    const overflow = speechStopped
-      ? Math.max(0, quietMs - SPEAKING_START_GRACE_MS)
-      : Math.max(0, wallMs - SPEAKING_START_GRACE_MS);
+  if (incomplete && neverSpoke) {
+    const overflow = Math.max(0, wallMs - SPEAKING_START_GRACE_MS);
     return { ...next, mode: 'finish', handoffMs: speechElapsed, finishMs: overflow };
   }
   return next;

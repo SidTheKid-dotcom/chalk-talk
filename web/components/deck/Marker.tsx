@@ -34,15 +34,24 @@ export function Marker({
   return (
     <g transform={`translate(${x} ${y})`} opacity={ghost ? 0.35 : 1}>
       {highlighted ? (
-        <ellipse
-          cx="0"
-          cy="0"
-          rx={radius * 2.05}
-          ry={radius * 1.15}
-          className={animateHighlight ? 'swipe-in highlighter' : 'highlighter'}
-          fill="#FFC72C"
-          fillOpacity={0.78}
-        />
+        <>
+          <circle
+            cx="0"
+            cy="0"
+            r={radius * 1.85}
+            fill="#FFC72C"
+            fillOpacity="0.22"
+            className={animateHighlight ? 'swipe-in highlighter' : 'highlighter'}
+          />
+          <circle
+            cx="0"
+            cy="0"
+            r={radius * 1.55}
+            fill="none"
+            stroke="#FFC72C"
+            strokeWidth={radius * 0.28}
+          />
+        </>
       ) : null}
       {hasBall ? (
         <circle
@@ -59,8 +68,8 @@ export function Marker({
         cy="0"
         r={radius}
         fill={fill}
-        stroke={stroke}
-        strokeWidth={ours ? 0.35 : 0.7}
+        stroke={highlighted ? '#FFC72C' : stroke}
+        strokeWidth={highlighted ? radius * 0.22 : ours ? 0.35 : 0.7}
         strokeDasharray={ghost ? '0.9 0.7' : undefined}
       />
       {ghost ? null : (
