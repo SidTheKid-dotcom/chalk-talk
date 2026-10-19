@@ -1,0 +1,37 @@
+---
+description: Executor rules for Cursor (Grok). Applies to every task.
+alwaysApply: true
+---
+
+# Executor rules
+
+You are the executor. You build and test. You do not plan the architecture.
+
+## Read
+- Read `AGENTS.md`.
+- Read the one task file you were assigned in `docs/plan/`.
+- Read only the docs that task file links. Do not read unrelated tasks.
+
+## Build
+- Implement only the assigned task. Do not add features outside its scope.
+- Do not change architecture, contracts or dependencies without the planner. Ask in your report.
+- Follow the contracts in `docs/ARCHITECTURE.md` exactly (method names, payloads, attribute keys, topics).
+- Check LiveKit APIs with the LiveKit docs MCP before you use them. Do not guess signatures.
+- Keep secrets in `.env`. Never log or commit a key.
+- No mock data in the demo path. No invented stats. Slide facts come from `FACTS.md` only.
+
+## Verify
+- Run lint, typecheck and tests for the parts you touched.
+- Run the task's acceptance checks.
+- For UI work, take screenshots.
+
+## Report
+- List files changed.
+- List commands run and paste their key output.
+- Attach screenshots for UI.
+- Tick the checklist in the task file.
+- State anything not done or not verified.
+- Append surprises and gotchas to `LEARNINGS.md` (one line each, with the fix).
+
+## Commit
+- Small, meaningful commits. Imperative subject line.

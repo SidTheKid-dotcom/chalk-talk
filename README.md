@@ -1,0 +1,23 @@
+# Chalk Talk
+
+Chalk Talk is a voice AI assistant coach. It walks a Warriors player through a six-slide game plan for Game 7 of the 2016 NBA Finals. The slides follow your questions, and you can cut the coach off at any time. When you ask for the head coach, a real person joins the call from a phone, gets a private briefing, and takes over while the AI runs the slides.
+
+**Status: work in progress.** This README only describes what is built and verified. Sections below are filled in as the work lands.
+
+## What it does
+_To be written._
+
+## Try it
+_Live link and demo video: to be added._
+
+## Run locally
+_To be written._
+
+## Architecture
+_Diagram and summary: to be written. Design contracts live in `docs/ARCHITECTURE.md`._
+
+## Decisions
+See `DECISIONS.md`.
+
+## Known limits
+_To be written._

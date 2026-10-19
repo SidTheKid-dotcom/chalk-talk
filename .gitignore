@@ -1,0 +1,33 @@
+# deps and builds
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.vercel/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# env
+.env*
+!.env.example
+
+# private process
+tasks/
+context/
+moto.md
+synthio-labs-notes.md
+
+# os
+.DS_Store
+
+# unlicensed local-only assets (slide 6 meme)
+local-assets/
