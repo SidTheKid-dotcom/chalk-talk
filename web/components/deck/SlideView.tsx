@@ -130,7 +130,7 @@ export function SlideView({
 
       {slide.diagram ? (
         <div className="slide-visual slide-court relative min-h-0">
-          {layout === 'court' && slide.cutouts.length > 0 ? (
+          {layout === 'court' && slide.cutouts.length > 0 && !playId ? (
             <div className="pointer-events-none absolute bottom-10 left-0 z-[2] max-w-[180px]">
               <CutoutRow
                 files={slide.cutouts.slice(0, 1)}
@@ -154,7 +154,7 @@ export function SlideView({
             />
             {playCaption ? (
               <p className="play-caption" data-play-caption>
-                <span className="lab">run_play</span>
+                <span className="lab">Play</span>
                 {playCaption}
               </p>
             ) : null}
@@ -246,7 +246,6 @@ function FactorsGrid({
     ...slide.points.map((point, index) => ({
       key: `p-${index}`,
       n: String(index + 1).padStart(2, '0'),
-      file: slide.cutouts[index],
       body: point,
       kind: 'point' as const,
     })),
@@ -254,7 +253,6 @@ function FactorsGrid({
       ? {
           key: 'fact',
           n: 'F',
-          file: slide.cutouts[3],
           body: noteFact.claim,
           kind: 'fact' as const,
           fact: noteFact,
@@ -264,17 +262,20 @@ function FactorsGrid({
 
   return (
     <>
+      {slide.cutouts.length > 0 ? (
+        <div className="factor-strip" data-factor-photos>
+          <CutoutRow
+            files={slide.cutouts}
+            credits={credits}
+            size={148}
+            forceMissing={forceMissingCutout}
+            nowrap
+          />
+        </div>
+      ) : null}
       {columns.map((column) => (
         <article key={column.key} className="factor-col">
-          {column.file ? (
-            <CutoutRow
-              files={[column.file]}
-              credits={credits}
-              size={200}
-              forceMissing={forceMissingCutout}
-            />
-          ) : null}
-          <span className="n mt-4">{column.n}</span>
+          <span className="n">{column.n}</span>
           {column.kind === 'fact' && 'fact' in column && column.fact ? (
             <div data-note-kind="fact">
               <p className="lab mt-2">{column.fact.id}</p>
@@ -286,7 +287,7 @@ function FactorsGrid({
         </article>
       ))}
       {callouts.length > 0 ? (
-        <div className="col-span-4">
+        <div className="factor-callouts">
           <CalloutStack callouts={callouts} />
         </div>
       ) : null}
@@ -324,16 +325,20 @@ function CutoutRow({
   credits,
   size,
   forceMissing = false,
+  nowrap = false,
   className = '',
 }: {
   files: string[];
   credits: CutoutCredit[];
   size: number;
   forceMissing?: boolean;
+  nowrap?: boolean;
   className?: string;
 }) {
   return (
-    <div className={`flex flex-row flex-wrap items-end justify-start gap-3 ${className}`}>
+    <div
+      className={`flex flex-row items-end justify-start gap-8 ${nowrap ? 'flex-nowrap' : 'flex-wrap'} ${className}`}
+    >
       {files.map((file) => {
         const credit = creditForFile(credits, file);
         const team = credit?.teamAbbrev === 'CLE' ? 'cle' : 'gsw';

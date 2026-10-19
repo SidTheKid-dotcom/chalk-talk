@@ -63,26 +63,28 @@ export function Marker({
         strokeWidth={ours ? 0.35 : 0.7}
         strokeDasharray={ghost ? '0.9 0.7' : undefined}
       />
-      <text
-        x="0"
-        y={startY}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fill="#FFFFFF"
-        className="marker-label"
-        style={{
-          fontFamily: 'var(--font-inter), system-ui, sans-serif',
-          fontSize: `${size}px`,
-          fontWeight: 800,
-          letterSpacing: '0.01em',
-        }}
-      >
-        {lines.map((line) => (
-          <tspan key={line} x="0" dy={line === lines[0] ? 0 : size * 1.05}>
-            {line}
-          </tspan>
-        ))}
-      </text>
+      {ghost ? null : (
+        <text
+          x="0"
+          y={startY}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="#FFFFFF"
+          className="marker-label"
+          style={{
+            fontFamily: 'var(--font-inter), system-ui, sans-serif',
+            fontSize: `${size}px`,
+            fontWeight: 800,
+            letterSpacing: '0.01em',
+          }}
+        >
+          {lines.map((line) => (
+            <tspan key={line} x="0" dy={line === lines[0] ? 0 : size * 1.05}>
+              {line}
+            </tspan>
+          ))}
+        </text>
+      )}
     </g>
   );
 }
