@@ -36,3 +36,7 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [facts] `startswith("y")` skipped `Y` silently. Match `y\b` / `n\b` case-insensitive and exit if the cell is neither. (source: task 02 round 3)
 - [deck] Short-roll corner arrows are reads, not passes made. Mark `"option": true` and ignore option arrows in the ball rule. (source: task 02 round 3)
 - [deck] Trap tests must key on `"action": "trap"`, not the caption, or a wording change disables the radius check. (source: task 02 round 3)
+- [web/fonts] Archivo loaded with static weights plus `font-variation-settings: 'wdth' 78` collapsed UI glyphs (lower-third and status text vanished). Drop the width axis unless Archivo is loaded as a variable font. (source: task 07)
+- [web/css] A three-column grid still placed the court in the empty `auto` cutout column when a slide had no side cutouts, shrinking slide 6. Use a two-column template when that slot is unused. (source: task 07)
+- [web/prettier] `prettier --write` reformats `web/lib/deck/deck.json` and would drift the synced copy. Ignore `lib/deck/*.json`. (source: task 07)
+- [web/court] Deck y=0 is the baseline. Mapping SVG as y-down puts the rim at the top; rotate to `toSvg(x,y)=(100-y,x)` so the basket sits on the right like the concepts. (source: task 07)
