@@ -14,7 +14,9 @@
 - Replace the starter's token route. Request and response exactly as in the contract. Grants exactly as listed. TTL about 15 min. `role` set via `AccessToken` `attributes`. Identity `player-<random>` / `coach-<random>`.
 - Coach: check the room exists (RoomService list by name) before minting; 404 if not. Use server-side keys only.
 - 400 for unknown role or missing room for coach. 405 for GET.
-- Update the starter's client code to call the new route with `{"role":"player"}`. Add `/coach?room=...` page stub that requests a coach token and joins (no UI beyond connect status).
+- Update the starter's client code to call the new route with `{"role":"player"}`.
+- Remove the starter's silent fallback in `web/app/page.tsx` to `https://livekit.com/api/homepage-agent/token` when `LIVEKIT_URL` is unset (audit 01). A missing env must fail loudly, never reach another agent.
+- Room names: use a cryptographically random id (for example `fr-` + 10 chars from `crypto.randomUUID()`), not `Math.random()` (MISTAKES row 21). Add `/coach?room=...` page stub that requests a coach token and joins (no UI beyond connect status).
 - Vitest tests: decode the JWT, assert grants, attributes, TTL, dispatch present only for player, no admin, no `canUpdateOwnMetadata`.
 
 ## Out of scope

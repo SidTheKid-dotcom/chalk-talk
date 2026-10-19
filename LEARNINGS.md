@@ -11,3 +11,6 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [livekit/agents] `ToolHandlingOptions(tool_reply_after_audio=...)` from early research does not exist in livekit/agents. Use `StopResponse` or `cancel_tool_reply()` to control replies. (code search; events doc)
 - [livekit/agents] livekit-agents 1.8.7+ reports realtime `e2e_latency` in assistant message metrics when local VAD is set. (changelog 1.8.7)
 - [tooling] The docs MCP may be pending approval in a session. `lk docs search|get-page|code-search|changelog` gives the same source from the shell.
+- [livekit/cli] `lk agent dev` registers under a random `dev-` deployment by default; starter tokens dispatch to production. Use `--deployment production` locally until a cloud agent exists. (lk agent dev --help; audit 01)
+- [web] The embedded preview browser has no mic: `getUserMedia` throws `NotSupportedError`. The /player page must catch mic failure and show a message. Voice tests need a real browser. (audit 01)
+- [livekit/agents] Adding plain `vad=` to a realtime session keeps server turn detection; adding `turn_detection` or `interruption` with it switches to client-side turns. VAD is needed for `e2e_latency`. (agent_activity.py; audit 01)
