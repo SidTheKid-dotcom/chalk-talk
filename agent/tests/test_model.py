@@ -22,6 +22,8 @@ def test_default_providers_are_openai_then_inference(
     _set_openai_and_livekit(monkeypatch)
     model = build_realtime_model()
     assert isinstance(model, RealtimeModelFallbackAdapter)
+    # Adapter has no public fallback list; `_models` is the only way to assert
+    # provider order and each fallback model id.
     assert isinstance(model._models[0], openai.realtime.RealtimeModel)
     assert isinstance(model._models[1], inference.RealtimeModel)
     assert model._models[0].model == "gpt-realtime-2.1"
@@ -69,6 +71,8 @@ def test_two_providers_return_adapter_in_list_order(
     _set_openai_and_livekit(monkeypatch)
     model = build_realtime_model()
     assert isinstance(model, RealtimeModelFallbackAdapter)
+    # Adapter has no public fallback list; `_models` is the only way to assert
+    # provider order and each fallback model id.
     assert isinstance(model._models[0], inference.RealtimeModel)
     assert isinstance(model._models[1], openai.realtime.RealtimeModel)
     assert model._models[0].model == "openai/gpt-realtime-2.1"
@@ -82,6 +86,8 @@ def test_adapter_accepts_default_openai_and_inference_capabilities(
     _set_openai_and_livekit(monkeypatch)
     model = build_realtime_model()
     assert isinstance(model, RealtimeModelFallbackAdapter)
+    # Adapter has no public fallback list; `_models` is the only way to assert
+    # matching capabilities across each fallback model.
     hard = ("audio_output", "turn_detection", "supports_overlapping_speech")
     first = model._models[0].capabilities
     for other in model._models[1:]:

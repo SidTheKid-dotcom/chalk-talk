@@ -77,3 +77,6 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [spike 2] A title-only tool result made the model invent slide content. Tool results must carry the slide's points, notes and facts. (task 04)
 - [spike 2] Two tool calls in one response ran in order with no overlap (second start 760-980 ms after first end). (task 04)
 - [livekit/realtime] A startup `generate_reply` may call an available tool again even when its instructions include that tool's completed result. Pass `tool_choice="none"` after the direct, acked startup action to prevent a duplicate RPC. (task 09)
+- [agent/startup] `show_slide(s1_tipoff)` at connect can return 1401/1400/2003 before the player handler is ready. Retry those three, and if the result still starts `FAILED:` tell the model only to narrate the failure. (audit 09)
+- [agent/tests] `conftest.py` `setdefault(OPENAI_API_KEY=sk-test)` before dotenv shadows a root/.env.local key. Load dotenv first, then set the dummy default. (audit 09)
+- [agent/debug] `load_realtime_config()` at import requires an OpenAI key even for `CHALK_DEBUG=1`. Skip that validation on the debug-probe path; keep it for normal worker start. (audit 09)

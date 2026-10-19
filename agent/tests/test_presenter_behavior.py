@@ -9,12 +9,27 @@ import pytest
 from livekit.agents import AgentSession, utils
 
 from agent import Assistant
-from deck_data import slide_narration
+from deck_data import get_slide, slide_narration
 from model import RealtimeConfig, build_realtime_model
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("RUN_AGENT_BEHAVIOR_TESTS") != "1",
     reason="set RUN_AGENT_BEHAVIOR_TESTS=1 to run provider-backed behavior tests",
+)
+
+SPELLED_NUMBER = re.compile(
+    r"\b("
+    r"two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+    r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|"
+    r"thirty|forty|fifty|sixty|seventy|eighty|ninety|"
+    r"hundred|thousand|million|dozen|percent"
+    r")\b",
+    re.IGNORECASE,
+)
+DIGIT = re.compile(r"[0-9]")
+SLIDE_ASSIGNMENT = re.compile(
+    r"\b(primary|assignment|blitz|stagger|switch the|iguodala is)\b",
+    re.IGNORECASE,
 )
 
 
@@ -27,21 +42,41 @@ class RecordingCommander:
         return slide_narration(slide_id)
 
 
-def _tool_calls(result) -> list[tuple[str, dict[str, str]]]:
-    return [
-        (event.item.name, json.loads(event.item.arguments))
-        for event in result.events
-        if event.item.type == "function_call"
-    ]
+def _event_type(event: object) -> str | None:
+    item = getattr(event, "item", None)
+    return getattr(item, "type", None)
 
 
-def _assistant_text(result) -> str:
-    messages = [
-        event.item.text_content
-        for event in result.events
-        if event.item.type == "message" and event.item.role == "assistant"
-    ]
-    return " ".join(text for text in messages if text).strip()
+def _assert_content_free_leadin(text: str, slide_id: str) -> None:
+    words = text.split()
+    assert len(words) <= 20, text
+    assert DIGIT.search(text) is None, text
+    assert SPELLED_NUMBER.search(text) is None, text
+    assert SLIDE_ASSIGNMENT.search(text) is None, text
+    slide = get_slide(slide_id)
+    assert slide is not None
+    hay = text.lower()
+    for point in slide["points"]:
+        assert point.lower() not in hay, text
+    assert slide["notes"].lower() not in hay, text
+
+
+def _inspect_turn(result: object, expected_slide: str) -> str:
+    lead = result.expect.skip_next_event_if(type="message", role="assistant")
+    if lead is not None:
+        text = lead.event().item.text_content or ""
+        if text.strip():
+            _assert_content_free_leadin(text, expected_slide)
+
+    call = result.expect.next_event().is_function_call(
+        name="show_slide", arguments={"slide_id": expected_slide}
+    )
+    assert json.loads(call.event().item.arguments) == {"slide_id": expected_slide}
+    result.expect.skip_next_event_if(type="function_call_output")
+    answer = result.expect.next_event().is_message(role="assistant")
+    post = (answer.event().item.text_content or "").strip()
+    assert post
+    return post
 
 
 @pytest.mark.asyncio
@@ -63,21 +98,23 @@ async def test_presenter_routes_and_grounds_two_runs(run_number: int) -> None:
         await session.start(Assistant(commander))
         for user_input, expected_slide in cases:
             result = await session.run(user_input=user_input)
-            calls = _tool_calls(result)
-            assert calls == [("show_slide", {"slide_id": expected_slide})]
-            reply = _assistant_text(result)
-            assert reply
+            types = [_event_type(event) for event in result.events]
+            assert "function_call" in types
+            assert types.index("function_call") < max(
+                i for i, name in enumerate(types) if name == "message"
+            )
+            post = _inspect_turn(result, expected_slide)
             print(
                 f"run={run_number} input={user_input!r} slide={expected_slide} "
-                f"reply={reply!r}"
+                f"post={post!r} events={types}"
             )
 
             if expected_slide == "s2_lebron":
-                assert "Iguodala" in reply
+                assert "Iguodala" in post
                 allowed_numbers = set(
                     re.findall(r"\d+(?:\.\d+)?", slide_narration(expected_slide))
                 )
-                reply_numbers = set(re.findall(r"\d+(?:\.\d+)?", reply))
+                reply_numbers = set(re.findall(r"\d+(?:\.\d+)?", post))
                 assert reply_numbers <= allowed_numbers
 
     assert commander.calls == [expected for _, expected in cases]
