@@ -1,8 +1,8 @@
 # Progress
 
 ## Now
-SPEED MODE (user records the demo tonight). One audit per task; fix rounds are verified by the planner, not re-audited. Cut: task 14 automated E2E driver, task 04 harness merge, status-panel metrics beyond "—".
-Running: speech-paced play motion (ADR-029, Grok 4.7). Next: deploy (LiveKit Cloud agent + Vercel), README polish, Loom. Video rail cut.
+SPEED MODE (user records the demo tonight). One audit per task; fix rounds are verified by the planner, not re-audited. Cut: task 14 automated E2E driver, task 04 harness merge, status-panel metrics beyond "—", video rail.
+Next: deploy (LiveKit Cloud agent + Vercel), README polish, Loom. Speech-paced plays merged; not yet verified in a live room.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -22,6 +22,7 @@ Running: speech-paced play motion (ADR-029, Grok 4.7). Next: deploy (LiveKit Clo
 - 12 Hardwood merged: fixed 16:9 stage, large type, slide push, play captions/ghosts, unscaled 44px controls. Planner reviewed r2 stills (slide 5 strip, full-width push, play steps 2/4, three control viewports, portrait rotate hint). `pnpm test` 79 passed.
 - 13A handoff core merged: `call_head_coach`, private briefing, clicker switch, floor router, camera grants; 117 agent tests.
 - 13B coach UI merged: player QR + copyable join link, Hardwood `/coach` with private briefing, live clicker + leave recovery. Video rail cut. `pnpm test` 90 passed. Live room: coach `show_slide` s2 136 ms, highlight 410 ms; player command after coach intact (no ADR-028 fallback).
+- Speech-paced play motion merged (ADR-029): captioned `run_play` steps advance only while `lk.agent.state` is `speaking`. Scripted stills at 5s stay on "Tag the roller behind" vs wall-clock last step. Player and coach pass the speaking flag; `/lab` stays wall-clock. Not live-mic verified.
 
 ## Next
 | Wave | Tasks | Gate |
