@@ -1,6 +1,6 @@
 # Chalk Talk — architecture and contracts
 
-Status: design. Items marked `[UNVERIFIED - check LiveKit docs]` must be confirmed with the LiveKit docs MCP before use. Contracts here are the source of truth for both agent and web code. Change them only through the planner, and log the change in `DECISIONS.md`.
+Status: design. Items marked `[UNVERIFIED - check LiveKit docs]` must be confirmed with the LiveKit docs MCP before use. Items marked `[VERIFIED]` were checked with `lk docs` (search, get-page, code-search) against livekit-agents 1.8.8 docs; the source is named inline. Contracts here are the source of truth for both agent and web code. Change them only through the planner, and log the change in `DECISIONS.md`.
 
 ## System diagram
 ```mermaid
@@ -50,7 +50,7 @@ Deck single source: the planner decides how web gets the deck (shared JSON file 
 ### Participant identities and attributes
 | Key | Set by | Values | Notes |
 |---|---|---|---|
-| `role` | Token route (token attributes) | `player` \| `coach` | The agent finds participants by this. Never by join order. `[UNVERIFIED - check LiveKit docs]` exact token API for initial attributes (`AccessToken` attributes field). |
+| `role` | Token route (token attributes) | `player` \| `coach` | The agent finds participants by this. Never by join order. `[VERIFIED]` `AccessToken` options take `attributes?: Record<string, string>` (`livekit-server-sdk` `AccessToken.ts`); docs: initial attribute values can be set in the token. Human tokens must NOT get `canUpdateOwnMetadata`, or a client could rewrite its own `role` (participant-attributes doc). |
 | `current_slide` | Agent (`local_participant.set_attributes`) | slide id string, e.g. `s3_kyrie` | Late joiners and reconnects render from this. |
 | `slide_seq` | Agent | integer as string | Seq of the last acked slide. |
 | `overlay_state` | Agent | JSON string, see [Overlay state](#overlay-state) | Current board overlays. Set only after an ack. Cleared in the same `set_attributes` call that changes `current_slide`. |
@@ -178,7 +178,7 @@ Note: the user brief says `show_slide(slide_id, seq)`. Seq is owned by the agent
 
 Board tools are a fixed menu. The model only picks enum ids (and short instruction text for callouts). It never sends coordinates, layout, colors or markup. There is no clear tool: overlays clear on slide change, and limits drop the oldest item.
 
-Tool execution order: every tool that sends an RPC runs under one agent-side `asyncio.Lock`, in call order. A `highlight` that follows a `show_slide` in the same model response is checked against the slide after that `show_slide` acked. Whether `livekit-agents` runs parallel function calls concurrently: `[UNVERIFIED - check LiveKit docs]`. The lock makes this safe either way.
+Tool execution order: every tool that sends an RPC runs under one agent-side `asyncio.Lock`, in call order. A `highlight` that follows a `show_slide` in the same model response is checked against the slide after that `show_slide` acked. Whether `livekit-agents` runs parallel function calls concurrently: not stated in the docs (`function_tools_executed` reports a batch; execution order not documented). Treated as possibly concurrent. The lock makes this safe either way. Spike 2 logs the observed order.
 
 Seq: one agent-owned counter for all agent -> player commands (`show_slide`, `highlight`, `run_play`, `add_callout`). The browser keeps one `last_applied_seq`. See ADR-016.
 
@@ -222,7 +222,7 @@ On an applied slide change the browser clears all overlays (highlights, play, ca
 Ack: `{"ok": true}`
 
 Board methods (destination: player identity). Common rules:
-- `slide_id` is the slide the agent believes is on screen. If it differs from the browser's current slide, throw `RpcError` 1007.
+- `slide_id` is the slide the agent believes is on screen. If it differs from the browser's current slide, throw `RpcError` 2007.
 - Stale `seq` (<= last applied seq): ack `{"ok": true, "seq": N, "applied": false, "reason": "stale"}` and do not render.
 - The browser validates ids against the same deck data and throws `RpcError` on bad input.
 - Ack after the change is painted (same method as `show_slide`).
@@ -289,15 +289,15 @@ Applied in the agent before the RPC and again in the browser (defense in depth).
 Errors: throw `RpcError` (never return an "Error:" string).
 | Code | Meaning |
 |---|---|
-| 1001 | unknown slide_id |
-| 1002 | malformed payload (bad JSON or schema) |
-| 1003 | not ready (deck not mounted) |
-| 1004 | unknown target, or target not on this slide |
-| 1005 | callout rejected by the callout rule |
-| 1006 | unknown play_id, or play does not belong to slide_id |
-| 1007 | slide mismatch (payload slide_id is not the slide on screen) |
+| 2001 | unknown slide_id |
+| 2002 | malformed payload (bad JSON or schema) |
+| 2003 | not ready (deck not mounted) |
+| 2004 | unknown target, or target not on this slide |
+| 2005 | callout rejected by the callout rule |
+| 2006 | unknown play_id, or play does not belong to slide_id |
+| 2007 | slide mismatch (payload slide_id is not the slide on screen) |
 
-LiveKit reserves built-in codes (e.g. timeout, unsupported method) `[UNVERIFIED - check LiveKit docs]` for exact numbers; keep app codes in the 1000+ range.
+`[VERIFIED]` (RPC doc, "Errors"): codes 1001-1999 are reserved for LiveKit. App codes therefore use 2001-2007 (ADR-020). Built-in codes the agent must map to a failure string: 1400 unsupported method, 1401 recipient not found, 1500 application error (any non-`RpcError` throw), 1501 connection timeout, 1502 response timeout, 1503 recipient disconnected, 1505 send failed. Default `response_timeout` is 10 s; we set about 3 s.
 
 Ack timing: the browser acks after the slide is committed to the screen (after next paint). Planner decides the exact method (e.g. `requestAnimationFrame`) in the RPC spike. Board methods use the same method; `run_play` acks after the first animation frame.
 
@@ -306,9 +306,9 @@ Choice (ADR-016): the player gets board changes as acked RPC. The agent then mir
 
 Rules:
 - The agent is the only writer. It writes `overlay_state` only after an ack with `applied: true`.
-- On an applied `show_slide`, the agent sets `current_slide`, `slide_seq` and a cleared `overlay_state` in one `set_attributes` call. Whether one call is delivered as one atomic update: `[UNVERIFIED - check LiveKit docs]`. The browser renders overlays only when `overlay_state.slide_id` equals `current_slide`, so a split update is harmless.
+- On an applied `show_slide`, the agent sets `current_slide`, `slide_seq` and a cleared `overlay_state` in one `set_attributes` call. Whether one call is delivered as one atomic update: not stated in the docs (they say each key updates without sending the others). The browser renders overlays only when `overlay_state.slide_id` equals `current_slide`, so a split update is harmless.
 - The value stores ids only, no geometry. Both pages look up geometry, captions and fact text in the deck and facts data.
-- Attribute size limits: `[UNVERIFIED - check LiveKit docs]`. The capped value (2 highlights, 1 play, 3 callouts of at most 60 characters) is well under 1 KB.
+- Attribute size limits: `[VERIFIED]` 64 KiB combined across all keys and values (participant-attributes doc, "Size limits"). The agent has the right to set its own attributes. The capped value (2 highlights, 1 play, 3 callouts of at most 60 characters) is well under 1 KB.
 
 Schema:
 ```json
@@ -352,7 +352,7 @@ Rendering from the attribute (coach page, and player page on reconnect):
 | `lk.transcription` | built in | all | Live transcripts for the panel |
 | `chalk-talk-events` (optional) | agent -> player | player | Panel events: slide trace, interruption, handoff timeline. Planner may use attributes instead. |
 
-`send_text(..., topic=..., destination_identities=[...])` is documented for text streams. Confirm Python signature `[UNVERIFIED - check LiveKit docs]`.
+`send_text(..., topic=..., destination_identities=[...])` is documented for text streams. `[VERIFIED]` Python: `await room.local_participant.send_text(text, *, topic=..., destination_identities=[...])` is keyword-only (`livekit-rtc` `participant.py`). Executor confirms the exact keyword list in the installed version.
 
 ### Agent modes and the switch
 | Mode | Instructions (substance) | Listens to |
@@ -367,7 +367,7 @@ Exact switch trigger: the agent sees a participant join with `role=coach` (event
 2. `send_text` the briefing to the coach only.
 3. Say the one handoff line ("Coach, they're worried about Kyrie. We're on slide 3.").
 4. Update instructions to clicker mode (`agent.update_instructions(...)`). Set attribute `mode=clicker`.
-5. Switch audio input to the coach: `session.room_io.set_participant(coach_identity)`. This method is documented (sessions doc, turns doc, `toggle_io.py` example). Behavior with GPT Realtime and whether two humans can be heard at once: `[UNVERIFIED - Spike 1]`.
+5. Switch audio input to the coach: `session.room_io.set_participant(coach_identity)`. This method is documented (sessions doc, turns doc, `toggle_io.py` example). `[VERIFIED]` signature: `RoomIO.set_participant(participant_identity: str | None)`, "Switch audio and video streams to specified participant" (`room_io.py`). It takes one identity, so the agent hears one human at a time. Behavior mid-session with GPT Realtime: `[UNVERIFIED - Spike 1]`.
 
 If a coach joins without a handoff request: still brief and switch (the link only exists after the request, so this is unlikely).
 
@@ -462,7 +462,7 @@ sequenceDiagram
   M->>A: audio answer about Kyrie
   A->>P: audio answer
 ```
-Truncation is done by LiveKit Agents and the OpenAI plugin. Verify in logs, do not hand-roll. `[UNVERIFIED - check LiveKit docs]` how to read the heard text for the panel (transcription stream vs session events).
+Truncation is done by LiveKit Agents and the OpenAI plugin. Verify in logs, do not hand-roll. Heard text for the panel: `conversation_item_added` gives each committed `ChatMessage`; the message has an `interrupted` flag (`chat_context.py`), and after truncation its text is what was played. `[UNVERIFIED - Spike 2]` that the realtime path fills the truncated text; verify in logs.
 
 ## Sequence: handoff
 ```mermaid
@@ -499,5 +499,5 @@ sequenceDiagram
 
 ## Observability for the panel
 - Turn state from `lk.agent.state`.
-- Latency per turn from session metrics events `[UNVERIFIED - check LiveKit docs]` for the realtime model fields.
+- Latency per turn: `[VERIFIED]` livekit-agents 1.8.7 adds realtime `e2e_latency` (last user speech to first agent playback) in `event.item.metrics` on `conversation_item_added` for assistant messages, when local VAD is configured (changelog 1.8.7). Show "—" when absent.
 - Slide trace, board trace (tool, ids, ack or failure reason, round trip) and handoff timeline from agent-sent events.

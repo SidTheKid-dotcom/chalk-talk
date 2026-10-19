@@ -28,7 +28,8 @@ Only links found in our research or checked while writing this scaffold. Prefer 
 | React starter app | https://docs.livekit.io/frontends/start/starter-apps/react.md |
 | Token endpoints | https://docs.livekit.io/frontends/build/authentication/endpoint.md |
 | Agent dispatch | https://docs.livekit.io/agents/server/agent-dispatch.md |
-| Testing agents | https://docs.livekit.io/agents/start/testing/ `[UNVERIFIED path]` |
+| Testing agents (unit tests) | https://docs.livekit.io/testing/unit-tests/ |
+| CLI docs access | `lk docs search`, `lk docs get-page`, `lk docs code-search`, `lk docs changelog livekit/agents` |
 | Quotas and limits | https://docs.livekit.io/deploy/admin/quotas-and-limits.md |
 | Pricing | https://livekit.com/pricing |
 | KB: fixed participant for agent audio | https://kb.livekit.io/articles/8350195063-how-to-set-a-fixed-participant-for-agent-audio-processing |

@@ -5,7 +5,7 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 ## Spike 1: Agent hears the coach after handoff (highest risk)
 - **Question:** Can the agent switch its audio input from the player to the coach mid-session, with GPT Realtime as the model?
 - **Known:** `AgentSession` links to one participant (default: the first to join). `RoomIO.set_participant(identity)` and `session.room_io.set_participant(...)` are documented in Python (sessions doc, turns doc, `livekit/agents` `examples/voice_agents/toggle_io.py`).
-- **Unknown:** Does it work cleanly with the realtime model mid-session? Can the agent hear both humans at once, or only one? `[UNVERIFIED]`
+- **Unknown:** Does it work cleanly with the realtime model mid-session? Can the agent hear both humans at once? `[VERIFIED]` No: `set_participant` takes one identity, so the agent hears one human at a time. Fallback A is the expected design. Unknown: clean switch mid-session with GPT Realtime. `[UNVERIFIED]`
 - **Test:** Room with two browser tabs (player, coach). After a trigger, call `set_participant(coach_identity)`. Coach says "Assistant, show the Kyrie slide."
 - **Pass:** Agent responds to the coach's speech and calls `show_slide`. No crash. Agent ignores the player's audio (or hears both, note which).
 - **Fail fallback A:** Agent listens only to the coach after handoff (acceptable).
@@ -13,17 +13,18 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 
 ## Spike 2: GPT Realtime calls show_slide before speaking
 - **Question:** Does the model call `show_slide` before talking about the slide?
-- **Known:** Realtime models can speak and then call a tool in the same response. The RPC ack blocks the tool result, not audio already produced. LiveKit has `ToolHandlingOptions(tool_reply_after_audio="skip")` to avoid double replies (from research; confirm in docs) `[UNVERIFIED]`.
+- **Known:** Realtime models can speak and then call a tool in the same response. The RPC ack blocks the tool result, not audio already produced. `ToolHandlingOptions(tool_reply_after_audio="skip")`: not found in livekit/agents code search; treat as not existing. Reply control that does exist (events doc): a tool that returns nothing or raises `StopResponse` gets no reply; `FunctionToolsExecutedEvent.cancel_tool_reply()` suppresses the auto reply. Model: `openai/gpt-realtime-2.1` is listed as turn-based on LiveKit Inference (realtime models doc).
 - **Test:** Strict instruction ("call show_slide first, then speak; never describe a slide before the tool result"). Run 20 routing questions in text or audio, 3 times. Log order of first audio vs tool call.
 - **Board tools:** Run the test twice: with `show_slide` and `call_head_coach` only, then with all five tools. Include the `run_play` items. Log the order of first play-specific audio vs the `run_play` call.
 - **Pass:** Tool call comes before slide-specific speech in nearly all runs. Planner sets the bar and records the measured rate.
 - **Fail fallback:** Swap to an STT-LLM-TTS pipeline (one config change plus STT and TTS models). Keep tools and RPC unchanged.
+- **Noted, not planned:** GPT-Live 1 (`openai/gpt-live-1`, added in livekit-agents 1.8.8) sends tool decisions to a backend model and speaks after the tool batch has results (GPT-Live doc). It might fix tool order, but it is full-duplex and append-only context, so interruption and truncation behave differently. Consider only if the pipeline fallback also fails.
 
 ## Spike 3: RPC show_slide round trip with ack and seq
 - **Question:** Does `perform_rpc` to the player identity return an ack after render, with timeout and stale-seq handling?
 - **Test:** Agent calls `show_slide` 10 times with increasing seq, plus one stale seq and one unknown slide id. Kill the player tab for one call.
 - **Board methods:** Repeat with `highlight`, `run_play` and `add_callout`: one stale seq, one unknown id, one slide mismatch, one rejected callout. Join a coach tab mid-play and check `overlay_state` renders.
-- **Pass:** Acks return with `applied` true or false as expected. Stale seq does not render. Unknown id raises `RpcError` 1001. Board errors raise 1004-1007 as in `docs/ARCHITECTURE.md`. Dead tab gives a timeout and the tool returns a failure string. Round trip measured and logged.
+- **Pass:** Acks return with `applied` true or false as expected. Stale seq does not render. Unknown id raises `RpcError` 2001. Board errors raise 2004-2007 as in `docs/ARCHITECTURE.md`. Dead tab gives a timeout and the tool returns a failure string. Round trip measured and logged.
 - **Fail fallback:** If ack after paint is slow, ack after state commit and note it.
 
 ## Risk 4: Free-tier cold start
@@ -39,7 +40,7 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 - **Mitigation:** Handle deliberately in the token route task. Keep role validation.
 
 ## Risk 7: Agent speaks in clicker mode when not addressed
-- **Mitigation:** Clicker instructions plus eval items for "not addressed" turns. If it still talks, disable audio output in clicker mode except for name-addressed turns `[UNVERIFIED]` best API.
+- **Mitigation:** Clicker instructions plus eval items for "not addressed" turns. If it still talks, disable audio output in clicker mode except for name-addressed turns. API exists: `session.output.set_audio_enabled(bool)` (text-and-transcriptions doc). Deciding when to re-enable it is the hard part.
 
 ## Risk 8: Unsourced facts
 - **Mitigation:** `FACTS.md` gate. A slide fact without verified = y does not ship.
@@ -55,6 +56,6 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 - **Fallback:** If speech and motion drift badly, ack at the end of the play and narrate after. Accept the extra pause.
 
 ## Risk 11: Coach screen out of sync with the player
-- **Risk:** The coach renders overlays from the `overlay_state` attribute with no ack. Attribute delay, size limits or split updates `[UNVERIFIED]` could show a stale or missing overlay.
+- **Risk:** The coach renders overlays from the `overlay_state` attribute with no ack. Attribute delay or split updates could show a stale or missing overlay.
 - **Mitigation:** Ids only, capped size. Render overlays only when `overlay_state.slide_id` equals `current_slide`. Test with the coach joining mid-play and after a callout. See ADR-016.
 - **Fallback:** RPC to both identities with two acks.

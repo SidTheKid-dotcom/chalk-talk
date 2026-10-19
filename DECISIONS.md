@@ -111,7 +111,7 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Decision:** Board changes go to the player as RPC with an ack. After `applied: true`, the agent writes the result into its own participant attribute `overlay_state` (JSON, ids only). The coach page and late joiners render from the attribute. One agent-owned `seq` covers all agent -> player commands. A slide change writes the new slide and a cleared `overlay_state` in one `set_attributes` call.
 - **Why:** Same pattern as ADR-006 and ADR-008: RPC is the command with an ack that gates narration, the attribute is state of record. Late joiners and reconnects get the current board for free. One counter makes order clear across methods, so a stale highlight cannot land on a newer slide.
 - **Rejected:** RPC broadcast to both identities (two acks per change; what to do when only one acks; a late joiner needs a replay of past commands). Room metadata or room attributes (set through the server API, a second state surface next to `current_slide`, write rights `[UNVERIFIED]`; no gain over the agent attribute). Attribute only, no RPC (no ack, so the agent could narrate a board the player never saw). A data packet or text stream to both (no ack, no state for late joiners).
-- **Cost:** The coach's animation starts when the attribute arrives, so it is not frame-synced with the player's. The coach is not acked: a coach rendering bug fails silently. Attribute size and atomic update behavior are `[UNVERIFIED]`; the value is capped small, and the browser ignores overlays whose `slide_id` differs from `current_slide`.
+- **Cost:** The coach's animation starts when the attribute arrives, so it is not frame-synced with the player's. The coach is not acked: a coach rendering bug fails silently. Attribute size is limited to 64 KiB total (verified); atomic update is not documented; the value is capped small, and the browser ignores overlays whose `slide_id` differs from `current_slide`.
 - **Revisit:** If the coach lag is visible in the Loom, or if the coach ever needs to be guaranteed in sync (e.g. a regulated audit of what each party saw), send RPC to both and ack both.
 
 ## ADR-017: Callout guardrail
@@ -127,3 +127,28 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Rejected:** Getty, AP, NBA.com or news photos (no reuse license). Committing the meme (not licensable). A new `show_card` tool (one more tool for one beat; more wrong-tool risk).
 - **Cost:** Some photos are from other seasons than 2016 (see `CREDITS.md`). Background removal edges are imperfect at small sizes. The public build shows the fallback card, not the meme.
 - **Revisit:** If a licensed photo from the 2015-16 season appears for a player, swap it in and update `CREDITS.md`.
+
+## ADR-019: One deck source, generated copies for each deploy
+- **Decision:** `deck/deck.json` is the only hand-edited deck file. `deck/facts.json` is generated from `FACTS.md` by `scripts/build_facts.py` (verified rows only). `scripts/sync_deck.py` copies both into `agent/data/` and `web/lib/deck/`. The copies are committed. `scripts/sync_deck.py --check` fails if a copy differs from the source, and both test suites run it.
+- **Why:** The agent builds on LiveKit Cloud from `agent/` and the frontend builds on Vercel from `web/`. Neither build reliably sees files outside its folder. Committed copies with a check keep one source without depending on monorepo build settings.
+- **Rejected:** Import `../deck` from both sides (breaks isolated builds). Hand-kept copies (drift). Serving the deck over RPC or attributes (the browser needs geometry before the agent connects).
+- **Cost:** A sync step. Forgetting it fails the check, not the demo.
+- **Revisit:** If both deploys move to one monorepo build.
+
+## ADR-020: App RPC error codes 2001-2007
+- **Decision:** App `RpcError` codes move from 1001-1007 to 2001-2007. Meanings are unchanged.
+- **Why:** The LiveKit RPC doc reserves 1001-1999 for LiveKit internal errors (verified with `lk docs`, RPC page, "Errors"). Our planned codes collided.
+- **Rejected:** Keep 1001-1007 (could be confused with built-in errors such as 1500 or 1502).
+- **Cost:** None. Nothing was built.
+
+## ADR-021: Spikes land on the real scaffold
+- **Decision:** Spikes run on the real `agent/` and `web/` setup. Spike 3's RPC client and browser handler are written as production code with tests, and are kept if the auditor approves. Spike 2's measurement harness lives in `evals/spikes/` and is not in the demo path.
+- **Why:** The RPC ack path is core code in every later task. Writing it twice wastes effort.
+- **Rejected:** Throwaway branches for every spike (`docs/RISKS.md` default).
+- **Cost:** Spike code gets a full review. If a spike fails, its code is reverted before the fallback.
+
+## ADR-022: Own role-checked token route; human tokens cannot edit attributes
+- **Decision:** Replace the starter's token route with `POST /api/token` per `docs/ARCHITECTURE.md#token-route`. Player and coach tokens do not get `canUpdateOwnMetadata`. The `role` attribute is set in the token.
+- **Why:** The participant-attributes doc says a participant with `canUpdateOwnMetadata` can update its own attributes. A player could then claim `role=coach`. The starter's production guard exists because its route mints open tokens; a role-checked route with short TTL and no admin grants is the deliberate fix, not a deleted guard.
+- **Rejected:** Patch the starter route (keeps its open shape). Deleting the guard without a replacement.
+- **Cost:** The browser cannot set its own attributes. Not needed: the agent owns all state.
