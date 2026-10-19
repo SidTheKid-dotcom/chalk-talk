@@ -1,0 +1,412 @@
+{
+  "players": {
+    "gsw_curry": {"label": "Curry", "team": "gsw"},
+    "gsw_thompson": {"label": "K. Thompson", "team": "gsw"},
+    "gsw_green": {"label": "Green", "team": "gsw"},
+    "gsw_iguodala": {"label": "Iguodala", "team": "gsw"},
+    "gsw_barnes": {"label": "Barnes", "team": "gsw"},
+    "cle_james": {"label": "James", "team": "cle"},
+    "cle_irving": {"label": "Irving", "team": "cle"},
+    "cle_love": {"label": "Love", "team": "cle"},
+    "cle_smith": {"label": "Smith", "team": "cle"},
+    "cle_tthompson": {"label": "T. Thompson", "team": "cle"}
+  },
+  "zones": {
+    "z_paint": {"label": "Paint", "shape": "rect", "box": [34, 0, 66, 38]},
+    "z_top_key": {"label": "Top of the key", "shape": "rect", "box": [40, 52, 60, 66]},
+    "z_left_wing": {"label": "Left wing", "shape": "rect", "box": [8, 36, 28, 58]},
+    "z_right_wing": {"label": "Right wing", "shape": "rect", "box": [72, 36, 92, 58]},
+    "z_left_corner": {"label": "Left corner", "shape": "rect", "box": [0, 0, 16, 22]},
+    "z_right_corner": {"label": "Right corner", "shape": "rect", "box": [84, 0, 100, 22]},
+    "z_left_elbow": {"label": "Left elbow", "shape": "rect", "box": [28, 38, 40, 50]},
+    "z_right_elbow": {"label": "Right elbow", "shape": "rect", "box": [60, 38, 72, 50]},
+    "z_high_post": {"label": "High post", "shape": "rect", "box": [40, 38, 60, 50]}
+  },
+  "slides": [
+    {
+      "id": "s1_tipoff",
+      "number": 1,
+      "section": "Tip-off",
+      "title": "Tip-off: tonight and the three keys",
+      "points": [
+        "The series is tied. We close at home.",
+        "Keys: their best player, their isolation guard, our shooters.",
+        "Ask anything. The board follows the question."
+      ],
+      "notes": "Welcome them as a player in the room before the last game. The series is even and we are at home. Preview the three keys that map to the next slides: stop their best player, contain their isolation guard, and get our shooters going while watching the swing factors. Invite questions.",
+      "fact_ids": ["F01", "F08", "F14"],
+      "cutouts": [
+        "stephen-curry.png",
+        "klay-thompson.png",
+        "draymond-green.png",
+        "andre-iguodala.png",
+        "harrison-barnes.png",
+        "lebron-james.png",
+        "kyrie-irving.png",
+        "kevin-love.png",
+        "jr-smith.png",
+        "tristan-thompson.png"
+      ],
+      "diagram": null,
+      "cards": []
+    },
+    {
+      "id": "s2_lebron",
+      "number": 2,
+      "section": "Stop LeBron",
+      "title": "How do we stop LeBron?",
+      "points": [
+        "Iguodala is the primary. Green helps at the nail.",
+        "Blitz the pick-and-roll. Make someone else beat us.",
+        "Do not give him a straight line to the rim."
+      ],
+      "notes": "Primary is Iguodala on James. Green is the helper. When the screen comes at the top we trap the ball, tag the roller, and rotate the weak side. The thing we do not allow is a downhill drive to the paint. Board play is the blitz.",
+      "fact_ids": ["F06", "F07", "F12", "F16"],
+      "cutouts": ["lebron-james.png"],
+      "diagram": {
+        "kind": "half_court",
+        "markers": {
+          "cle_james": [50, 70],
+          "cle_irving": [78, 50],
+          "cle_love": [22, 42],
+          "cle_smith": [8, 12],
+          "cle_tthompson": [62, 58],
+          "gsw_iguodala": [50, 64],
+          "gsw_green": [48, 40],
+          "gsw_thompson": [74, 48],
+          "gsw_curry": [14, 16],
+          "gsw_barnes": [28, 40]
+        },
+        "matchups": {
+          "gsw_iguodala": "cle_james",
+          "gsw_thompson": "cle_irving",
+          "gsw_green": "cle_tthompson",
+          "gsw_barnes": "cle_love",
+          "gsw_curry": "cle_smith"
+        },
+        "zones": ["z_paint", "z_top_key", "z_left_wing", "z_right_wing", "z_left_corner", "z_right_corner"]
+      },
+      "cards": []
+    },
+    {
+      "id": "s3_kyrie",
+      "number": 3,
+      "section": "Kyrie iso",
+      "title": "Kyrie in isolation: who guards him and how",
+      "points": [
+        "Thompson takes him on the wing. Switch the screen.",
+        "Stay in front after the switch. No panic help.",
+        "Help stays home on the shooters."
+      ],
+      "notes": "Irving wants isolation on the wing. Thompson is the first body. We switch the screen so the new defender stays in front. Help stays home on the shooters; do not crash and leave a corner. Board play is the switch.",
+      "fact_ids": ["F09", "F16"],
+      "cutouts": ["kyrie-irving.png"],
+      "diagram": {
+        "kind": "half_court",
+        "markers": {
+          "cle_irving": [82, 48],
+          "cle_james": [22, 50],
+          "cle_love": [50, 36],
+          "cle_smith": [8, 12],
+          "cle_tthompson": [92, 12],
+          "gsw_thompson": [76, 46],
+          "gsw_iguodala": [26, 46],
+          "gsw_green": [50, 32],
+          "gsw_barnes": [88, 16],
+          "gsw_curry": [12, 16]
+        },
+        "matchups": {
+          "gsw_thompson": "cle_irving",
+          "gsw_iguodala": "cle_james",
+          "gsw_green": "cle_love",
+          "gsw_barnes": "cle_tthompson",
+          "gsw_curry": "cle_smith"
+        },
+        "zones": ["z_top_key", "z_left_wing", "z_right_wing", "z_left_elbow", "z_right_elbow", "z_paint"]
+      },
+      "cards": []
+    },
+    {
+      "id": "s4_offense",
+      "number": 4,
+      "section": "Our offense",
+      "title": "Our offense: Steph and Klay off screens, Draymond as playmaker",
+      "points": [
+        "Stagger Curry. Let him catch and shoot or hit the slip.",
+        "When they trap the ball, Green is the short-roll hub.",
+        "Look lob, corner, or a drive from the nail."
+      ],
+      "notes": "Offense is screens for the shooters and Green as the playmaker. Curry starts low and runs a stagger. If they trap Curry, he finds Green in the high post and Green plays the short roll: lob, corner, or drive. Look for that early.",
+      "fact_ids": ["F10", "F11"],
+      "cutouts": ["stephen-curry.png", "draymond-green.png", "klay-thompson.png"],
+      "diagram": {
+        "kind": "half_court",
+        "markers": {
+          "gsw_curry": [20, 14],
+          "gsw_iguodala": [30, 28],
+          "gsw_green": [40, 46],
+          "gsw_thompson": [50, 62],
+          "gsw_barnes": [90, 12],
+          "cle_irving": [26, 12],
+          "cle_love": [34, 22],
+          "cle_james": [42, 38],
+          "cle_smith": [50, 54],
+          "cle_tthompson": [82, 14]
+        },
+        "matchups": {
+          "cle_irving": "gsw_curry",
+          "cle_love": "gsw_iguodala",
+          "cle_james": "gsw_green",
+          "cle_smith": "gsw_thompson",
+          "cle_tthompson": "gsw_barnes"
+        },
+        "zones": ["z_top_key", "z_left_wing", "z_right_wing", "z_left_corner", "z_right_corner", "z_high_post", "z_paint"]
+      },
+      "cards": []
+    },
+    {
+      "id": "s5_xfactors",
+      "number": 5,
+      "section": "X-factors",
+      "title": "X-factors: Love, bench, fouls, pace",
+      "points": [
+        "Love had a big Game One, then sat Game Three.",
+        "Green is back. Stay out of foul trouble.",
+        "Bench and pace can decide it if the stars cancel."
+      ],
+      "notes": "Walk the swing factors. Love was productive in Game One and inactive in Game Three. Green missed a game under suspension and then played with fouls; we need him on the floor. Our bench can swing it. We can push; our regular-season pace was high. No court on this slide.",
+      "fact_ids": ["F13", "F15", "F17", "F18", "F19"],
+      "cutouts": [
+        "kevin-love.png",
+        "shaun-livingston.png",
+        "andre-iguodala.png",
+        "festus-ezeli.png"
+      ],
+      "diagram": null,
+      "cards": []
+    },
+    {
+      "id": "s6_last_two",
+      "number": 6,
+      "section": "Last two minutes",
+      "title": "The last two minutes",
+      "points": [
+        "Late-game calls belong to the head coach.",
+        "Know the score and the clock.",
+        "Ask if you want him in the room."
+      ],
+      "notes": "This decision belongs to the head coach. Offer to call him. If they ask about the clock, the score, or closing, reveal the JR card after it acks and say one short line: know the score and the clock. Don't be JR. At most once. The card is a later-year joke; it does not speak to this series result.",
+      "fact_ids": ["F08"],
+      "cutouts": [],
+      "diagram": {
+        "kind": "half_court",
+        "markers": {},
+        "zones": [
+          "z_paint",
+          "z_top_key",
+          "z_left_wing",
+          "z_right_wing",
+          "z_left_corner",
+          "z_right_corner",
+          "z_left_elbow",
+          "z_right_elbow",
+          "z_high_post"
+        ]
+      },
+      "cards": [
+        {
+          "id": "k_jr_card",
+          "hidden": true,
+          "caption": "Know the score. Don't be JR."
+        }
+      ]
+    }
+  ],
+  "plays": [
+    {
+      "id": "p_blitz_lebron_pnr",
+      "slide_id": "s2_lebron",
+      "title": "Blitz the LeBron pick-and-roll",
+      "steps": [
+        {
+          "caption": "Screen comes at the top",
+          "duration_ms": 1200,
+          "ball": "cle_james",
+          "moves": {"cle_tthompson": [56, 70]},
+          "arrows": [{"from": "cle_tthompson", "to": [56, 70], "kind": "screen"}]
+        },
+        {
+          "caption": "Both defenders trap the ball",
+          "duration_ms": 1200,
+          "action": "trap",
+          "ball": "cle_james",
+          "moves": {"gsw_green": [54, 74], "gsw_iguodala": [46, 74]},
+          "arrows": [
+            {"from": "gsw_green", "to": [54, 74], "kind": "rotate"},
+            {"from": "gsw_iguodala", "to": [46, 74], "kind": "rotate"}
+          ]
+        },
+        {
+          "caption": "Tag the roller behind",
+          "duration_ms": 1200,
+          "ball": "cle_james",
+          "moves": {"cle_tthompson": [58, 32], "gsw_barnes": [58, 40]},
+          "arrows": [
+            {"from": "cle_tthompson", "to": [58, 32], "kind": "cut"},
+            {"from": "gsw_barnes", "to": [58, 40], "kind": "rotate"}
+          ]
+        },
+        {
+          "caption": "Weak side rotates home",
+          "duration_ms": 1400,
+          "ball": "cle_james",
+          "moves": {"gsw_curry": [28, 28]},
+          "arrows": [{"from": "gsw_curry", "to": [28, 28], "kind": "rotate"}]
+        }
+      ]
+    },
+    {
+      "id": "p_switch_kyrie",
+      "slide_id": "s3_kyrie",
+      "title": "Switch everything on Kyrie",
+      "steps": [
+        {
+          "caption": "Screen comes for Irving",
+          "duration_ms": 1200,
+          "ball": "cle_irving",
+          "moves": {"cle_love": [70, 50]},
+          "arrows": [{"from": "cle_love", "to": [70, 50], "kind": "screen"}]
+        },
+        {
+          "caption": "Defenders switch the action",
+          "duration_ms": 1200,
+          "ball": "cle_irving",
+          "moves": {"gsw_green": [80, 46], "gsw_thompson": [68, 48]},
+          "arrows": [
+            {"from": "gsw_green", "to": [80, 46], "kind": "rotate"},
+            {"from": "gsw_thompson", "to": [68, 48], "kind": "rotate"}
+          ]
+        },
+        {
+          "caption": "Stay in front after the switch",
+          "duration_ms": 1200,
+          "ball": "cle_irving",
+          "moves": {"cle_irving": [80, 40], "gsw_green": [77, 35]},
+          "arrows": [{"from": "cle_irving", "to": [80, 40], "kind": "dribble"}]
+        },
+        {
+          "caption": "Help stays home on shooters",
+          "duration_ms": 1000,
+          "ball": "cle_irving",
+          "moves": {},
+          "arrows": []
+        }
+      ]
+    },
+    {
+      "id": "p_steph_stagger",
+      "slide_id": "s4_offense",
+      "title": "Steph off a staggered screen",
+      "steps": [
+        {
+          "caption": "Curry starts low",
+          "duration_ms": 800,
+          "ball": "gsw_thompson",
+          "moves": {},
+          "arrows": []
+        },
+        {
+          "caption": "He runs off staggered screens",
+          "duration_ms": 1400,
+          "ball": "gsw_thompson",
+          "moves": {
+            "gsw_curry": [36, 42],
+            "gsw_iguodala": [32, 26],
+            "gsw_green": [38, 44]
+          },
+          "arrows": [
+            {"from": "gsw_curry", "to": [36, 42], "kind": "cut"},
+            {"from": "gsw_iguodala", "to": [32, 26], "kind": "screen"},
+            {"from": "gsw_green", "to": [38, 44], "kind": "screen"}
+          ]
+        },
+        {
+          "caption": "Catch on the wing or top",
+          "duration_ms": 1200,
+          "ball": "gsw_curry",
+          "moves": {"gsw_curry": [22, 52]},
+          "arrows": [
+            {"from": "gsw_thompson", "to": [22, 52], "kind": "pass"},
+            {"from": "gsw_curry", "to": [22, 52], "kind": "cut"}
+          ]
+        },
+        {
+          "caption": "Shoot or hit the slip",
+          "duration_ms": 1200,
+          "ball": "gsw_curry",
+          "moves": {"gsw_iguodala": [50, 26]},
+          "arrows": [{"from": "gsw_iguodala", "to": [50, 26], "kind": "cut"}]
+        }
+      ]
+    },
+    {
+      "id": "p_draymond_short_roll",
+      "slide_id": "s4_offense",
+      "title": "Draymond short-roll 4-on-3",
+      "start": {
+        "ball": "gsw_curry",
+        "positions": {
+          "gsw_curry": [50, 62],
+          "gsw_green": [58, 56],
+          "gsw_thompson": [80, 48],
+          "gsw_iguodala": [12, 14],
+          "gsw_barnes": [90, 12],
+          "cle_irving": [50, 54],
+          "cle_james": [56, 48],
+          "cle_love": [22, 16],
+          "cle_smith": [74, 42],
+          "cle_tthompson": [82, 14]
+        }
+      },
+      "steps": [
+        {
+          "caption": "They trap Curry on the ball",
+          "duration_ms": 1200,
+          "action": "trap",
+          "ball": "gsw_curry",
+          "moves": {
+            "gsw_green": [55, 61],
+            "cle_irving": [46, 59],
+            "cle_james": [54, 59]
+          },
+          "arrows": [
+            {"from": "gsw_green", "to": [55, 61], "kind": "screen"},
+            {"from": "cle_irving", "to": [46, 59], "kind": "rotate"},
+            {"from": "cle_james", "to": [54, 59], "kind": "rotate"}
+          ]
+        },
+        {
+          "caption": "Curry finds Green at the nail",
+          "duration_ms": 1200,
+          "ball": "gsw_green",
+          "moves": {"gsw_green": [50, 38]},
+          "arrows": [
+            {"from": "gsw_curry", "to": [50, 38], "kind": "pass"},
+            {"from": "gsw_green", "to": [50, 38], "kind": "cut"}
+          ]
+        },
+        {
+          "caption": "Look lob, corner, or drive",
+          "duration_ms": 1400,
+          "ball": "gsw_green",
+          "moves": {},
+          "arrows": [
+            {"from": "gsw_green", "to": [12, 14], "kind": "pass", "option": true},
+            {"from": "gsw_green", "to": [90, 12], "kind": "pass", "option": true},
+            {"from": "gsw_green", "to": [50, 10], "kind": "dribble", "option": true}
+          ]
+        }
+      ]
+    }
+  ]
+}

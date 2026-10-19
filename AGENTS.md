@@ -101,6 +101,14 @@ lk agent debugger stop
 # takes real traffic. Set LIVEKIT_AGENT_DEPLOYMENT then.
 ```
 
+Deck and facts (task 02):
+```bash
+python3 scripts/build_facts.py                         # FACTS.md -> deck/facts.json (verified rows only)
+python3 scripts/sync_deck.py                           # copy deck json into agent/data and web/lib/deck
+python3 scripts/sync_deck.py --check                   # fail if a copy drifted
+uv run --with pytest --with jsonschema pytest scripts -v
+```
+
 ## Mistakes to avoid (short list)
 Full list with sources: `docs/MISTAKES-TO-AVOID.md`.
 - No `roomAdmin` in tokens. Role-scoped grants, short TTL, random room.

@@ -1,0 +1,135 @@
+[
+  {
+    "id": "F01",
+    "claim": "2016 NBA Finals: Cleveland Cavaliers vs Golden State Warriors, both listed as #1 seeds.",
+    "slide": "s1_tipoff",
+    "source_url": "https://www.basketball-reference.com/playoffs/2016-nba-finals-cavaliers-vs-warriors.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F02",
+    "claim": "Game 1 (Jun 2): Warriors 104, Cavaliers 89.",
+    "slide": "s1_tipoff",
+    "source_url": "https://www.basketball-reference.com/playoffs/2016-nba-finals-cavaliers-vs-warriors.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F03",
+    "claim": "Game 2 (Jun 5): Warriors 110, Cavaliers 77.",
+    "slide": "s1_tipoff",
+    "source_url": "https://www.basketball-reference.com/playoffs/2016-nba-finals-cavaliers-vs-warriors.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F04",
+    "claim": "Game 3 (Jun 8): Cavaliers 120, Warriors 90.",
+    "slide": "s1_tipoff",
+    "source_url": "https://www.basketball-reference.com/playoffs/2016-nba-finals-cavaliers-vs-warriors.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F05",
+    "claim": "Game 4 (Jun 10): Warriors 108, Cavaliers 97. Warriors led the series 3-1 after Game 4.",
+    "slide": "s1_tipoff",
+    "source_url": "https://www.basketball-reference.com/playoffs/2016-nba-finals-cavaliers-vs-warriors.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F06",
+    "claim": "Game 5 (Jun 13): Cavaliers 112, Warriors 97.",
+    "slide": "s1_tipoff / s2_lebron / s3_kyrie",
+    "source_url": "https://www.basketball-reference.com/boxscores/201606130GSW.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F07",
+    "claim": "Game 6 (Jun 16): Cavaliers 115, Warriors 101. LeBron James scored 41 (game top scorer).",
+    "slide": "s1_tipoff / s2_lebron",
+    "source_url": "https://www.basketball-reference.com/boxscores/201606160CLE.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F08",
+    "claim": "Series tied 3-3 before Game 7. Game 7 on Jun 19 at Golden State.",
+    "slide": "s1_tipoff",
+    "source_url": "https://www.basketball-reference.com/playoffs/2016-nba-finals-cavaliers-vs-warriors.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F09",
+    "claim": "Game 1 top scorer: Kyrie Irving, 26 points.",
+    "slide": "s3_kyrie",
+    "source_url": "https://www.basketball-reference.com/boxscores/201606020GSW.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F10",
+    "claim": "Game 2 top scorer: Draymond Green, 28 points.",
+    "slide": "s4_offense",
+    "source_url": "https://www.basketball-reference.com/playoffs/2016-nba-finals-cavaliers-vs-warriors.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F11",
+    "claim": "Game 4 top scorer: Stephen Curry, 38 points.",
+    "slide": "s4_offense",
+    "source_url": "https://www.basketball-reference.com/playoffs/2016-nba-finals-cavaliers-vs-warriors.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F12",
+    "claim": "Game 3 top scorer: LeBron James, 32 points.",
+    "slide": "s2_lebron",
+    "source_url": "https://www.basketball-reference.com/boxscores/201606080CLE.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F13",
+    "claim": "Kevin Love scored 17 points and grabbed 13 rebounds in 37:21 in Game 1 (Jun 2).",
+    "slide": "s5_xfactors",
+    "source_url": "https://www.basketball-reference.com/boxscores/201606020GSW.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F14",
+    "claim": "2015-16 Golden State Warriors regular-season record: 73-9, finished 1st in NBA Western Conference.",
+    "slide": "s1_tipoff",
+    "source_url": "https://www.basketball-reference.com/teams/GSW/2016.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F15",
+    "claim": "Game 5 (Jun 13): Draymond Green listed as Player Suspended.",
+    "slide": "s5_xfactors",
+    "source_url": "https://www.basketball-reference.com/boxscores/201606130GSW.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F16",
+    "claim": "Game 5 (Jun 13): LeBron James 41 points, Kyrie Irving 41 points.",
+    "slide": "s2_lebron / s3_kyrie",
+    "source_url": "https://www.basketball-reference.com/boxscores/201606130GSW.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F17",
+    "claim": "Game 3 (Jun 8): Kevin Love listed Inactive.",
+    "slide": "s5_xfactors",
+    "source_url": "https://www.basketball-reference.com/boxscores/201606080CLE.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F18",
+    "claim": "Game 6 (Jun 16): Draymond Green 5 personal fouls.",
+    "slide": "s5_xfactors",
+    "source_url": "https://www.basketball-reference.com/boxscores/201606160CLE.html",
+    "source_domain": "www.basketball-reference.com"
+  },
+  {
+    "id": "F19",
+    "claim": "2015-16 Warriors regular-season Pace: 99.3 (2nd of 30).",
+    "slide": "s5_xfactors",
+    "source_url": "https://www.basketball-reference.com/teams/GSW/2016.html",
+    "source_domain": "www.basketball-reference.com"
+  }
+]
