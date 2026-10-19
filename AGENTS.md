@@ -83,15 +83,21 @@ LEARNINGS.md  Surprises and gotchas found while building.
 - Never copy private context into public files.
 
 ## Commands
-TBD by planner after setup. Known first commands:
 ```bash
-curl -sSL https://get.livekit.io/cli | bash     # install lk CLI (or: brew install livekit-cli)
-lk cloud auth                                     # link LiveKit Cloud project
-lk skills install                                 # LiveKit docs MCP + skills for Claude Code and Cursor
-lk agent init agent --template agent-starter-python
-git clone https://github.com/livekit-examples/agent-starter-react web
+# --- task 01: agent + web local run ---
+make agent-dev          # cd agent && lk agent dev
+make web-dev            # cd web && pnpm dev
+make agent-test         # cd agent && uv run pytest
+make web-lint           # cd web && pnpm lint
+make web-typecheck      # cd web && pnpm exec tsc --noEmit
+cd agent && uv sync
+cd web && pnpm install
+lk agent debugger start
+lk agent debugger say "hello"
+lk agent debugger stop
+# CLI 2.19+ registers `lk agent dev` under a random dev- deployment.
+# If the browser cannot reach the local agent, use: cd agent && lk agent dev --deployment production
 ```
-Dev and deploy (from research, confirm): `uv sync`, `lk agent dev`, `lk agent create`, `pnpm dev`.
 
 ## Mistakes to avoid (short list)
 Full list with sources: `docs/MISTAKES-TO-AVOID.md`.

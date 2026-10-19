@@ -11,7 +11,19 @@ _To be written._
 _Live link and demo video: to be added._
 
 ## Run locally
-_To be written._
+Secrets live in `.env` (repo root) and `web/.env.local`. Copy them from the private machine env; never commit them.
+
+```bash
+cd agent && uv sync
+cd web && pnpm install
+make agent-dev      # LiveKit Cloud worker; registers AGENT_NAME from env
+make web-dev        # http://localhost:3000
+make agent-test
+make web-lint
+make web-typecheck
+```
+
+`AGENT_NAME` must match on the agent (`@server.rtc_session(agent_name=...)`) and in `web/.env.local` (starter `agentName` prop). The token route is still the starter's; task 05 replaces it.
 
 ## Architecture
 _Diagram and summary: to be written. Design contracts live in `docs/ARCHITECTURE.md`._
