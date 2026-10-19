@@ -2,6 +2,8 @@
 
 Chalk Talk is a voice AI assistant coach named Floppy. It walks a Warriors player through a six-slide game plan for Game 7 of the 2016 NBA Finals. The slides follow your questions, and you can cut the coach off at any time. When you ask for the head coach, a real person joins the call from a phone, gets a private briefing, and takes over while the AI runs the slides.
 
+![Slide 2, "How do we stop LeBron?": the three keys on the left, both lineups on the half court, and a sourced fact card the agent posted when asked about Game 6](docs/images/stop-lebron-board.jpg)
+
 **Status: work in progress.** This README only describes what is built and verified. Sections below are filled in as the work lands.
 
 ## What it does
@@ -12,6 +14,8 @@ Chalk Talk is a voice AI assistant coach named Floppy. It walks a Warriors playe
 - Refuses unsourced claims on screen: a free-text note with a digit, `%` or a spelled-out number is rejected in the agent and again in the browser.
 - Stops at once when you talk over it (LiveKit Agents handles barge-in and history truncation).
 - Hands off to a human: "Get me the head coach" shows a room-bound join link and QR. A coach on `/coach` gets a private briefing, the agent becomes a quiet clicker, and both screens stay on the same board. If the coach leaves, it returns to the player. Player, coach and any other human in the room appear on a camera rail to the right of the slide, so video never covers the board; the current speaker gets a gold border. The agent has no camera tile.
+
+![After the handoff: the head coach asked Floppy to show the Kyrie coverage, so the switch play runs on the board with the wing Kyrie attacks from lit, while the player and coach cameras sit on the right rail](docs/images/coach-handoff-board.jpg)
 
 ## Measured in development
 | What | Result | Where |
