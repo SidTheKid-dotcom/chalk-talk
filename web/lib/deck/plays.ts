@@ -2,6 +2,12 @@ import type { DrawnArrow } from '@/components/deck/PlayArrows';
 import type { Coord, DeckPlay, PlayerId, SlideDiagram } from '@/lib/deck/types';
 
 export const PLAY_START_DURATION_MS = 300;
+export const SPEECH_MS_PER_WORD = 380;
+export const SPEECH_PAD_MS = 450;
+export const SPEECH_BUDGET_MIN_MS = 1600;
+export const SPEECH_BUDGET_MAX_MS = 5000;
+/** Quiet stretch before a clicker-silent play, or a stopped line, finishes at deck speed. */
+export const SPEAKING_START_GRACE_MS = 700;
 
 export type PlayViewFrame = {
   markers: Partial<Record<PlayerId, Coord>>;
@@ -49,6 +55,7 @@ export function playFrame(diagram: SlideDiagram, play: DeckPlay): PlayViewFrame 
         kind: arrow.kind,
         option: arrow.option,
         key: `${play.id}-${stepIndex}-${arrowIndex}`,
+        drawMs: step.duration_ms,
       });
     });
     Object.assign(markers, step.moves);
@@ -92,6 +99,7 @@ export function playMotionSegments(diagram: SlideDiagram, play: DeckPlay): PlayM
         kind: arrow.kind,
         option: arrow.option,
         key: `${play.id}-${stepIndex}-${arrowIndex}`,
+        drawMs: step.duration_ms,
       });
     });
     markers = { ...markers, ...step.moves };
@@ -163,4 +171,22 @@ export function frameAtElapsed(
     ball: last.ball,
     caption: last.caption,
   };
+}
+
+export function captionWordCount(caption: string): number {
+  const trimmed = caption.trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).length;
+}
+
+/** Speech time for one captioned step, including its deck tween. */
+export function speechBudgetMs(caption: string, durationMs: number): number {
+  const estimate = captionWordCount(caption) * SPEECH_MS_PER_WORD + SPEECH_PAD_MS;
+  const raw = Math.max(durationMs, estimate);
+  return Math.min(SPEECH_BUDGET_MAX_MS, Math.max(SPEECH_BUDGET_MIN_MS, raw));
+}
+
+export function stepHoldMs(segment: PlayMotionSegment): number {
+  if (segment.caption == null) return 0;
+  return Math.max(0, speechBudgetMs(segment.caption, segment.durationMs) - segment.durationMs);
 }

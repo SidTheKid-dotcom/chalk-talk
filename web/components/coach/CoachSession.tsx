@@ -284,7 +284,8 @@ function CoachStage({
     slide?.diagram,
     board.play?.play_id ?? null,
     board.play?.seq ?? null,
-    board.playAnimate
+    board.playAnimate,
+    board.agentState === 'speaking'
   );
 
   if (!slide || !board.slideId) {

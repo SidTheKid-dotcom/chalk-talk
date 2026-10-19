@@ -114,7 +114,9 @@ def play_narration(play: dict[str, Any]) -> str:
         f"Title: {play['title']}\n"
         f"Steps: {' | '.join(captions)}\n"
         f"Duration: {play_duration_ms(play)} ms\n"
-        "The play is running on screen. Walk through the steps in order, briefly."
+        "The play is on screen and advances with your speech. "
+        "Speak each step caption in order while that step is showing. "
+        "Do not skip ahead."
     )
 
 

@@ -227,6 +227,7 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
       playId={commands.play?.play_id ?? null}
       playSeq={commands.play?.seq ?? null}
       playAnimate={commands.playAnimate}
+      speaking={agent.state === 'speaking'}
       callouts={commands.callouts}
       status={status}
       notice={micFailure}
@@ -245,6 +246,7 @@ function PlayerSlide({
   playId,
   playSeq,
   playAnimate,
+  speaking,
   callouts,
   status,
   notice,
@@ -259,6 +261,7 @@ function PlayerSlide({
   playId: string | null;
   playSeq: number | null;
   playAnimate: boolean;
+  speaking: boolean;
   callouts: ReturnType<typeof useDeckCommands>['callouts'];
   status: AgentState;
   notice: string | null;
@@ -266,7 +269,7 @@ function PlayerSlide({
   coachLink: ReactNode;
 }) {
   const slide = getSlide(slideId as Parameters<typeof getSlide>[0]);
-  const motion = usePlayMotion(slide.diagram, playId, playSeq, playAnimate);
+  const motion = usePlayMotion(slide.diagram, playId, playSeq, playAnimate, speaking);
   return (
     <div className="player-shell">
       <ScaledSlide
