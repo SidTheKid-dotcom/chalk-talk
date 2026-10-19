@@ -25,7 +25,7 @@ make web-typecheck
 
 Once a cloud agent exists (`lk agent create`), a local worker on production takes real traffic. Set `LIVEKIT_AGENT_DEPLOYMENT` then.
 
-`AGENT_NAME` must match on the agent (`@server.rtc_session(agent_name=...)`) and in `web/.env.local` (starter `agentName` prop). The token route is still the starter's; task 05 replaces it.
+`AGENT_NAME` must match on the agent (`@server.rtc_session(agent_name=...)`) and in the player token's explicit dispatch. `POST /api/token` mints short-lived player and coach tokens with a `role` attribute. A missing `LIVEKIT_URL` fails loudly; there is no homepage-agent fallback.
 
 ## Architecture
 _Diagram and summary: to be written. Design contracts live in `docs/ARCHITECTURE.md`._
