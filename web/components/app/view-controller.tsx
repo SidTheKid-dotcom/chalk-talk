@@ -7,9 +7,11 @@ import { WelcomeView } from '@/components/app/welcome-view';
 import { PhotoCreditsLink } from '@/components/deck/PhotoCredits';
 import { ScaledSlide } from '@/components/deck/ScaledSlide';
 import { SlideView } from '@/components/deck/SlideView';
+import { CoachLinkCard } from '@/components/hardwood/CoachLinkCard';
 import { HardwoodStage } from '@/components/hardwood/HardwoodStage';
 import { JoinPanel } from '@/components/hardwood/JoinPanel';
 import { SlidePush } from '@/components/hardwood/SlidePush';
+import { useCoachLink } from '@/hooks/useCoachLink';
 import { useDeckCommands } from '@/hooks/useDeckCommands';
 import { usePlayMotion } from '@/hooks/usePlayMotion';
 import { isSlideId } from '@/lib/deck/commands';
@@ -35,6 +37,8 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
   const session = useSessionContext();
   const agent = useAgent();
   const commands = useDeckCommands();
+  const coachUrl = useCoachLink();
+  const coachLink = coachUrl ? <CoachLinkCard url={coachUrl} /> : null;
   const [phase, setPhase] = useState<'ready' | 'starting' | 'active' | 'ended'>('ready');
   const [micFailure, setMicFailure] = useState<string | null>(null);
   const [startFailure, setStartFailure] = useState<string | null>(null);
@@ -189,6 +193,7 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
         <ScaledSlide
           rail={
             <>
+              {coachLink}
               <PhotoCreditsLink />
               {sessionControls}
             </>
@@ -226,6 +231,7 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
       status={status}
       notice={micFailure}
       controls={sessionControls}
+      coachLink={coachLink}
     />
   );
 }
@@ -243,6 +249,7 @@ function PlayerSlide({
   status,
   notice,
   controls,
+  coachLink,
 }: {
   credits: CutoutCredit[];
   jrImageSrc: string | null;
@@ -256,6 +263,7 @@ function PlayerSlide({
   status: AgentState;
   notice: string | null;
   controls: ReactNode;
+  coachLink: ReactNode;
 }) {
   const slide = getSlide(slideId as Parameters<typeof getSlide>[0]);
   const motion = usePlayMotion(slide.diagram, playId, playSeq, playAnimate);
@@ -264,6 +272,7 @@ function PlayerSlide({
       <ScaledSlide
         rail={
           <>
+            {coachLink}
             <PhotoCreditsLink />
             {controls}
           </>
