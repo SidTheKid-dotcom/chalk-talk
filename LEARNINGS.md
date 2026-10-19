@@ -11,3 +11,9 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [livekit/agents] `ToolHandlingOptions(tool_reply_after_audio=...)` from early research does not exist in livekit/agents. Use `StopResponse` or `cancel_tool_reply()` to control replies. (code search; events doc)
 - [livekit/agents] livekit-agents 1.8.7+ reports realtime `e2e_latency` in assistant message metrics when local VAD is set. (changelog 1.8.7)
 - [tooling] The docs MCP may be pending approval in a session. `lk docs search|get-page|code-search|changelog` gives the same source from the shell.
+- [facts] Basketball-Reference series page now includes the Game 7 score, series winner and Finals MVP. Shipped claims use Games 1-6 box scores, the game list, and the 2015-16 team page only. (source: task 02)
+- [facts] Game 5 series summary says "PTS 2 tied 41"; the names are only on the box score (LeBron James 41, Kyrie Irving 41). (source: task 02)
+- [facts] Game 5 Warriors box lists Draymond Green as "Player Suspended". Game 3 box lists Kevin Love as Inactive. (source: task 02)
+- [deck] Architecture sketch caption "Two defenders jump the ball" fails callout rule 5 (spelled-out number). Use "Both defenders jump the ball". (source: task 02)
+- [facts] Page titles contain a pipe before "Basketball-Reference.com". Drop the site suffix in the Verified cell so the markdown table still has five columns. (source: task 02)
+- [tooling] This worktree has `python3` and `uv`, not `python`. Deck commands in AGENTS.md use `python3`. (source: task 02)
