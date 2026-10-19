@@ -43,3 +43,7 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [web/token] `RoomConfiguration` JWT includes protobuf defaults (`name`, `restartPolicy`, empty `tags`). Assert named fields, not `toEqual` on the whole config. (source: task 05 r2)
 - [web/token] Coach room format `^fr-[0-9a-f]{16}$` is checked in `parseTokenRequest`, so invalid ids 400 before `listRooms`. (source: task 05 r2)
 - [livekit/inference] Free plan: 5 concurrent Inference sessions and $2.50 credit (about 50 realtime minutes). A parallel eval run hit 429 and a usage alert. Run evals at concurrency 1 and stop stale runs. (lk docs pricing-info)
+- [livekit/rpc] Nested RPC works: the player can `performRpc` `debug_probe` on the agent while registered as the `show_slide` handler; the agent then `perform_rpc`s back to that same player. (source: task 03 live probe)
+- [web/rpc] Two `requestAnimationFrame`s is a working "after paint" ack. Applied `show_slide` round trips were min 103.5 / median 117.2 / max 121.7 ms (n=10). (source: task 03)
+- [agent/debug] Skipping `AgentSession` under `CHALK_DEBUG=1` keeps inference off, but the starter `useAgentErrors` then treats the agent as failed and the session UI ends the call after ~20s. Finish the RPC probe before that, or keep a dummy session. (source: task 03)
+- [livekit/js] Browser `performRpc` clamps `responseTimeout` to at least 8000ms on the caller. That does not change the agent's Python `perform_rpc(..., response_timeout=3.0)`. (livekit-client RpcManager; task 03)
