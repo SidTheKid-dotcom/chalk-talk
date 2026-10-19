@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-01 merged (audited). 02 in audit. 05 token route delegated. 03, 04, 07 start when 02 merges.
+01 and 02 merged (audited). Running: 05 token route (resumed after provider error), 04 spike tool order, 07 UI lab. 03 RPC spike starts when 05 merges (needs the role attribute).
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -9,6 +9,7 @@
 - `[UNVERIFIED]` pass on ARCHITECTURE and RISKS with `lk docs`. ADR-019 to ADR-022.
 - Task files 01-07 written.
 - 01 setup merged: agent on gpt-realtime-2.1 with explicit dispatch, web starter, Makefile. Spoken mic turn not yet verified (no mic in executor browser).
+- 02 deck and facts merged: 19 facts re-verified by auditor, 6 slides, 4 plays, 25 deck tests incl. basketball sanity rules.
 
 ## Next
 | Wave | Tasks | Gate |
