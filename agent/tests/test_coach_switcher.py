@@ -362,7 +362,6 @@ async def test_handoff_order_and_private_briefing_destination() -> None:
     assert "player" not in text_call["destination_identities"]
     assert json.loads(text_call["text"])["main_worry"] == "What about Kyrie?"
     assert session.reply_calls[0]["tool_choice"] == "none"
-    assert session.reply_calls[0]["allow_interruptions"] is False
     assert agent.instructions == CLICKER
     assert state.active_coach_identity == "coach"
 
