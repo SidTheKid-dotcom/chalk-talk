@@ -41,6 +41,10 @@ Merged: 01-03, 05-11 and player control/caption fixes. In audit: 12 Hardwood fro
 - Move `CoachSwitcher`, `find_by_role`, `participant_role` to `agent/src/coach_switcher.py`; `SlideCommander.find_player` uses `find_by_role`. Move the four debug `session.on` loggers out of `agent.py` or behind debug (they log transcripts at INFO).
 - Tests: attributes-changed path, coach present at attach, second coach after leave, failing `update_instructions` logged; add `drain()` instead of reading `_tasks`.
 
+## Lane B (task 13) must include (audit 13A)
+- Live check: speaker change, then "Assistant, ..." command. The floor router may clip the first words of a new speaker (active-speaker detection + debounce + new stream). If the command is lost, take the ADR-028 fallback (coach-only ear after handoff).
+- README known limit: if the briefing or handoff line fails, the coach is ignored until they rejoin.
+
 ## Ship checklist (collected from audits)
 - BEFORE ANY PUBLIC PUSH: git history contains a private name and a private Loom link (commits from the Hardwood planning, e.g. `44e82be`). Current files are clean. Rewrite or squash history before the first push to a public remote, then run `secret_scan.sh` and `git log -p | grep -i -E '<private terms>'` to confirm.
 - README Known limits: coach link is a bearer link (anyone with it joins as coach); no rate limit on the token route; free-tier cold start and minute caps.
