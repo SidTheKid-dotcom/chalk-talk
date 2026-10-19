@@ -55,10 +55,10 @@ A player can request the head coach, a coach can join the same room from `/coach
 | Coach leave | disconnect coach, then player asks a new question | session survives, mode returns to presenter, agent hears player |
 
 ## Checklist
-- [x] Implemented (video rail cut in speed mode)
+- [x] Implemented (video rail added after items 1-4)
 - [x] Lint and typecheck pass
 - [x] Tests pass (list)
-- [x] Acceptance checks pass with evidence (items 1-4 live; item 5 video rail not built)
+- [x] Acceptance checks pass with evidence (items 1-4 live; item 5 unit-tested, not yet two-camera live)
 - [x] Screenshots attached
 - [x] LEARNINGS.md updated if needed
 - [x] Docs updated if behavior changed

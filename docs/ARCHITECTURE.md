@@ -121,7 +121,7 @@ Shape (sketch; planner fixes the final format):
   }]
 }
 ```
-Featured fact: a slide may set `featured_fact_id` (one of its `fact_ids`). The slide shows that fact as its static paperclip card. Board callouts (`add_callout`) are separate and count toward the 3-callout limit; the featured card does not.
+Featured fact: a slide may set `featured_fact_id` (one of its `fact_ids`). The card is not shown until a human asks for it through `add_callout`. Board callouts count toward the 3-callout limit.
 
 Formations (ADR-023):
 - `diagram.matchups` (slides with markers): map of each defender id to the player he guards, for all five defenders.
@@ -179,7 +179,7 @@ run_play(play_id: PlayId) -> str
   - player acks when the first frame of the play is painted (animation started)
   - the player (and coach) then advance captioned steps on the agent's speaking clock (ADR-029). `duration_ms` in the ack is still the sum of deck step tweens, not speech length.
   - on ack: update overlay_state, return play title + step captions in order + total duration,
-    "The play is on screen and advances with your speech. Speak each step caption in order while that step is showing. Do not skip ahead."
+    "The play is on screen and advances with your speech. Speak each step caption in order while that step is showing. Linger on each caption. Pause after each one. Do not skip ahead."
   - on timeout / RpcError: return "FAILED: play not shown (<reason>). Do not describe it as on screen."
 
 add_callout(fact_id: FactId | None = None, text: str | None = None) -> str
@@ -364,7 +364,7 @@ Rendering from the attribute (coach page, and player page on reconnect):
 ### Text streams
 | Topic | Direction | Destination | Content |
 |---|---|---|---|
-| `coach-briefing` | agent -> coach | `destination_identities=[coach_identity]` only | JSON: `{"asked": [...], "main_worry": "...", "current_slide": "s3_kyrie", "summary": "..."}` |
+| `coach-briefing` | agent -> coach | `destination_identities=[coach_identity]` only | JSON: `{"asked": [...], "main_worry": "...", "current_slide": "s3_kyrie", "summary": "..."}`. The same JSON is also written to the agent attribute `coach_briefing` so a late coach handler still gets the summary as text. |
 | `lk.transcription` | built in | all | Live transcripts for the panel |
 | `chalk-talk-events` (optional) | agent -> player | player | Panel events: slide trace, interruption, handoff timeline. Planner may use attributes instead. |
 

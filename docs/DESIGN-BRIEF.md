@@ -82,14 +82,15 @@ Never shrink body copy to make more content fit. Shorten or regroup the presenta
 - The player view has compact mic, camera and end-session controls. There is no typed question bar.
 
 ## Slide layouts
-- **Slide 1:** one oversized statement, three large keys in one panel, hero cutouts on the right.
+- **Slide 1:** one oversized statement, three large keys in one panel, a Warriors vs Cavaliers matchup card under it, and both-team lineups (five equal columns per team) centered on the right. The board stays blank until they ask for the plan.
+- **Attack zones:** a diagram may map a player to the zone he attacks from (`attack_zones`). Highlighting that player also shades the zone with an "Attacks from" label.
 - **Slides 2-4:** headline and coaching-point panel left; large court right; at most one cutout/lower-third group and one board-action caption.
 - **Slide 5:** four swing-factor columns or a strong asymmetric grid with 24px+ body text. Avoid tiny card copy.
 - **Slide 6:** head-coach call panel left, optional local-only JR card center, blank zone-labelled court right.
 
 ## Board tools
 - `highlight`: gold swipe or ring around an existing marker, zone, card or approved text group. It never rewrites copy.
-- `run_play`: markers tween, previous position ghosts remain faint, gold movement arrows draw, pass and screen notation stay distinct, one large current-step caption appears.
+- `run_play`: markers tween, uninvolved players dim, gold movement arrows draw, pass and screen notation stay distinct, one large current-step caption appears. The legend shows only while a play is on.
 - `add_callout`: Kalam note plus a small Coach note label, or a verified fact card. It never edits the static title or coaching points.
 - Static slide content is immutable during a session. The model may only select slides and approved overlay tools.
 
@@ -115,7 +116,7 @@ Phone portrait:
 - Compact top scoreboard and private label.
 - Two small human video tiles or fallbacks.
 - Current slide thumbnail.
-- Briefing fields: They asked, Main worry, Now on.
+- Briefing fields: Brief (summary), Main worry, Topics, Now on. No raw transcript dump.
 - Large mic/camera controls and a clear take-floor state.
 - No dense slide carousel and no tiny transcript table.
 

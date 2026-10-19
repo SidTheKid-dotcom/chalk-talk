@@ -40,7 +40,7 @@ Full contracts: `docs/ARCHITECTURE.md`. Decisions: `DECISIONS.md`.
 - `design/hardwood/` is the main visual reference; `docs/DESIGN-BRIEF-SCOUTING-PACKET.md` archives the old direction. Draw courts, markers and plays in code from deck data. Take names and facts from `FACTS.md` and deck data, never from images.
 - `design/refs/` shows the target taste.
 - `design/players/` holds licensed Wikimedia Commons player photos as plain transparent cutouts, plus `CREDITS.md`. The app draws the broadcast shadow and lower-third caption. Never add a photo without a credits row.
-- `local-assets/` (gitignored, optional) holds the slide 6 meme image, which cannot be licensed. It is never committed. If it is missing, slide 6 shows a text-only fallback card.
+- `local-assets/` (gitignored, optional) holds the slide 6 meme image and the two team logo SVGs, which cannot be licensed. They are never committed. If missing, slide 6 shows a text-only card and the slide 1 matchup card shows drawn GSW/CLE badges.
 
 ## Repo map (planned)
 ```

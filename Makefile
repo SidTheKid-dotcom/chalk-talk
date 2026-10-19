@@ -6,7 +6,7 @@ agent-dev:
 	cd agent && lk agent dev --deployment $${LIVEKIT_AGENT_DEPLOYMENT:-production}
 
 web-dev:
-	cd web && pnpm dev
+	cd web && pnpm dev --hostname 0.0.0.0
 
 agent-test:
 	cd agent && uv run pytest
