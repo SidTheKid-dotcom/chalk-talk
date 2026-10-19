@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08. Spike 2 measurement is complete; audit and merge of its harness remain. Wave 2 plans 09 and 10 are ready to execute in parallel after that audit starts.
+Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08. Spike 2 measurement is complete; its independent audit is running before the harness merge. Wave 2 tasks 09 (presenter agent) and 10 (`/player`) are running in parallel.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
