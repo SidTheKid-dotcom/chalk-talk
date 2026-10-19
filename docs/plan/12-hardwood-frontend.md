@@ -5,7 +5,7 @@ Player, lobby and reusable slide primitives adopt the Hardwood Broadcast directi
 
 ## Context
 - Design source: `docs/DESIGN-BRIEF.md`, ADR-027, `design/hardwood/`
-- Interaction reference: a private reference demo in `docs/DESIGN-BRIEF.md#what-to-learn-from-the-reference-demo`
+- Interaction reference: `docs/DESIGN-BRIEF.md#interaction-lessons-from-voice-slide-demos`
 - Existing behavior: merged tasks 09-11
 - User feedback: current fonts are too small; current UI fits poorly; remove visible speech captions and use Listening/Speaking state only; preserve the bottom text-entry removal; add a strong slide transition.
 - The untracked main-workspace concepts are readable at `/home/sidvish/Documents/Work/Personal/synthio-take-home/design/hardwood/`. Do not copy concept cutouts without complete per-file attribution; use `design/players/` in the product.
@@ -51,3 +51,14 @@ Player, lobby and reusable slide primitives adopt the Hardwood Broadcast directi
 - Commands run and key output:
 - Evidence paths:
 - Not done / not verified:
+
+## Round 2 (planner, from audit 12)
+Fix on branch `t3/hardwood-frontend-redesign`. Do not change agent, deck, facts, RPC or hooks.
+1. **Slide 5 photo pairing (blocker).** `SlideView.tsx` `FactorsGrid` pairs `slide.cutouts[index]` with points and puts `cutouts[3]` on the fact column. Deck data has no point-to-player link, so this puts Livingston on "Green is back" and Ezeli on F15 (Green). Remove positional pairing: render the cutouts as a captioned photo strip separate from the text columns. Do not add a frontend point-to-player map (it would invent data).
+2. **Push transition collides (blocker).** `hardwood.css` outgoing layer moves only -12% at opacity .85 and `.slide-layer` is transparent, so headlines overprint at the midpoint. Make a true push: outgoing to `translateX(-100%)` (forward) / `+100%` (backward), incoming from the opposite side, stage `overflow:hidden`; optionally fade outgoing to 0 by ~40%. Add a check that pauses the animations mid-way (`document.getAnimations()`, set `currentTime` to 50%) and asserts the outgoing and incoming headline boxes do not intersect, forward and backward.
+3. **Play overlaps (blocker).** The LeBron cutout (`z-[2]`) covers `.play-caption`. Hide the cutout while a play runs, and give the caption `z-index:3` (or move it to the court's top-left). Draw ghost markers without labels at lower opacity. Apply the collision offset to every play step's positions. Extend `scripts/test-caption-layout.mjs` (or the marker overlap test) to check every play step, ghosts included. Caption label "Play", not `run_play`.
+4. **Controls below 44px (blocker).** `SessionControls` render inside the scaled stage. Render them in an unscaled bar outside `ScaledSlide` that overlays the rail area; same for the Photo credits link. Assert at 1920×1080, 1280×800 and 844×390: each control ≥44px tall, credits link readable (≥14px text).
+5. **Portrait phone.** No reflow. Below 600px portrait: stage pinned top at full width, unscaled controls below, and a small "Rotate your phone or open on a laptop" hint. Screenshot 390×844 and 844×390.
+6. **Nits.** Add `web/fonts/hardwood/OFL.txt` (font license text). `aria-pressed` on the mic toggle.
+
+Evidence: `pnpm test && pnpm lint && pnpm exec tsc --noEmit`; `python3 scripts/sync_deck.py --check`; mid-transition frames forward and backward; screenshots of slide 5, play step 2 and 4 on slide 2, controls at three viewports, portrait phone.
