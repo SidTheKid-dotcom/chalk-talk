@@ -5,7 +5,10 @@ Chalk Talk is a voice AI assistant coach. It walks a Warriors player through a s
 **Status: work in progress.** This README only describes what is built and verified. Sections below are filled in as the work lands.
 
 ## What it does
-_To be written._
+- Opens on the acked tip-off slide before the assistant speaks.
+- Routes natural questions to one of six prepared slides from deck-owned topics.
+- Grounds each spoken answer in the selected slide's points, notes, and verified fact claims.
+- Keeps slide state in LiveKit participant attributes so reconnecting viewers can recover it.
 
 ## Try it
 _Live link and demo video: to be added._

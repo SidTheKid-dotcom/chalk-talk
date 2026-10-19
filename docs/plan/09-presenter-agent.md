@@ -40,15 +40,24 @@ In presenter mode the agent shows slide 1 on start, routes questions to the righ
 | Shutdown | stop PIDs, `lk room list` | empty list |
 
 ## Checklist
-- [ ] Implemented
-- [ ] Lint and typecheck pass
-- [ ] Tests pass (list)
-- [ ] Acceptance checks pass with evidence
-- [ ] Screenshots attached (UI tasks)
-- [ ] LEARNINGS.md updated (if any surprise)
-- [ ] Docs updated (README / DECISIONS / FACTS) if affected
+- [x] Implemented
+- [x] Lint and typecheck pass
+- [x] Tests pass (list)
+- [ ] Acceptance checks pass with evidence (live typed path passed; see room-list and microphone limits below)
+- [x] Screenshots attached (UI tasks)
+- [x] LEARNINGS.md updated (if any surprise)
+- [x] Docs updated (README / DECISIONS / FACTS) if affected
 
 ## Report (executor fills)
-- Files changed:
+- Files changed: `agent/src/agent.py`, `agent/src/deck_data.py`, `agent/src/model.py`, `agent/src/prompts.py`, presenter/model/commander tests, `deck/deck.json`, `deck/schema.json`, generated deck copies, `scripts/test_deck.py`, `README.md`, and `LEARNINGS.md`.
 - Commands run and key output:
-- Not done / not verified:
+  - `cd agent && uv run pytest -q`: 56 passed, 2 provider-backed tests skipped by default.
+  - `cd agent && uv run ruff check`: all checks passed.
+  - `uv run --with pytest --with jsonschema pytest scripts -q`: 29 passed.
+  - `python3 scripts/sync_deck.py --check`: sync check passed.
+  - Provider-backed LiveKit harness, `REALTIME_PROVIDERS=openai`, two fresh sessions: 2 passed; all eight routing items selected the expected slide. Both `s2_lebron` replies named Iguodala and used no unreturned numbers.
+  - `REALTIME_PROVIDERS=bogus ... lk agent dev --deployment production`: import failed on the unknown provider before `registered worker` appeared.
+  - Live room: startup log order was applied `show_slide(s1_tipoff)` seq 1, `startup_slide`, then the first assistant message; no duplicate tool call. Typed `Should we push the pace?` applied `show_slide(s5_xfactors)` and rendered slide 5.
+  - Screenshots captured for the acked opening slide and the live slide-5 pace route.
+  - Local agent and task-owned web PIDs were stopped. `lk room list` later showed one different active room from concurrent work, so it was not deleted.
+- Not done / not verified: microphone audio was unavailable in the headless browser, so live input used the typed text path. The final account-wide room list was not empty because another concurrent session created a different room after this task's room closed; no unrelated room was terminated.

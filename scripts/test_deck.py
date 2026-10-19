@@ -309,6 +309,9 @@ def validate_deck(deck: dict, facts: list[dict], players_dir: Path) -> list[str]
     for i, slide in enumerate(deck["slides"], start=1):
         if slide.get("number") != i:
             errors.append(f"{slide.get('id')} number {slide.get('number')} != {i}")
+        topics = slide.get("topics") or []
+        if not topics or len(topics) != len(set(topics)):
+            errors.append(f"{slide.get('id')} needs unique routing topics")
 
     for slide_id, expected in PER_SLIDE.items():
         slide = slides.get(slide_id)
@@ -457,6 +460,18 @@ def test_points_notes_captions_have_no_digits(deck):
             if DIGIT.search(step["caption"]):
                 found.append(f"{play['id']} step {i} caption")
     assert found == []
+
+
+def test_every_slide_has_unique_routing_topics(deck):
+    for slide in deck["slides"]:
+        assert len(slide["topics"]) >= 2, slide["id"]
+        assert len(slide["topics"]) == len(set(slide["topics"])), slide["id"]
+
+
+def test_pace_topic_routes_to_xfactors(deck):
+    slides = slide_by_id(deck)
+    assert "pace" in slides["s5_xfactors"]["topics"]
+    assert "push or slow down" in slides["s5_xfactors"]["topics"]
 
 
 def test_bad_caption_fails(deck, facts):

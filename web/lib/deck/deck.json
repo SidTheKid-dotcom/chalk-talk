@@ -28,6 +28,7 @@
       "number": 1,
       "section": "Tip-off",
       "title": "Tip-off: tonight and the three keys",
+      "topics": ["openers", "big picture", "overall plan", "stakes", "three keys"],
       "points": [
         "The series is tied. We close at home.",
         "Keys: their best player, their isolation guard, our shooters.",
@@ -56,6 +57,7 @@
       "number": 2,
       "section": "Stop LeBron",
       "title": "How do we stop LeBron?",
+      "topics": ["LeBron", "best player", "primary scorer", "playmaker", "number twenty-three", "downhill drives"],
       "points": [
         "Iguodala is the primary. Green helps at the nail.",
         "Blitz the pick-and-roll. Make someone else beat us.",
@@ -95,6 +97,7 @@
       "number": 3,
       "section": "Kyrie iso",
       "title": "Kyrie in isolation: who guards him and how",
+      "topics": ["Kyrie", "other scorer", "point guard", "isolation", "ball handling", "one-on-one scoring"],
       "points": [
         "Thompson takes him on the wing. Switch the screen.",
         "Stay in front after the switch. No panic help.",
@@ -134,6 +137,7 @@
       "number": 4,
       "section": "Our offense",
       "title": "Our offense: Steph and Klay off screens, Draymond as playmaker",
+      "topics": ["our scoring", "shooters", "Steph", "Klay", "Draymond", "screens", "short roll"],
       "points": [
         "Stagger Curry. Let him catch and shoot or hit the slip.",
         "When they trap the ball, Green is the short-roll hub.",
@@ -173,6 +177,7 @@
       "number": 5,
       "section": "X-factors",
       "title": "X-factors: Love, bench, fouls, pace",
+      "topics": ["pace", "tempo", "push or slow down", "Love", "bench", "fouls", "role players", "swing factors"],
       "points": [
         "Love had a big Game One, then sat Game Three.",
         "Green is back. Stay out of foul trouble.",
@@ -195,6 +200,7 @@
       "number": 6,
       "section": "Last two minutes",
       "title": "The last two minutes",
+      "topics": ["late game", "last shot", "closing", "clock", "score", "end-of-game situations"],
       "points": [
         "Late-game calls belong to the head coach.",
         "Know the score and the clock.",

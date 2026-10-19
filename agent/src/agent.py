@@ -5,7 +5,7 @@ import os
 import time
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Annotated, Any, Protocol
 
 from dotenv import load_dotenv
 from livekit.agents import (
@@ -27,10 +27,12 @@ from livekit.agents.llm import (
     RealtimeModelFallbackAdapter,
 )
 from livekit.plugins import ai_coustics
+from pydantic import Field
 
 from debug_probe import DebugSlideCommander, debug_enabled, run_debug_job
-from deck_data import SlideId, assert_slide_ids_match_deck
-from model import build_realtime_model, parse_realtime_providers
+from deck_data import SlideId, assert_slide_ids_match_deck, load_deck, load_facts
+from model import build_realtime_model, load_realtime_config
+from prompts import presenter_instructions, show_slide_tool_description
 from slide_commander import SlideCommander
 
 logger = logging.getLogger("agent")
@@ -45,6 +47,11 @@ if not AGENT_NAME:
     raise RuntimeError("AGENT_NAME is required for explicit agent dispatch")
 
 assert_slide_ids_match_deck()
+DECK = load_deck()
+FACTS = load_facts()
+PRESENTER_INSTRUCTIONS = presenter_instructions(DECK, FACTS)
+SHOW_SLIDE_DESCRIPTION = show_slide_tool_description(DECK)
+REALTIME_CONFIG = load_realtime_config()
 
 CLICKER_INSTRUCTIONS = (
     "Do not present. Stay silent unless addressed as Assistant. "
@@ -259,17 +266,13 @@ class CoachSwitcher:
 class Assistant(Agent):
     def __init__(self, commander: SlideCommander | None = None) -> None:
         self._commander = commander
-        super().__init__(
-            instructions=(
-                "You are the Warriors' assistant coach before Game 7 of the 2016 NBA "
-                "Finals. Greet the player in one sentence. "
-                "Call show_slide before you speak about a slide."
-            ),
-        )
+        super().__init__(instructions=PRESENTER_INSTRUCTIONS)
 
-    @function_tool
-    async def show_slide(self, slide_id: SlideId) -> str:
-        """Show this slide on the player's board before you speak about it."""
+    @function_tool(description=SHOW_SLIDE_DESCRIPTION)
+    async def show_slide(
+        self,
+        slide_id: Annotated[SlideId, Field(description=SHOW_SLIDE_DESCRIPTION)],
+    ) -> str:
         if self._commander is None:
             return "FAILED: slide not shown (commander missing). Do not describe it as on screen."
         return await self._commander.show_slide(slide_id)
@@ -354,9 +357,8 @@ async def my_agent(ctx: JobContext):
     # preemptive_generation were removed. Kept: noise cancellation on the
     # room audio input. Docs: https://docs.livekit.io/agents/models/realtime/openai
     # and https://docs.livekit.io/agents/logic/turns#realtime-models
-    providers = parse_realtime_providers()
-    llm = build_realtime_model()
-    logger.info("realtime providers=%s", ",".join(providers))
+    llm = build_realtime_model(REALTIME_CONFIG)
+    logger.info("realtime providers=%s", ",".join(REALTIME_CONFIG.providers))
     if isinstance(llm, RealtimeModelFallbackAdapter):
         llm.on("realtime_availability_changed", _on_realtime_availability)
 
@@ -386,8 +388,21 @@ async def my_agent(ctx: JobContext):
 
     await ctx.connect()
 
+    slide_result = await commander.show_slide("s1_tipoff")
+    _log(
+        "startup_slide",
+        slide_id="s1_tipoff",
+        applied=not slide_result.startswith("FAILED:"),
+        result=slide_result,
+    )
     await session.generate_reply(
-        instructions="Greet the player in one sentence.",
+        instructions=(
+            "Greet the player and present the opening slide in exactly three short "
+            "sentences, using only this show_slide result. The last sentence must "
+            "invite their next question.\n\n"
+            f"{slide_result}"
+        ),
+        tool_choice="none",
     )
 
 

@@ -76,3 +76,4 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [spike 2] RESULT: correct tool 96-100%; any speech before tool 57% (config B); slide content before tool 0 of 344 (planner review). Pre-tool speech is a short announcement of the topic. Kept Realtime (ADR-026). (task 04)
 - [spike 2] A title-only tool result made the model invent slide content. Tool results must carry the slide's points, notes and facts. (task 04)
 - [spike 2] Two tool calls in one response ran in order with no overlap (second start 760-980 ms after first end). (task 04)
+- [livekit/realtime] A startup `generate_reply` may call an available tool again even when its instructions include that tool's completed result. Pass `tool_choice="none"` after the direct, acked startup action to prevent a duplicate RPC. (task 09)

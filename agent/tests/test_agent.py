@@ -78,8 +78,16 @@ def test_explicit_dispatch_name_is_set() -> None:
 def test_assistant_greets_as_warriors_coach() -> None:
     instructions = Assistant().instructions
     assert "Warriors" in instructions
-    assert "Game 7" in instructions
-    assert "2016 NBA Finals" in instructions
+    assert "Game Seven" in instructions
+    assert "twenty sixteen NBA Finals" in instructions
+
+
+@pytest.mark.asyncio
+async def test_show_slide_without_commander_returns_failure_unchanged() -> None:
+    result = await Assistant().show_slide("s1_tipoff")
+    assert result == (
+        "FAILED: slide not shown (commander missing). Do not describe it as on screen."
+    )
 
 
 def test_clicker_instructions_are_one_line() -> None:
