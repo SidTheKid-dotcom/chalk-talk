@@ -14,3 +14,4 @@ Tracked copies of the floor texture and UI fonts used by `/player`, `/lab`, and 
 - Inter 400/600/800 — Rasmus Andersson. SIL OFL 1.1 (via @fontsource).
 - IBM Plex Sans Condensed 500/700 — IBM. SIL OFL 1.1 (via @fontsource).
 - Kalam 700 — Indian Type Foundry. SIL OFL 1.1 (via @fontsource).
+- Full license text: `web/fonts/hardwood/OFL.txt`.

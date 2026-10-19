@@ -86,3 +86,12 @@ Fix on branch `t3/hardwood-frontend-redesign`. Do not change agent, deck, facts,
 6. **Nits.** Add `web/fonts/hardwood/OFL.txt` (font license text). `aria-pressed` on the mic toggle.
 
 Evidence: `pnpm test && pnpm lint && pnpm exec tsc --noEmit`; `python3 scripts/sync_deck.py --check`; mid-transition frames forward and backward; screenshots of slide 5, play step 2 and 4 on slide 2, controls at three viewports, portrait phone.
+
+## Round 2 report
+- Slide 5 cutouts are a captioned strip, not paired to points.
+- Push travels the full stage width. Headline boxes do not intersect at 50% time, forward or backward.
+- Plays hide the cutout, label the caption "Play", draw unlabeled ghosts, and offset every step including ghosts.
+- Session controls and Photo credits sit outside the scaled stage and stay at least 44px / 14px at 1920×1080, 1280×800, and 844×390.
+- Portrait under 600px pins the stage to the top, puts controls below, and shows the rotate hint.
+- `web/fonts/hardwood/OFL.txt` is tracked. The mic toggle sets `aria-pressed`.
+- Checks: `pnpm test` 79 passed; lint and `tsc --noEmit` passed; `sync_deck.py --check` passed. Stills in `/tmp/task12-r2/`.
