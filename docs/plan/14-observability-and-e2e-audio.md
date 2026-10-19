@@ -8,7 +8,12 @@ The complete demo is exercised through real audio in a real LiveKit Cloud room w
 - Contract: `docs/ARCHITECTURE.md#sequence-interruption`, `#observability-for-the-panel`
 - Decisions: ADR-003, ADR-006, ADR-009, ADR-010, ADR-024, ADR-025, ADR-026
 - LiveKit docs: debugger audio mode cannot interrupt; use a real room participant or audio simulation for barge-in.
-- Depends on merged tasks 09-13.
+- The simulator/transport spike depends on merged task 11 and may run in parallel with tasks 12-13. The final scenario depends on merged task 13.
+
+## Parallel prework
+- Prove a test-owned sidecar can subscribe to room audio, run an independent OpenAI Realtime player or coach session, and publish generated PCM through the browser participant's synthetic microphone without exposing the key or adding a mock product path.
+- Keep the driver outside app code under `evals/e2e/`. Use unique room/identity names and never attach to the production demo room.
+- Establish deterministic fixed-audio fallback and event recording before the final app exists. Do not claim end-to-end success until the task-13 browser surfaces and handoff are integrated.
 
 ## Scope
 - Finish the player status panel with measured turn count, agent state, available realtime end-to-end latency, interruption count and heard-text trace. Show `—` when a metric is unavailable.
