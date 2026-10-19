@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import os
-import time
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Annotated, Any, Protocol
@@ -29,6 +28,13 @@ from livekit.agents.llm import (
 from livekit.plugins import ai_coustics
 from pydantic import Field
 
+from coach_switcher import (
+    CoachLinkCommander,
+    CoachSwitcher,
+    HandoffState,
+    find_by_role,
+    participant_role,
+)
 from debug_probe import DebugSlideCommander, debug_enabled, run_debug_job
 from deck_data import (
     FactId,
@@ -42,6 +48,7 @@ from deck_data import (
 from model import RealtimeConfig, build_realtime_model, load_realtime_config
 from prompts import (
     add_callout_tool_description,
+    call_head_coach_tool_description,
     highlight_tool_description,
     presenter_instructions,
     run_play_tool_description,
@@ -68,6 +75,7 @@ SHOW_SLIDE_DESCRIPTION = show_slide_tool_description(DECK)
 HIGHLIGHT_DESCRIPTION = highlight_tool_description(DECK)
 RUN_PLAY_DESCRIPTION = run_play_tool_description(DECK)
 ADD_CALLOUT_DESCRIPTION = add_callout_tool_description(FACTS)
+CALL_HEAD_COACH_DESCRIPTION = call_head_coach_tool_description()
 
 
 def load_worker_realtime_config() -> RealtimeConfig | None:
@@ -98,6 +106,13 @@ STARTUP_RETRYABLE_REASONS = (
 )
 
 
+def load_app_url() -> str:
+    app_url = os.environ.get("NEXT_PUBLIC_APP_URL")
+    if not app_url:
+        raise RuntimeError("NEXT_PUBLIC_APP_URL is required for coach join links")
+    return app_url
+
+
 class _RemoteParticipantLike(Protocol):
     identity: str
     attributes: Mapping[str, str]
@@ -116,54 +131,12 @@ class _RoomLike(Protocol):
     def on(self, event: str, callback: Any) -> Any: ...
 
 
-class _RoomIOLike(Protocol):
-    linked_participant: _RemoteParticipantLike | None
-
-    def set_participant(self, participant_identity: str | None) -> None: ...
-
-
-class _SessionLike(Protocol):
-    @property
-    def room_io(self) -> _RoomIOLike: ...
-
-
-class _AgentLike(Protocol):
-    async def update_instructions(self, instructions: str) -> None: ...
-
-
 class _SlideShower(Protocol):
     async def show_slide(self, slide_id: str) -> str: ...
 
 
 def _log(event: str, **fields: object) -> None:
     logger.info(json.dumps({"event": event, **fields}))
-
-
-def participant_role(participant: object) -> str | None:
-    attributes = getattr(participant, "attributes", None) or {}
-    role = attributes.get("role")
-    return role if isinstance(role, str) else None
-
-
-def find_by_role(room: _RoomLike, role: str) -> _RemoteParticipantLike | None:
-    found: _RemoteParticipantLike | None = None
-    for participant in room.remote_participants.values():
-        if participant_role(participant) != role:
-            continue
-        if found is not None:
-            logger.warning(
-                json.dumps(
-                    {
-                        "event": "multiple_role",
-                        "role": role,
-                        "kept": found.identity,
-                        "ignored": participant.identity,
-                    }
-                )
-            )
-            continue
-        found = participant
-    return found
 
 
 def is_startup_retryable(result: str) -> bool:
@@ -285,149 +258,14 @@ async def present_opening_slide(
     return result
 
 
-class CoachSwitcher:
-    """Switch RoomIO audio to the coach and enter clicker mode. Spike 1."""
-
-    def __init__(
-        self, session: _SessionLike, agent: _AgentLike, room: _RoomLike
-    ) -> None:
-        self._session = session
-        self._agent = agent
-        self._room = room
-        self._tasks: set[asyncio.Task[None]] = set()
-        self._lock = asyncio.Lock()
-        self._switched_to: str | None = None
-
-    def attach(self) -> None:
-        self._room.on("participant_connected", self._on_participant_connected)
-        self._room.on("participant_attributes_changed", self._on_attributes_changed)
-        self._room.on("participant_disconnected", self._on_participant_disconnected)
-        existing = find_by_role(self._room, "coach")
-        if existing is not None:
-            self._on_participant_connected(existing)
-
-    def _schedule(self, coro: Any, name: str) -> None:
-        task = asyncio.create_task(coro, name=name)
-        self._tasks.add(task)
-
-        def _done(done: asyncio.Task[None]) -> None:
-            self._tasks.discard(done)
-            if done.cancelled():
-                return
-            exc = done.exception()
-            if exc is not None:
-                logger.error(
-                    json.dumps(
-                        {
-                            "event": "async_task_failed",
-                            "task": name,
-                            "error": f"{type(exc).__name__}: {exc}",
-                        }
-                    ),
-                    exc_info=exc,
-                )
-
-        task.add_done_callback(_done)
-
-    def _on_participant_connected(self, participant: _RemoteParticipantLike) -> None:
-        if participant_role(participant) != "coach":
-            return
-        if self._is_local(participant):
-            return
-        _log(
-            "coach_joined",
-            identity=participant.identity,
-            role="coach",
-        )
-        self._schedule(self._switch(participant.identity), "switch_to_coach")
-
-    def _on_attributes_changed(
-        self, changed_attributes: Mapping[str, str], participant: object
-    ) -> None:
-        if (
-            changed_attributes.get("role") != "coach"
-            and participant_role(participant) != "coach"
-        ):
-            return
-        if not hasattr(participant, "identity"):
-            return
-        self._on_participant_connected(participant)  # type: ignore[arg-type]
-
-    def _on_participant_disconnected(self, participant: _RemoteParticipantLike) -> None:
-        role = participant_role(participant)
-        if role != "coach" and participant.identity != self._switched_to:
-            return
-        linked = self._linked_identity()
-        reason = getattr(participant, "disconnect_reason", None)
-        _log(
-            "coach_left",
-            identity=participant.identity,
-            role=role,
-            linked_identity=linked,
-            switched_to=self._switched_to,
-            disconnect_reason=str(reason) if reason is not None else None,
-            note="no fallback implemented; recording default RoomIO behavior",
-        )
-
-    def _is_local(self, participant: object) -> bool:
-        local = getattr(self._room, "local_participant", None)
-        identity = getattr(participant, "identity", None)
-        return (
-            local is not None
-            and identity is not None
-            and identity == getattr(local, "identity", None)
-        )
-
-    def _linked_identity(self) -> str | None:
-        try:
-            linked = self._session.room_io.linked_participant
-        except RuntimeError:
-            return None
-        return linked.identity if linked is not None else None
-
-    async def _switch(self, identity: str) -> None:
-        async with self._lock:
-            if self._switched_to == identity:
-                _log(
-                    "coach_switch_skipped", identity=identity, reason="already_switched"
-                )
-                return
-            if self._switched_to is not None:
-                logger.warning(
-                    json.dumps(
-                        {
-                            "event": "coach_switch_skipped",
-                            "kept": self._switched_to,
-                            "ignored": identity,
-                        }
-                    )
-                )
-                return
-            started = time.perf_counter()
-            self._session.room_io.set_participant(identity)
-            set_ms = (time.perf_counter() - started) * 1000
-            _log(
-                "set_participant",
-                identity=identity,
-                linked_identity=self._linked_identity(),
-                latency_ms=round(set_ms, 2),
-            )
-            await self._agent.update_instructions(CLICKER_INSTRUCTIONS)
-            _log("update_instructions", mode="clicker")
-            await self._room.local_participant.set_attributes({"mode": "clicker"})
-            self._switched_to = identity
-            total_ms = (time.perf_counter() - started) * 1000
-            _log(
-                "mode_set",
-                mode="clicker",
-                identity=identity,
-                switch_latency_ms=round(total_ms, 2),
-            )
-
-
 class Assistant(Agent):
-    def __init__(self, commander: SlideCommander | None = None) -> None:
+    def __init__(
+        self,
+        commander: SlideCommander | None = None,
+        coach_link: CoachLinkCommander | None = None,
+    ) -> None:
         self._commander = commander
+        self._coach_link = coach_link
         super().__init__(instructions=PRESENTER_INSTRUCTIONS)
 
     @function_tool(description=SHOW_SLIDE_DESCRIPTION)
@@ -482,6 +320,12 @@ class Assistant(Agent):
         if self._commander is None:
             return "FAILED: callout not shown (commander missing)."
         return await self._commander.add_callout(fact_id, text)
+
+    @function_tool(description=CALL_HEAD_COACH_DESCRIPTION)
+    async def call_head_coach(self) -> str:
+        if self._coach_link is None:
+            return "FAILED: coach link not shown (commander missing)."
+        return await self._coach_link.request_handoff(self)
 
 
 def _on_realtime_availability(ev: RealtimeAvailabilityChangedEvent) -> None:
@@ -559,6 +403,8 @@ async def my_agent(ctx: JobContext):
         raise RuntimeError("realtime config missing outside CHALK_DEBUG")
 
     commander = SlideCommander(ctx.room)
+    handoff_state = HandoffState()
+    coach_link = CoachLinkCommander(ctx.room, load_app_url(), handoff_state)
 
     # GPT Realtime is turn-based speech-to-speech. The model's own turn
     # detection (semantic VAD by default) owns turn boundaries, so the
@@ -574,7 +420,7 @@ async def my_agent(ctx: JobContext):
     session = AgentSession(
         llm=llm,
     )
-    assistant = Assistant(commander)
+    assistant = Assistant(commander, coach_link)
 
     await session.start(
         agent=assistant,
@@ -585,15 +431,31 @@ async def my_agent(ctx: JobContext):
                     model=ai_coustics.EnhancerModel.QUAIL_VF_S
                 ),
             ),
+            close_on_disconnect=False,
         ),
     )
 
-    session.on("conversation_item_added", _on_conversation_item_added)
-    session.on("function_tools_executed", _on_function_tools_executed)
-    session.on("user_input_transcribed", _on_user_input_transcribed)
-    session.on("close", _on_session_close)
+    if os.environ.get("CHALK_SESSION_DEBUG") == "1":
+        session.on("conversation_item_added", _on_conversation_item_added)
+        session.on("function_tools_executed", _on_function_tools_executed)
+        session.on("user_input_transcribed", _on_user_input_transcribed)
 
-    CoachSwitcher(session, assistant, ctx.room).attach()
+    switcher = CoachSwitcher(
+        session,
+        assistant,
+        ctx.room,
+        commander,
+        handoff_state,
+        presenter_instructions=PRESENTER_INSTRUCTIONS,
+        clicker_instructions=CLICKER_INSTRUCTIONS,
+    )
+    switcher.attach()
+
+    def _on_close(ev: CloseEvent) -> None:
+        switcher.detach()
+        _on_session_close(ev)
+
+    session.on("close", _on_close)
 
     await ctx.connect()
     await present_opening_slide(session, commander, ctx.room)

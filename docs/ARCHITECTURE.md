@@ -373,18 +373,20 @@ Rendering from the attribute (coach page, and player page on reconnect):
 | Mode | Instructions (substance) | Listens to |
 |---|---|---|
 | `presenter` | Present the deck. Call `show_slide` before speaking about any slide. Call a board tool before describing the board change. Answer from slide notes and facts only. Offer the head coach for slide 6 topics. Only the prepared plays exist; never invent one. | Player |
-| `clicker` | Do not present. Do not answer unless addressed as "Assistant". Call `show_slide` when the humans move to a topic on another slide. Board tools when addressed; `run_play` also when the humans clearly discuss a prepared play. Stay silent otherwise. | Coach (and player if supported) |
+| `clicker` | Do not present. Do not answer unless addressed as "Assistant". Call `show_slide` when the humans move to a topic on another slide. Board tools when addressed; `run_play` also when the humans clearly discuss a prepared play. Stay silent otherwise. | The active trusted player or coach selected by the bounded floor router |
 
 The board tool rules come from [Tools by mode](#tools-by-mode). The prompt lists the menu by reading the deck data, not by a hand-written copy.
 
-Exact switch trigger: the agent sees a participant join with `role=coach` (event `participant_connected`, or attribute change) AND a handoff was requested. Then, in order:
+Exact switch trigger: the agent sees a participant join with `role=coach` (event `participant_connected`, or attribute change). A prior handoff request is not required. Then, in order:
 1. Build the briefing from the session so far.
 2. `send_text` the briefing to the coach only.
 3. Say the one handoff line ("Coach, they're worried about Kyrie. We're on slide 3.").
 4. Update instructions to clicker mode (`agent.update_instructions(...)`). Set attribute `mode=clicker`.
-5. Switch audio input to the coach: `session.room_io.set_participant(coach_identity)`. This method is documented (sessions doc, turns doc, `room_io.py`). `[VERIFIED]` signature: `RoomIO.set_participant(participant_identity: str | None)`, "Switch audio and video streams to specified participant". It takes one identity, so the agent hears one human at a time. Behavior mid-session with GPT Realtime 2.1: `[VERIFIED - Spike 1 / task 06]` switch is clean (0.66 ms for `set_participant`, 46.23 ms including clicker instructions and `mode=clicker`); no realtime session reset. Default `close_on_disconnect=True` then closes the session if that coach leaves; no automatic fallback to the player.
+5. Switch audio input to the coach: `session.room_io.set_participant(coach_identity)`. This method is documented (sessions doc, turns doc, `room_io.py`). `[VERIFIED]` signature: `RoomIO.set_participant(participant_identity: str | None)`, "Switch audio and video streams to specified participant". It takes one identity, so the agent hears one human at a time. Behavior mid-session with GPT Realtime 2.1: `[VERIFIED - Spike 1 / task 06]` switch is clean (0.66 ms for `set_participant`, 46.23 ms including clicker instructions and `mode=clicker`); no realtime session reset. `close_on_disconnect=False`. Only the library's close reasons (`CLIENT_INITIATED`, `ROOM_DELETED`, `USER_REJECTED`) end the session, and only when no player remains. Coach leave restores the player.
 
 If a coach joins without a handoff request: still brief and switch (the link only exists after the request, so this is unlikely).
+
+After the initial coach switch, `active_speakers_changed` can move the single linked participant between trusted `role=player` and `role=coach` participants. The router holds the current floor while that participant remains active, otherwise waits 200 ms before switching. It never selects the agent or a participant without a trusted role. On coach leave it disables floor routing, restores presenter instructions and mode, and links the remaining player. `RoomOptions(close_on_disconnect=False)` keeps the session alive for that recovery.
 
 ### Token route
 `POST /api/token`
@@ -401,7 +403,7 @@ Response:
 Rules:
 - `player`: server creates a random room name. Token includes explicit agent dispatch (`RoomConfiguration` with `agents: [{agentName}]`). TTL short (about 15 min).
 - `coach`: must pass an existing room name. No dispatch. Short TTL.
-- Grants (both): `roomJoin`, `room=<name>`, `canPublish` (audio), `canSubscribe`, `canPublishData` (needed for RPC responses). No `roomAdmin`, no `roomCreate`, no `roomList`.
+- Grants (both): `roomJoin`, `room=<name>`, `canPublish`, `canPublishSources=[microphone,camera]`, `canSubscribe`, `canPublishData` (needed for RPC responses). No screen share, `roomAdmin`, `roomCreate`, `roomList` or `canUpdateOwnMetadata`.
 - Sets token attribute `role`.
 - Rejects unknown roles with 400. No GET route.
 - The starter's production guard (throws unless `IS_VERCEL_PREVIEW=true`) must be handled deliberately, not deleted blindly. Planner decides.

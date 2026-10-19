@@ -11,3 +11,4 @@ load_dotenv(_agent_dir.parent / ".env")
 
 os.environ.setdefault("AGENT_NAME", "test-agent")
 os.environ.setdefault("OPENAI_API_KEY", "sk-test")
+os.environ.setdefault("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
