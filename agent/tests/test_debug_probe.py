@@ -10,11 +10,15 @@ from debug_probe import DebugSlideCommander, handle_debug_probe
 from slide_commander import SlideCommander
 
 
-def _invocation(identity: str, payload: dict[str, object] | None = None) -> RpcInvocationData:
+def _invocation(
+    identity: str, payload: dict[str, object] | None = None
+) -> RpcInvocationData:
     return RpcInvocationData(
         request_id="req-1",
         caller_identity=identity,
-        payload=json.dumps(payload or {"action": "show_slide", "slide_id": "s1_tipoff"}),
+        payload=json.dumps(
+            payload or {"action": "show_slide", "slide_id": "s1_tipoff"}
+        ),
         response_timeout=3.0,
         method="debug_probe",
     )
@@ -34,9 +38,7 @@ async def test_debug_probe_rejects_non_player_role(
     monkeypatch.setenv("CHALK_DEBUG", "1")
     room = _room_with_coach_first()
     commander = DebugSlideCommander(room)
-    result = json.loads(
-        await handle_debug_probe(commander, _invocation("coach-aaa"))
-    )
+    result = json.loads(await handle_debug_probe(commander, _invocation("coach-aaa")))
     assert result["ok"] is False
     assert result["error"] == "player role required"
     assert room.local_participant.calls == []
@@ -49,9 +51,7 @@ async def test_debug_probe_rejects_unknown_caller(
     monkeypatch.setenv("CHALK_DEBUG", "1")
     room = FakeRoom([FakeRemote("player-bbb", {"role": "player"})])
     commander = DebugSlideCommander(room)
-    result = json.loads(
-        await handle_debug_probe(commander, _invocation("spectator"))
-    )
+    result = json.loads(await handle_debug_probe(commander, _invocation("spectator")))
     assert result["ok"] is False
     assert result["error"] == "player role required"
 

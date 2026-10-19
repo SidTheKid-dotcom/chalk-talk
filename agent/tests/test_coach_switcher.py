@@ -9,6 +9,7 @@ from livekit.agents.voice.room_io.types import DEFAULT_CLOSE_ON_DISCONNECT_REASO
 from livekit.rtc import RpcError
 
 from coach_switcher import (
+    COACH_BRIEFING_ATTRIBUTE,
     COACH_BRIEFING_TOPIC,
     COACH_LINK_RESULT,
     CoachLinkCommander,
@@ -16,6 +17,7 @@ from coach_switcher import (
     HandoffState,
     build_coach_briefing,
     find_by_role,
+    paraphrase_player_turn,
     participant_role,
     validate_app_url,
 )
@@ -61,10 +63,11 @@ class FakeLocal:
         return object()
 
     async def set_attributes(self, attributes: dict[str, str]) -> None:
-        mode = attributes.get("mode")
-        self.events.append(f"mode:{mode}")
-        if mode == self.fail_attributes_for:
-            raise RuntimeError("attribute write failed")
+        if "mode" in attributes:
+            mode = attributes["mode"]
+            self.events.append(f"mode:{mode}")
+            if mode == self.fail_attributes_for:
+                raise RuntimeError("attribute write failed")
         self.attribute_calls.append(dict(attributes))
 
 
@@ -107,7 +110,10 @@ class FakeRoomIO:
     def set_participant(self, participant_identity: str | None) -> None:
         self.events.append(f"floor:{participant_identity}")
         self.calls.append(participant_identity)
-        if participant_identity == self.fail_once_for:
+        if (
+            self.fail_once_for is not None
+            and participant_identity == self.fail_once_for
+        ):
             self.fail_once_for = None
             raise RuntimeError("switch failed")
         self.linked_participant = (
@@ -282,6 +288,17 @@ async def test_coach_link_failure_does_not_mark_requested() -> None:
         validate_app_url("localhost:3000")
 
 
+def test_paraphrase_player_turn_is_a_note_not_a_transcript() -> None:
+    assert (
+        paraphrase_player_turn("so what's the plan tonight") == "Wanted the Game 7 plan"
+    )
+    assert paraphrase_player_turn("How do we stop LeBron?") == "How to stop LeBron"
+    assert paraphrase_player_turn(
+        "Kyrie is a good passer, where does he attack from?"
+    ) == ("Kyrie coverage")
+    assert paraphrase_player_turn("Get me the head coach") == "Asked to bring you in"
+
+
 def test_briefing_uses_session_turns_and_skips_handoff_request() -> None:
     events: list[str] = []
     room = FakeRoom([], events)
@@ -297,12 +314,12 @@ def test_briefing_uses_session_turns_and_skips_handoff_request() -> None:
         session, "s3_kyrie", user_turn_count=state.user_turn_count
     )
     assert state.user_turn_count == 3
-    assert briefing == {
-        "asked": ["How do we stop LeBron?", "What about Kyrie?"],
-        "main_worry": "What about Kyrie?",
-        "current_slide": "s3_kyrie",
-        "summary": "Main concern: What about Kyrie? Current slide: s3_kyrie.",
-    }
+    assert briefing["asked"] == ["How to stop LeBron", "Kyrie coverage"]
+    assert briefing["main_worry"] == "Kyrie coverage"
+    assert briefing["current_slide"] == "s3_kyrie"
+    assert "How do we stop LeBron?" not in briefing["asked"]
+    assert "What about Kyrie?" not in briefing["summary"]
+    assert "Kyrie coverage" in str(briefing["summary"])
 
 
 def test_briefing_keeps_the_concern_from_before_later_turns() -> None:
@@ -330,9 +347,10 @@ def test_briefing_keeps_the_concern_from_before_later_turns() -> None:
     briefing = build_coach_briefing(
         later, "s3_kyrie", user_turn_count=state.user_turn_count
     )
-    assert briefing["asked"] == ["How do we stop LeBron?", "What about Kyrie?"]
-    assert briefing["main_worry"] == "What about Kyrie?"
+    assert briefing["asked"] == ["How to stop LeBron", "Kyrie coverage"]
+    assert briefing["main_worry"] == "Kyrie coverage"
     assert "ok thanks" not in briefing["asked"]
+    assert "ok thanks" not in str(briefing["summary"])
 
 
 @pytest.mark.asyncio
@@ -360,7 +378,15 @@ async def test_handoff_order_and_private_briefing_destination() -> None:
     assert text_call["topic"] == COACH_BRIEFING_TOPIC
     assert text_call["destination_identities"] == ["coach"]
     assert "player" not in text_call["destination_identities"]
-    assert json.loads(text_call["text"])["main_worry"] == "What about Kyrie?"
+    assert json.loads(text_call["text"])["main_worry"] == "Kyrie coverage"
+    stored = next(
+        call
+        for call in room.local_participant.attribute_calls
+        if COACH_BRIEFING_ATTRIBUTE in call
+    )
+    assert (
+        json.loads(stored[COACH_BRIEFING_ATTRIBUTE])["main_worry"] == "Kyrie coverage"
+    )
     assert session.reply_calls[0]["tool_choice"] == "none"
     assert agent.instructions == CLICKER
     assert state.active_coach_identity == "coach"
@@ -381,7 +407,7 @@ async def test_coach_present_at_attach_switches_without_prior_request() -> None:
     assert state.active_coach_identity == "coach"
     assert session.room_io.calls == ["coach"]
     briefing = json.loads(room.local_participant.text_calls[0]["text"])
-    assert briefing["main_worry"] == "Get me the head coach"
+    assert briefing["main_worry"] == "Asked to bring you in"
 
 
 @pytest.mark.asyncio
@@ -442,7 +468,8 @@ async def test_instruction_failure_aborts_before_mode_or_audio_switch(
         await switcher.drain()
 
     assert session.room_io.calls == []
-    assert room.local_participant.attribute_calls == [{"mode": "presenter"}]
+    assert COACH_BRIEFING_ATTRIBUTE in room.local_participant.attribute_calls[0]
+    assert room.local_participant.attribute_calls[-1] == {"mode": "presenter"}
     assert state.active_coach_identity is None
     assert '"stage": "update_instructions"' in caplog.text
 

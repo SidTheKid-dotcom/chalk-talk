@@ -5,6 +5,7 @@ import pytest
 
 from agent import (
     CLICKER_INSTRUCTIONS,
+    OPENING_GREETING,
     STARTUP_SLIDE_ID,
     Assistant,
     greet_after_startup,
@@ -57,6 +58,10 @@ def test_explicit_dispatch_name_is_set() -> None:
 
 def test_assistant_greets_as_warriors_coach() -> None:
     instructions = Assistant().instructions
+    assert "Floppy" in instructions
+    assert "opening greeting" in instructions
+    assert "prep you up" in instructions
+    assert "never re-introduce" in instructions
     assert "Warriors" in instructions
     assert "Game Seven" in instructions
     assert "twenty sixteen NBA Finals" in instructions
@@ -78,8 +83,10 @@ async def test_show_slide_without_commander_returns_failure_unchanged() -> None:
 
 def test_clicker_instructions_are_one_line() -> None:
     assert "\n" not in CLICKER_INSTRUCTIONS
+    assert "Floppy" in CLICKER_INSTRUCTIONS
     assert "Assistant" in CLICKER_INSTRUCTIONS
     assert "show_slide" in CLICKER_INSTRUCTIONS
+    assert "X-factors" in CLICKER_INSTRUCTIONS
 
 
 @pytest.mark.asyncio
@@ -93,23 +100,12 @@ async def test_call_head_coach_uses_acked_command_path() -> None:
     assert result == "Coach link is on screen. Say one short line, then wait."
 
 
-def test_startup_reply_instructions_acked_branch() -> None:
-    result = slide_narration(STARTUP_SLIDE_ID)
-    instructions = startup_reply_instructions(result)
-    assert "present the opening slide" in instructions
-    assert "could not be shown" not in instructions
-    assert result in instructions
-
-
-def test_startup_reply_instructions_failed_branch() -> None:
-    result = (
-        "FAILED: slide not shown (player not found). Do not describe it as on screen."
-    )
-    instructions = startup_reply_instructions(result)
-    assert "could not be shown" in instructions
-    assert "present the opening slide" not in instructions
-    assert "Do not describe any slide content" in instructions
-    assert result in instructions
+def test_startup_reply_instructions_keep_the_board_blank() -> None:
+    instructions = startup_reply_instructions()
+    assert OPENING_GREETING in instructions
+    assert "Do not walk the plan" in instructions
+    assert "board stays blank" in instructions
+    assert "Do not call a tool" in instructions
 
 
 def test_startup_retryable_matches_expected_codes() -> None:
@@ -205,39 +201,15 @@ async def test_show_startup_slide_does_not_retry_other_failures() -> None:
 
 
 @pytest.mark.asyncio
-async def test_present_opening_slide_acked_branch() -> None:
-    acked = slide_narration(STARTUP_SLIDE_ID)
+async def test_present_opening_slide_greets_without_loading_a_slide() -> None:
     room = FakeRoom([FakeRemote("player-bbb", {"role": "player"})])
     session = RecordingSession()
-    result = await present_opening_slide(session, RecordingCommander([acked]), room)
-    assert result == acked
+    result = await present_opening_slide(session, room)
+    assert result == OPENING_GREETING
     assert session.calls[0]["tool_choice"] == "none"
     instructions = str(session.calls[0]["instructions"])
-    assert "present the opening slide" in instructions
-    assert "could not be shown" not in instructions
-    assert acked in instructions
-
-
-@pytest.mark.asyncio
-async def test_present_opening_slide_failed_branch() -> None:
-    failed = (
-        "FAILED: slide not shown (player not found). Do not describe it as on screen."
-    )
-    room = FakeRoom([])
-    session = RecordingSession()
-    result = await present_opening_slide(
-        session,
-        RecordingCommander([failed]),
-        room,
-        player_timeout_s=0.01,
-        attempts=2,
-        delay_s=0,
-    )
-    assert result == failed
-    instructions = str(session.calls[0]["instructions"])
-    assert "could not be shown" in instructions
-    assert "present the opening slide" not in instructions
-    assert failed in instructions
+    assert OPENING_GREETING in instructions
+    assert "board stays blank" in instructions
 
 
 @pytest.mark.asyncio
@@ -273,12 +245,12 @@ async def test_wait_for_player_timeout() -> None:
 
 
 @pytest.mark.asyncio
-async def test_greet_after_startup_uses_failure_instructions() -> None:
+async def test_greet_after_startup_uses_the_blank_board_greeting() -> None:
     session = RecordingSession()
-    failed = "FAILED: slide not shown (not ready). Do not describe it as on screen."
-    await greet_after_startup(session, failed)
+    await greet_after_startup(session)
     assert session.calls[0]["tool_choice"] == "none"
-    assert "could not be shown" in str(session.calls[0]["instructions"])
+    assert OPENING_GREETING in str(session.calls[0]["instructions"])
+    assert "board stays blank" in str(session.calls[0]["instructions"])
 
 
 def test_debug_skips_realtime_config(monkeypatch: pytest.MonkeyPatch) -> None:
