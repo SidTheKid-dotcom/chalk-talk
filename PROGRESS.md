@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-01, 02, 05 merged (audited). Running: 04 spike tool order, 07 UI lab, 03 RPC spike. Open decision: model billing (own OpenAI key vs LiveKit Inference credit; free tier = $2.50 credit, 5 concurrent Inference sessions).
+01, 02, 05 merged (audited). Model traffic moves to our OpenAI key (ADR-024). Running: 08 OpenAI plugin switch, 03 RPC spike, 07 UI lab. 04 spike paused (harness committed on its branch); resumes on the OpenAI key after 08 merges.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -32,4 +32,5 @@
 - LiveKit Cloud agent: `AGENT_NAME` must be a secret (`lk agent secrets`), or the worker crash-loops.
 - After `lk agent create`: local dev must stop using `--deployment production` (set `LIVEKIT_AGENT_DEPLOYMENT`).
 - Agent: cap session length (cost guard).
+- `CHALK_DEBUG` must not be set in `lk agent secrets` or any deploy config (enables the debug_probe RPC).
 - Decide whether planning files (`CLAUDE.md`, `AGENTS.md`, `.claude/`, `.agents/`, `docs/plan/`) stay public.

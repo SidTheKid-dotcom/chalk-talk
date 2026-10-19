@@ -121,6 +121,8 @@ Shape (sketch; planner fixes the final format):
   }]
 }
 ```
+Featured fact: a slide may set `featured_fact_id` (one of its `fact_ids`). The slide shows that fact as its static paperclip card. Board callouts (`add_callout`) are separate and count toward the 3-callout limit; the featured card does not.
+
 Formations (ADR-023):
 - `diagram.matchups` (slides with markers): map of each defender id to the player he guards, for all five defenders.
 - `play.start` (optional): marker positions and `ball` holder at the start of the play. Markers not listed keep the slide position. When a play runs, markers first move to `start` in one short step that has no caption. Two plays on one slide can then start from different formations.
