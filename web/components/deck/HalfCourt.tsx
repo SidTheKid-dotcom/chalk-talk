@@ -2,7 +2,7 @@ import { Marker } from '@/components/deck/Marker';
 import { type DrawnArrow, PlayArrows } from '@/components/deck/PlayArrows';
 import type { Coord, Deck, PlayerId, SlideDiagram, TargetId, ZoneId } from '@/lib/deck/types';
 import { toSvgPoint, zoneToSvg } from '@/lib/sketch/court';
-import { layoutMarkers } from '@/lib/sketch/markers';
+import { layoutMarkers, separateGhostsFromLive } from '@/lib/sketch/markers';
 
 type HalfCourtProps = {
   deck: Deck;
@@ -126,10 +126,14 @@ export function HalfCourt({
     matchups: diagram.matchups,
   });
   const ghostLaid = ghosts
-    ? layoutMarkers({
-        markers: ghosts,
-        players: deck.players,
-      })
+    ? separateGhostsFromLive(
+        layoutMarkers({
+          markers: { ...resolvedMarkers, ...ghosts },
+          players: deck.players,
+          matchups: diagram.matchups,
+        }).filter((marker) => Boolean(ghosts[marker.id])),
+        laid
+      )
     : [];
 
   return (
