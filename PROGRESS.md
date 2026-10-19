@@ -1,7 +1,8 @@
 # Progress
 
 ## Now
-Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08, 09 (grounded presenter), 10 (live `/player`), 11 (board tools), player voice-only controls/caption stability. Task 12 Hardwood frontend redesign is running, followed by task 13 camera-aware head-coach handoff and task 14 realtime E2E. The Spike 2 decision is recorded, but its harness branch failed audit and is not merged.
+Planner: Claude Code (Opus 5.5). Executor: Cursor Grok 4.7. Auditor: Claude.
+Merged: 01-03, 05-11 and player control/caption fixes. In audit: 12 Hardwood frontend (branch done), 13 Lane A handoff core (branch done). Running: 14 prework (E2E audio driver). Blocked: 04 harness merge (audit findings). Next after audits: 13 Lane B (coach page, video rail, coach link UI), then 14 full E2E, deploy, freeze.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
