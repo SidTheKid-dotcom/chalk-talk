@@ -239,11 +239,15 @@ async def test_coach_link_is_room_bound_acked_and_marks_requested() -> None:
     state = HandoffState()
     command = CoachLinkCommander(room, "https://chalk.example/base/", state)
 
-    result = await command.request_handoff()
+    session = FakeSession(
+        room, events, None, ["What about Kyrie?", "Get me the head coach"]
+    )
+    result = await command.request_handoff(session)
 
     assert result == COACH_LINK_RESULT
     assert state.handoff_requested is True
     assert state.request_count == 1
+    assert state.user_turn_count == 2
     call = room.local_participant.rpc_calls[0]
     assert call["destination_identity"] == "player"
     assert call["method"] == "show_coach_link"
@@ -259,16 +263,18 @@ async def test_coach_link_failure_does_not_mark_requested() -> None:
     room.local_participant.rpc_response = '{"ok":false,"reason":"not ready"}'
     state = HandoffState()
 
+    session = FakeSession(room, events, None, ["Get me the head coach"])
     result = await CoachLinkCommander(
         room, "http://localhost:3000", state
-    ).request_handoff()
+    ).request_handoff(session)
 
     assert result == "FAILED: coach link not shown (not ready)."
     assert state.handoff_requested is False
+    assert state.user_turn_count is None
     room.local_participant.rpc_response = "[]"
     result = await CoachLinkCommander(
         room, "http://localhost:3000", state
-    ).request_handoff()
+    ).request_handoff(session)
     assert result == "FAILED: coach link not shown (malformed ack)."
     with pytest.raises(ValueError, match="absolute http"):
         validate_app_url("localhost:3000")
@@ -283,7 +289,12 @@ def test_briefing_uses_session_turns_and_skips_handoff_request() -> None:
         None,
         ["How do we stop LeBron?", "What about Kyrie?", "Get me the head coach"],
     )
-    briefing = build_coach_briefing(session, "s3_kyrie", handoff_requested=True)
+    state = HandoffState()
+    state.mark_requested(session)
+    briefing = build_coach_briefing(
+        session, "s3_kyrie", user_turn_count=state.user_turn_count
+    )
+    assert state.user_turn_count == 3
     assert briefing == {
         "asked": ["How do we stop LeBron?", "What about Kyrie?"],
         "main_worry": "What about Kyrie?",
@@ -292,12 +303,42 @@ def test_briefing_uses_session_turns_and_skips_handoff_request() -> None:
     }
 
 
+def test_briefing_keeps_the_concern_from_before_later_turns() -> None:
+    events: list[str] = []
+    room = FakeRoom([], events)
+    at_request = FakeSession(
+        room,
+        events,
+        None,
+        ["How do we stop LeBron?", "What about Kyrie?", "Get me the head coach"],
+    )
+    state = HandoffState()
+    state.mark_requested(at_request)
+    later = FakeSession(
+        room,
+        events,
+        None,
+        [
+            "How do we stop LeBron?",
+            "What about Kyrie?",
+            "Get me the head coach",
+            "ok thanks",
+        ],
+    )
+    briefing = build_coach_briefing(
+        later, "s3_kyrie", user_turn_count=state.user_turn_count
+    )
+    assert briefing["asked"] == ["How do we stop LeBron?", "What about Kyrie?"]
+    assert briefing["main_worry"] == "What about Kyrie?"
+    assert "ok thanks" not in briefing["asked"]
+
+
 @pytest.mark.asyncio
 async def test_handoff_order_and_private_briefing_destination() -> None:
     events: list[str] = []
     player = FakeRemote("player", "player")
     room = FakeRoom([player], events)
-    state = HandoffState(handoff_requested=True, request_count=1)
+    state = HandoffState(handoff_requested=True, request_count=1, user_turn_count=3)
     switcher, session, agent, _ = make_switcher(room, events, state=state)
     switcher.attach()
     coach = FakeRemote("coach", "coach")
