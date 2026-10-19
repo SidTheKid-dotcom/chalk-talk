@@ -235,9 +235,11 @@ function CoachJoin({ credits, jrImageSrc }: CoachSessionProps) {
           <BriefingField label="They asked" text={askedText} />
           <BriefingField label="Main worry" text={briefing?.mainWorry || '—'} highlight />
           <BriefingField label="Now on" text={nowOn} />
-          <p className="coach-mode" data-mode-label>
-            {modeLabel(board.mode)}
-          </p>
+          {board.mode === 'clicker' || board.mode === 'presenter' ? (
+            <p className="coach-mode" data-mode-label>
+              {modeLabel(board.mode)}
+            </p>
+          ) : null}
         </aside>
       </div>
       <footer className="coach-controls" data-coach-controls>
