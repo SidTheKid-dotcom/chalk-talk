@@ -2,6 +2,7 @@ import { Caption } from '@/components/deck/Caption';
 import { HalfCourt } from '@/components/deck/HalfCourt';
 import { Headline } from '@/components/deck/Headline';
 import { JrCard } from '@/components/deck/JrCard';
+import { KalamNote } from '@/components/deck/KalamNote';
 import { LowerThird } from '@/components/deck/LowerThird';
 import { NoteCard } from '@/components/deck/NoteCard';
 import { PhotoCreditsLink } from '@/components/deck/PhotoCredits';
@@ -11,6 +12,7 @@ import { Points } from '@/components/deck/Points';
 import { Sheet } from '@/components/deck/Sheet';
 import { Stamp } from '@/components/deck/Stamp';
 import { StatusStrip, type StatusStripProps } from '@/components/deck/StatusStrip';
+import type { OverlayCallout } from '@/lib/deck/commands';
 import { creditForFile, cutoutCaption } from '@/lib/deck/credits';
 import { facts, featuredFact, firstSentence } from '@/lib/deck/load';
 import type { CutoutCredit, Deck, DeckSlide, PlayerId, TargetId } from '@/lib/deck/types';
@@ -29,6 +31,8 @@ export type SlideViewProps = {
   forceMissingJr?: boolean;
   revealJr?: boolean;
   noteFactId?: string;
+  callouts?: OverlayCallout[];
+  playCaption?: string | null;
   animate?: boolean;
   shot?: boolean;
   captionText?: string;
@@ -50,6 +54,8 @@ export function SlideView({
   forceMissingJr = false,
   revealJr = false,
   noteFactId,
+  callouts = [],
+  playCaption = null,
   animate = false,
   shot = false,
   captionText,
@@ -98,6 +104,7 @@ export function SlideView({
                         <NoteCard kind="fact" fact={noteFact} />
                       </div>
                     ) : null}
+                    <CalloutStack callouts={callouts} />
                   </div>
                   <CutoutRow
                     files={slide.cutouts}
@@ -119,6 +126,7 @@ export function SlideView({
                       <NoteCard kind="fact" fact={noteFact} />
                     </div>
                   ) : null}
+                  <CalloutStack callouts={callouts} />
                 </div>
               )}
               {slide.id === 's1_tipoff' ? (
@@ -161,6 +169,11 @@ export function SlideView({
                     ball={ball}
                     animate={animate}
                   />
+                  {playCaption ? (
+                    <p className="play-caption font-kalam" data-play-caption>
+                      {playCaption}
+                    </p>
+                  ) : null}
                   {showJr && jrCard ? (
                     <div className="absolute top-4 right-2">
                       <JrCard
@@ -183,6 +196,42 @@ export function SlideView({
         </Sheet>
       </div>
       <StatusStrip {...status} />
+    </div>
+  );
+}
+
+function CalloutStack({ callouts }: { callouts: OverlayCallout[] }) {
+  if (callouts.length === 0) return null;
+  return (
+    <div className="callout-stack mt-5 flex flex-col items-start gap-3">
+      {callouts.map((callout) => {
+        if (callout.fact_id) {
+          const fact = facts.find((row) => row.id === callout.fact_id);
+          if (!fact) return null;
+          return (
+            <div
+              key={callout.callout_id}
+              data-callout={callout.callout_id}
+              data-callout-kind="fact"
+            >
+              <NoteCard kind="fact" fact={fact} />
+            </div>
+          );
+        }
+        return (
+          <aside
+            key={callout.callout_id}
+            className="coach-note"
+            data-callout={callout.callout_id}
+            data-callout-kind="text"
+          >
+            <p className="font-archivo m-0 text-[11px] tracking-wide text-[var(--blue)] uppercase">
+              Coach&apos;s note
+            </p>
+            <KalamNote text={callout.text ?? ''} className="mt-1 text-[20px]" />
+          </aside>
+        );
+      })}
     </div>
   );
 }

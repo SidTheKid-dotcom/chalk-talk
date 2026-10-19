@@ -65,10 +65,17 @@ describe('bindDeckRpc', () => {
       },
       async () => undefined
     );
-    expect([...room.handlers.keys()].sort()).toEqual(['highlight', 'show_slide']);
+    expect([...room.handlers.keys()].sort()).toEqual([
+      'add_callout',
+      'highlight',
+      'run_play',
+      'show_slide',
+    ]);
     unbind();
     expect(room.unregisterRpcMethod).toHaveBeenCalledWith('show_slide');
     expect(room.unregisterRpcMethod).toHaveBeenCalledWith('highlight');
+    expect(room.unregisterRpcMethod).toHaveBeenCalledWith('run_play');
+    expect(room.unregisterRpcMethod).toHaveBeenCalledWith('add_callout');
     expect(room.handlers.size).toBe(0);
   });
 
@@ -112,5 +119,63 @@ describe('bindDeckRpc', () => {
       applied: true,
     });
     expect(current.currentSlideId).toBe('s3_kyrie');
+  });
+
+  it('acks run_play after the first painted frame', async () => {
+    const room = fakeRoom();
+    let current: DeckCommandState = {
+      ...mountedState,
+      currentSlideId: 's2_lebron',
+      lastAppliedSeq: 10,
+    };
+    const afterPaint = vi.fn(async () => undefined);
+    bindDeckRpc(
+      room,
+      () => current,
+      (next) => {
+        current = next;
+      },
+      afterPaint
+    );
+    const ack = await room.handlers.get('run_play')?.(
+      invocation({ slide_id: 's2_lebron', seq: 11, play_id: 'p_blitz_lebron_pnr' })
+    );
+    expect(afterPaint).toHaveBeenCalledOnce();
+    expect(JSON.parse(ack ?? '{}')).toMatchObject({
+      ok: true,
+      seq: 11,
+      applied: true,
+      play_id: 'p_blitz_lebron_pnr',
+      duration_ms: 5000,
+    });
+    expect(current.play?.play_id).toBe('p_blitz_lebron_pnr');
+  });
+
+  it('throws RpcError 2005 for a rejected callout and does not render', async () => {
+    const room = fakeRoom();
+    let current: DeckCommandState = {
+      ...mountedState,
+      currentSlideId: 's2_lebron',
+      lastAppliedSeq: 3,
+    };
+    bindDeckRpc(
+      room,
+      () => current,
+      (next) => {
+        current = next;
+      },
+      async () => undefined
+    );
+    await expect(
+      room.handlers.get('add_callout')?.(
+        invocation({
+          slide_id: 's2_lebron',
+          seq: 4,
+          callout_id: 'c4',
+          text: 'He scores 40 a night',
+        })
+      )
+    ).rejects.toMatchObject({ code: 2005 });
+    expect(current.callouts).toEqual([]);
   });
 });

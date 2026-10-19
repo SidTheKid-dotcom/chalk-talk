@@ -201,6 +201,24 @@
   transform: rotate(0.45deg);
 }
 
+.coach-note {
+  max-width: 240px;
+  padding: 6px 2px 0;
+  transform: rotate(-0.4deg);
+}
+
+.play-caption {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  margin: 0;
+  max-width: 280px;
+  color: var(--blue);
+  font-size: 22px;
+  line-height: 1.15;
+  text-align: right;
+}
+
 .status-strip {
   background: #191714;
   color: #f6f1e4;

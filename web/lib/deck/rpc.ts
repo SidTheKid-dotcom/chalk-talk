@@ -1,5 +1,11 @@
 import { RpcError, type RpcInvocationData } from 'livekit-client';
-import { type DeckCommandState, reduceHighlight, reduceShowSlide } from '@/lib/deck/commands';
+import {
+  type DeckCommandState,
+  reduceAddCallout,
+  reduceHighlight,
+  reduceRunPlay,
+  reduceShowSlide,
+} from '@/lib/deck/commands';
 
 export type DeckRpcHost = {
   registerRpcMethod: (
@@ -46,20 +52,25 @@ export function afterNextPaint(): Promise<void> {
   });
 }
 
+function parsePayload(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new RpcError(2002, 'malformed payload');
+  }
+}
+
 export function bindDeckRpc(
   room: DeckRpcHost,
   getState: () => DeckCommandState,
   setState: (state: DeckCommandState) => void,
   afterPaint: () => Promise<void> = afterNextPaint
 ): () => void {
-  const handleShowSlide = async (data: RpcInvocationData) => {
-    let payload: unknown;
-    try {
-      payload = JSON.parse(data.payload);
-    } catch {
-      throw new RpcError(2002, 'malformed payload');
-    }
-    const result = reduceShowSlide(getState(), payload);
+  const handle = async (
+    reducer: (state: DeckCommandState, payload: unknown) => ReturnType<typeof reduceShowSlide>,
+    data: RpcInvocationData
+  ) => {
+    const result = reducer(getState(), parsePayload(data.payload));
     if (!result.ok) {
       throw new RpcError(result.code, result.message);
     }
@@ -70,29 +81,20 @@ export function bindDeckRpc(
     return JSON.stringify(result.ack);
   };
 
-  const handleHighlight = async (data: RpcInvocationData) => {
-    let payload: unknown;
-    try {
-      payload = JSON.parse(data.payload);
-    } catch {
-      throw new RpcError(2002, 'malformed payload');
-    }
-    const result = reduceHighlight(getState(), payload);
-    if (!result.ok) {
-      throw new RpcError(result.code, result.message);
-    }
-    setState(result.state);
-    if (result.ack.applied) {
-      await afterPaint();
-    }
-    return JSON.stringify(result.ack);
-  };
+  const handleShowSlide = (data: RpcInvocationData) => handle(reduceShowSlide, data);
+  const handleHighlight = (data: RpcInvocationData) => handle(reduceHighlight, data);
+  const handleRunPlay = (data: RpcInvocationData) => handle(reduceRunPlay, data);
+  const handleAddCallout = (data: RpcInvocationData) => handle(reduceAddCallout, data);
 
   room.registerRpcMethod('show_slide', handleShowSlide);
   room.registerRpcMethod('highlight', handleHighlight);
+  room.registerRpcMethod('run_play', handleRunPlay);
+  room.registerRpcMethod('add_callout', handleAddCallout);
 
   return () => {
     room.unregisterRpcMethod('show_slide');
     room.unregisterRpcMethod('highlight');
+    room.unregisterRpcMethod('run_play');
+    room.unregisterRpcMethod('add_callout');
   };
 }

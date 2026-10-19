@@ -98,6 +98,12 @@ async def test_show_slide_without_commander_returns_failure_unchanged() -> None:
     assert result == (
         "FAILED: slide not shown (commander missing). Do not describe it as on screen."
     )
+    highlight = await Assistant().highlight("cle_james")
+    play = await Assistant().run_play("p_blitz_lebron_pnr")
+    callout = await Assistant().add_callout(text="Iguodala on LeBron")
+    assert highlight.startswith("FAILED: highlight not shown")
+    assert play.startswith("FAILED: play not shown")
+    assert callout.startswith("FAILED: callout not shown")
 
 
 def test_clicker_instructions_are_one_line() -> None:

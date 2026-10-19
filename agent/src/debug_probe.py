@@ -89,7 +89,9 @@ def _log_task_error(task: asyncio.Task[None]) -> None:
         )
 
 
-def _reject_non_player(commander: SlideCommander, data: RpcInvocationData) -> str | None:
+def _reject_non_player(
+    commander: SlideCommander, data: RpcInvocationData
+) -> str | None:
     role = commander.role_of(data.caller_identity)
     if role == "player":
         return None
@@ -215,6 +217,47 @@ async def handle_debug_probe(
             kind="slide",
         )
         return json.dumps({"ok": True, "action": "stale_slide", "result": result})
+
+    if action == "run_play":
+        play_id = str(body.get("play_id") or "p_blitz_lebron_pnr")
+        result = await commander.run_play(play_id)
+        return json.dumps({"ok": True, "action": "run_play", "result": result})
+
+    if action == "add_callout":
+        fact_id = body.get("fact_id")
+        text = body.get("text")
+        result = await commander.add_callout(
+            str(fact_id) if fact_id is not None else None,
+            str(text) if text is not None else None,
+        )
+        return json.dumps({"ok": True, "action": "add_callout", "result": result})
+
+    if action == "stale_play":
+        result = await commander.send_raw(
+            "run_play",
+            {
+                "slide_id": commander.current_slide or "s2_lebron",
+                "seq": 1,
+                "play_id": str(body.get("play_id") or "p_blitz_lebron_pnr"),
+            },
+            bump_seq=False,
+            kind="play",
+        )
+        return json.dumps({"ok": True, "action": "stale_play", "result": result})
+
+    if action == "stale_callout":
+        result = await commander.send_raw(
+            "add_callout",
+            {
+                "slide_id": commander.current_slide or SLIDE_IDS[0],
+                "seq": 1,
+                "callout_id": "c1",
+                "text": "Iguodala on LeBron",
+            },
+            bump_seq=False,
+            kind="callout",
+        )
+        return json.dumps({"ok": True, "action": "stale_callout", "result": result})
 
     script = await run_script(commander)
     return json.dumps({"ok": True, "action": "script", **script})
