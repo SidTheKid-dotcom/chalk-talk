@@ -20,3 +20,5 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [web] The embedded preview browser has no mic: `getUserMedia` throws `NotSupportedError`. The /player page must catch mic failure and show a message. Voice tests need a real browser. (audit 01)
 - [livekit/agents] Adding plain `vad=` to a realtime session keeps server turn detection; adding `turn_detection` or `interruption` with it switches to client-side turns. VAD is needed for `e2e_latency`. (agent_activity.py; audit 01)
 - [agent/tests] Importing agent.py raises if AGENT_NAME is unset, so a fresh clone fails pytest. Set a default in tests/conftest.py and keep the fail-fast raise. (audit 01; task 01 r2)
+- [facts] A soft claim ("Love produced when he played") passed planner review but was false across Games 5-6. Any slide sentence that judges performance needs a fact per game it covers, not one game. (audit 02)
+- [facts] Basketball-Reference returns 403 to curl and plain WebFetch. A search-provider fetch (parallel-search web_fetch) reads the full pages. (audit 02)
