@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-Merged: 01, 02, 03 (Spike 3 PASS), 05, 07 (UI lab), 08. Running: 04 Spike 2 tool order, 06 Spike 1 coach audio. Next: Wave 2 task files (presenter agent, styled /player) once both spikes report.
+Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08. Running: 04 Spike 2 tool order. Next: Wave 2 task files when 04 reports.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -9,6 +9,7 @@ Merged: 01, 02, 03 (Spike 3 PASS), 05, 07 (UI lab), 08. Running: 04 Spike 2 tool
 - `[UNVERIFIED]` pass on ARCHITECTURE and RISKS with `lk docs`. ADR-019 to ADR-022.
 - Task files 01-07 written.
 - 01 setup merged: agent on gpt-realtime-2.1 with explicit dispatch, web starter, Makefile. Spoken mic turn not yet verified (no mic in executor browser).
+- 06 Spike 1 merged: coach audio switch works mid-session (0.66 ms, no realtime reset). ADR-025: coach leave returns to player; model judges 'addressed'.
 - 07 UI lab merged: all six slides, coach view and primitives at /lab from deck data; marker overlap test.
 - 03 Spike 3 merged: RPC ack after paint, median 117 ms; stale, error codes, hidden tab, agent restart, frozen tab bound all handled.
 - 08 model merged: OpenAI plugin first, LiveKit Inference fallback (RealtimeModelFallbackAdapter). Inference credit likely spent (429).
@@ -28,6 +29,13 @@ Merged: 01, 02, 03 (Spike 3 PASS), 05, 07 (UI lab), 08. Running: 04 Spike 2 tool
 
 ## Blocked
 - None.
+
+## Handoff task must include (audit 06)
+- `RoomOptions(close_on_disconnect=False)`; on coach leave clear the switched state, `set_participant(player)` by role, restore presenter mode (ADR-025).
+- Switch order per ARCHITECTURE: briefing, handoff line, clicker instructions, `mode` attribute, `set_participant` last; or roll back on failure.
+- Attributes-changed handler only on `changed_attributes["role"] == "coach"`.
+- Move `CoachSwitcher`, `find_by_role`, `participant_role` to `agent/src/coach_switcher.py`; `SlideCommander.find_player` uses `find_by_role`. Move the four debug `session.on` loggers out of `agent.py` or behind debug (they log transcripts at INFO).
+- Tests: attributes-changed path, coach present at attach, second coach after leave, failing `update_instructions` logged; add `drain()` instead of reading `_tasks`.
 
 ## Ship checklist (collected from audits)
 - README Known limits: coach link is a bearer link (anyone with it joins as coach); no rate limit on the token route; free-tier cold start and minute caps.
