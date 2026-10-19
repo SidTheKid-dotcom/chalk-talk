@@ -14,6 +14,7 @@ type PushDemoProps = {
   fromId?: string;
   toId?: string;
   rapid?: boolean;
+  showCredits?: boolean;
 };
 
 export function PushDemo({
@@ -22,6 +23,7 @@ export function PushDemo({
   fromId = 's1_tipoff',
   toId = 's2_lebron',
   rapid = false,
+  showCredits = true,
 }: PushDemoProps) {
   const start = (SLIDE_IDS as readonly string[]).includes(fromId)
     ? (fromId as SlideId)
@@ -50,7 +52,7 @@ export function PushDemo({
   }, [rapid, target]);
 
   return (
-    <HardwoodStage slide={slide} status="Speaking">
+    <HardwoodStage slide={slide} status="Speaking" showCredits={showCredits}>
       <SlidePush slideId={slideId} seq={seq}>
         <SlideView deck={deck} slide={slide} credits={credits} jrImageSrc={jrImageSrc} />
       </SlidePush>
