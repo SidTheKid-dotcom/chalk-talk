@@ -2,6 +2,7 @@ import { Marker } from '@/components/deck/Marker';
 import { type DrawnArrow, PlayArrows } from '@/components/deck/PlayArrows';
 import type { Deck, PlayerId, SlideDiagram, TargetId, ZoneId } from '@/lib/deck/types';
 import { toSvgPoint, zoneToSvg } from '@/lib/sketch/court';
+import { layoutMarkers } from '@/lib/sketch/markers';
 import { hashSeed, roughCircle } from '@/lib/sketch/rough';
 
 type HalfCourtProps = {
@@ -53,11 +54,20 @@ export function HalfCourt({
     from: toSvgPoint(arrow.from),
     to: toSvgPoint(arrow.to),
   }));
+  const resolvedMarkers: Partial<Record<PlayerId, [number, number]>> = {
+    ...diagram.markers,
+    ...markerOverrides,
+  };
+  const laid = layoutMarkers({
+    markers: resolvedMarkers,
+    players: deck.players,
+    matchups: diagram.matchups,
+  });
 
   return (
     <svg
       viewBox="-2 -4 104 110"
-      className="aspect-square h-auto w-full overflow-visible"
+      className="h-auto w-full overflow-visible"
       role="img"
       aria-label="Half court"
     >
@@ -79,18 +89,18 @@ export function HalfCourt({
         );
       })}
       <PlayArrows arrows={mappedArrows} animate={animate} />
-      {Object.entries(diagram.markers).map(([id, position]) => {
-        const playerId = id as PlayerId;
-        const player = deck.players[playerId];
-        const coord = markerOverrides?.[playerId] ?? position;
-        if (!player || !coord) return null;
+      {laid.map((marker) => {
+        const player = deck.players[marker.id];
+        if (!player) return null;
         return (
           <Marker
-            key={playerId}
+            key={marker.id}
             player={player}
-            position={toSvgPoint(coord)}
-            highlighted={highlight === playerId}
-            hasBall={ball === playerId}
+            position={marker.svg}
+            radius={marker.radiusSvg}
+            fontSize={marker.fontSizeSvg}
+            highlighted={highlight === marker.id}
+            hasBall={ball === marker.id}
             animateHighlight={animate}
           />
         );
