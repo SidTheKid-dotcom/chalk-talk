@@ -77,6 +77,13 @@
           "gsw_curry": [14, 16],
           "gsw_barnes": [28, 40]
         },
+        "matchups": {
+          "gsw_iguodala": "cle_james",
+          "gsw_thompson": "cle_irving",
+          "gsw_green": "cle_tthompson",
+          "gsw_barnes": "cle_love",
+          "gsw_curry": "cle_smith"
+        },
         "zones": ["z_paint", "z_top_key", "z_left_wing", "z_right_wing", "z_left_corner", "z_right_corner"]
       },
       "cards": []
@@ -108,6 +115,13 @@
           "gsw_barnes": [88, 16],
           "gsw_curry": [12, 16]
         },
+        "matchups": {
+          "gsw_thompson": "cle_irving",
+          "gsw_iguodala": "cle_james",
+          "gsw_green": "cle_love",
+          "gsw_barnes": "cle_tthompson",
+          "gsw_curry": "cle_smith"
+        },
         "zones": ["z_top_key", "z_left_wing", "z_right_wing", "z_left_elbow", "z_right_elbow", "z_paint"]
       },
       "cards": []
@@ -128,16 +142,23 @@
       "diagram": {
         "kind": "half_court",
         "markers": {
-          "gsw_curry": [30, 18],
-          "gsw_thompson": [78, 48],
-          "gsw_green": [50, 58],
-          "gsw_iguodala": [8, 12],
-          "gsw_barnes": [92, 12],
-          "cle_irving": [32, 22],
-          "cle_james": [50, 52],
-          "cle_love": [50, 24],
-          "cle_smith": [74, 46],
-          "cle_tthompson": [88, 16]
+          "gsw_curry": [20, 14],
+          "gsw_iguodala": [30, 28],
+          "gsw_green": [40, 46],
+          "gsw_thompson": [50, 62],
+          "gsw_barnes": [90, 12],
+          "cle_irving": [26, 12],
+          "cle_love": [34, 22],
+          "cle_james": [42, 38],
+          "cle_smith": [50, 54],
+          "cle_tthompson": [82, 14]
+        },
+        "matchups": {
+          "cle_irving": "gsw_curry",
+          "cle_love": "gsw_iguodala",
+          "cle_james": "gsw_green",
+          "cle_smith": "gsw_thompson",
+          "cle_tthompson": "gsw_barnes"
         },
         "zones": ["z_top_key", "z_left_wing", "z_right_wing", "z_left_corner", "z_right_corner", "z_high_post", "z_paint"]
       },
@@ -149,11 +170,11 @@
       "section": "X-factors",
       "title": "X-factors: Love, bench, fouls, pace",
       "points": [
-        "Love's minutes and production have swung game to game.",
+        "Love produced when he played and sat another night.",
         "Green is back. Stay out of foul trouble.",
         "Bench and pace can decide it if the stars cancel."
       ],
-      "notes": "Walk the swing factors. Love has been in and out of the lineup and his nights have not been even. Green missed a game under suspension and then played with fouls; we need him on the floor. Livingston, Iguodala, and Ezeli are the bench minutes. We can push; their regular-season pace was high. No court on this slide.",
+      "notes": "Walk the swing factors. Love produced when he was in and was inactive for another night. Green missed a game under suspension and then played with fouls; we need him on the floor. Livingston, Iguodala, and Ezeli are the bench minutes. We can push; our regular-season pace was high. No court on this slide.",
       "fact_ids": ["F13", "F15", "F17", "F18", "F19"],
       "cutouts": [
         "kevin-love.png",
@@ -215,7 +236,7 @@
           "arrows": [{"from": "cle_tthompson", "to": [56, 70], "kind": "screen"}]
         },
         {
-          "caption": "Both defenders jump the ball",
+          "caption": "Both defenders trap the ball",
           "duration_ms": 1200,
           "ball": "cle_james",
           "moves": {"gsw_green": [54, 74], "gsw_iguodala": [46, 74]},
@@ -269,7 +290,7 @@
           "caption": "Stay in front after the switch",
           "duration_ms": 1200,
           "ball": "cle_irving",
-          "moves": {"cle_irving": [80, 40], "gsw_green": [80, 44]},
+          "moves": {"cle_irving": [80, 40], "gsw_green": [77, 35]},
           "arrows": [{"from": "cle_irving", "to": [80, 40], "kind": "dribble"}]
         },
         {
@@ -289,41 +310,41 @@
         {
           "caption": "Curry starts low",
           "duration_ms": 800,
-          "ball": "gsw_green",
+          "ball": "gsw_thompson",
           "moves": {},
           "arrows": []
         },
         {
           "caption": "He runs off staggered screens",
           "duration_ms": 1400,
-          "ball": "gsw_green",
+          "ball": "gsw_thompson",
           "moves": {
-            "gsw_curry": [42, 40],
-            "gsw_iguodala": [36, 28],
-            "gsw_green": [40, 42]
+            "gsw_curry": [36, 42],
+            "gsw_iguodala": [32, 26],
+            "gsw_green": [38, 44]
           },
           "arrows": [
-            {"from": "gsw_curry", "to": [42, 40], "kind": "cut"},
-            {"from": "gsw_iguodala", "to": [36, 28], "kind": "screen"},
-            {"from": "gsw_green", "to": [40, 42], "kind": "screen"}
+            {"from": "gsw_curry", "to": [36, 42], "kind": "cut"},
+            {"from": "gsw_iguodala", "to": [32, 26], "kind": "screen"},
+            {"from": "gsw_green", "to": [38, 44], "kind": "screen"}
           ]
         },
         {
           "caption": "Catch on the wing or top",
           "duration_ms": 1200,
           "ball": "gsw_curry",
-          "moves": {"gsw_curry": [24, 52]},
+          "moves": {"gsw_curry": [22, 52]},
           "arrows": [
-            {"from": "gsw_green", "to": [24, 52], "kind": "pass"},
-            {"from": "gsw_curry", "to": [24, 52], "kind": "cut"}
+            {"from": "gsw_thompson", "to": [22, 52], "kind": "pass"},
+            {"from": "gsw_curry", "to": [22, 52], "kind": "cut"}
           ]
         },
         {
           "caption": "Shoot or hit the slip",
           "duration_ms": 1200,
           "ball": "gsw_curry",
-          "moves": {"gsw_iguodala": [50, 28]},
-          "arrows": [{"from": "gsw_iguodala", "to": [50, 28], "kind": "cut"}]
+          "moves": {"gsw_iguodala": [50, 26]},
+          "arrows": [{"from": "gsw_iguodala", "to": [50, 26], "kind": "cut"}]
         }
       ]
     },
@@ -331,44 +352,56 @@
       "id": "p_draymond_short_roll",
       "slide_id": "s4_offense",
       "title": "Draymond short-roll 4-on-3",
+      "start": {
+        "ball": "gsw_curry",
+        "positions": {
+          "gsw_curry": [50, 62],
+          "gsw_green": [58, 56],
+          "gsw_thompson": [80, 48],
+          "gsw_iguodala": [12, 14],
+          "gsw_barnes": [90, 12],
+          "cle_irving": [50, 54],
+          "cle_james": [56, 48],
+          "cle_love": [22, 16],
+          "cle_smith": [74, 42],
+          "cle_tthompson": [82, 14]
+        }
+      },
       "steps": [
         {
           "caption": "They trap Curry on the ball",
           "duration_ms": 1200,
           "ball": "gsw_curry",
           "moves": {
-            "gsw_curry": [50, 62],
-            "cle_james": [46, 66],
-            "cle_irving": [54, 66]
+            "gsw_green": [55, 61],
+            "cle_irving": [46, 59],
+            "cle_james": [54, 59]
           },
           "arrows": [
-            {"from": "gsw_curry", "to": [50, 62], "kind": "dribble"},
-            {"from": "cle_james", "to": [46, 66], "kind": "rotate"},
-            {"from": "cle_irving", "to": [54, 66], "kind": "rotate"}
+            {"from": "gsw_green", "to": [55, 61], "kind": "screen"},
+            {"from": "cle_irving", "to": [46, 59], "kind": "rotate"},
+            {"from": "cle_james", "to": [54, 59], "kind": "rotate"}
           ]
         },
         {
           "caption": "Curry finds Green at the nail",
           "duration_ms": 1200,
           "ball": "gsw_green",
-          "moves": {"gsw_green": [50, 40]},
-          "arrows": [{"from": "gsw_curry", "to": [50, 40], "kind": "pass"}]
-        },
-        {
-          "caption": "Green plays the short roll",
-          "duration_ms": 1200,
-          "ball": "gsw_green",
-          "moves": {"gsw_green": [50, 34]},
-          "arrows": [{"from": "gsw_green", "to": [50, 34], "kind": "cut"}]
+          "moves": {"gsw_green": [50, 38]},
+          "arrows": [
+            {"from": "gsw_curry", "to": [50, 38], "kind": "pass"},
+            {"from": "gsw_green", "to": [50, 38], "kind": "cut"}
+          ]
         },
         {
           "caption": "Look lob, corner, or drive",
           "duration_ms": 1400,
           "ball": "gsw_green",
-          "moves": {},
+          "moves": {"gsw_green": [50, 30]},
           "arrows": [
-            {"from": "gsw_green", "to": [8, 12], "kind": "pass"},
-            {"from": "gsw_green", "to": [92, 12], "kind": "pass"}
+            {"from": "gsw_green", "to": [50, 30], "kind": "dribble"},
+            {"from": "gsw_green", "to": [12, 14], "kind": "pass"},
+            {"from": "gsw_green", "to": [90, 12], "kind": "pass"}
           ]
         }
       ]
