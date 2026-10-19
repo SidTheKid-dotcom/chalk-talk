@@ -16,6 +16,27 @@ function state(partial: Partial<DeckCommandState> = {}): DeckCommandState {
   return { ...initialDeckState, ready: true, ...partial };
 }
 
+function overlayAttributes(overlay: {
+  slide_id: string;
+  seq: number;
+  highlights?: string[];
+  play?: { play_id: string; seq: number } | null;
+  callouts?: Array<{ callout_id: string; text?: string; fact_id?: string }>;
+}): Record<string, string> {
+  return {
+    current_slide: overlay.slide_id,
+    slide_seq: String(overlay.seq),
+    overlay_state: JSON.stringify({
+      v: 1,
+      slide_id: overlay.slide_id,
+      seq: overlay.seq,
+      highlights: overlay.highlights ?? [],
+      play: overlay.play ?? null,
+      callouts: overlay.callouts ?? [],
+    }),
+  };
+}
+
 describe('reduceShowSlide', () => {
   it('applies an increasing seq and clears highlights', () => {
     const first = reduceShowSlide(state(), { slide_id: 's1_tipoff', seq: 1 });
@@ -290,6 +311,41 @@ describe('reduceAddCallout', () => {
     if (!stale.ok) return;
     expect(stale.ack).toMatchObject({ applied: false, reason: 'stale', active: ['c1'] });
   });
+
+  it('rejects short and long text as 2005, not 2002', () => {
+    const current = state({ currentSlideId: 's2_lebron', lastAppliedSeq: 4 });
+    const short = reduceAddCallout(current, {
+      slide_id: 's2_lebron',
+      seq: 5,
+      callout_id: 'c5',
+      text: 'no',
+    });
+    expect(short.ok).toBe(false);
+    if (!short.ok) expect(short.code).toBe(RPC_ERROR.CALLOUT_REJECTED);
+
+    const long = reduceAddCallout(current, {
+      slide_id: 's2_lebron',
+      seq: 5,
+      callout_id: 'c5',
+      text: 'x'.repeat(61),
+    });
+    expect(long.ok).toBe(false);
+    if (!long.ok) expect(long.code).toBe(RPC_ERROR.CALLOUT_REJECTED);
+  });
+
+  it('accepts padded valid text and stores the trimmed note', () => {
+    const current = state({ currentSlideId: 's2_lebron', lastAppliedSeq: 4 });
+    const result = reduceAddCallout(current, {
+      slide_id: 's2_lebron',
+      seq: 5,
+      callout_id: 'c5',
+      text: '  Iguodala on LeBron  ',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.ack).toMatchObject({ applied: true, callout_id: 'c5' });
+    expect(result.state.callouts).toEqual([{ callout_id: 'c5', text: 'Iguodala on LeBron' }]);
+  });
 });
 
 describe('stateFromAgentAttributes', () => {
@@ -338,6 +394,76 @@ describe('seedDeckFromAgent', () => {
       attributes: { current_slide: 's1_tipoff', slide_seq: '1' },
     });
     expect(next.state).toEqual(current);
+  });
+
+  it('keeps playAnimate through a same-seq overlay echo after RPC', () => {
+    const current = state({
+      currentSlideId: 's2_lebron',
+      lastAppliedSeq: 5,
+      play: { play_id: 'p_blitz_lebron_pnr', seq: 5 },
+      playAnimate: true,
+    });
+    const next = seedDeckFromAgent(current, 'agent-same', {
+      identity: 'agent-same',
+      attributes: overlayAttributes({
+        slide_id: 's2_lebron',
+        seq: 5,
+        play: { play_id: 'p_blitz_lebron_pnr', seq: 5 },
+      }),
+    });
+    expect(next.state).toEqual(current);
+    expect(next.state.playAnimate).toBe(true);
+  });
+
+  it('animates a new play.seq after the initial connect snap', () => {
+    const initial = seedDeckFromAgent(state({ ready: true }), null, {
+      identity: 'agent-same',
+      attributes: overlayAttributes({
+        slide_id: 's2_lebron',
+        seq: 3,
+        play: { play_id: 'p_blitz_lebron_pnr', seq: 3 },
+      }),
+    });
+    expect(initial.state.playAnimate).toBe(false);
+    expect(initial.state.play).toEqual({ play_id: 'p_blitz_lebron_pnr', seq: 3 });
+
+    const later = seedDeckFromAgent(initial.state, 'agent-same', {
+      identity: 'agent-same',
+      attributes: overlayAttributes({
+        slide_id: 's2_lebron',
+        seq: 8,
+        play: { play_id: 'p_blitz_lebron_pnr', seq: 8 },
+      }),
+    });
+    expect(later.state.lastAppliedSeq).toBe(8);
+    expect(later.state.play).toEqual({ play_id: 'p_blitz_lebron_pnr', seq: 8 });
+    expect(later.state.playAnimate).toBe(true);
+  });
+
+  it('keeps an in-flight play animating when highlight or callout seq advances', () => {
+    const current = state({
+      currentSlideId: 's2_lebron',
+      lastAppliedSeq: 5,
+      highlights: ['cle_james'],
+      play: { play_id: 'p_blitz_lebron_pnr', seq: 5 },
+      callouts: [],
+      playAnimate: true,
+    });
+    const next = seedDeckFromAgent(current, 'agent-same', {
+      identity: 'agent-same',
+      attributes: overlayAttributes({
+        slide_id: 's2_lebron',
+        seq: 7,
+        highlights: ['cle_james', 'gsw_green'],
+        play: { play_id: 'p_blitz_lebron_pnr', seq: 5 },
+        callouts: [{ callout_id: 'c7', text: 'Iguodala on LeBron' }],
+      }),
+    });
+    expect(next.state.lastAppliedSeq).toBe(7);
+    expect(next.state.highlights).toEqual(['cle_james', 'gsw_green']);
+    expect(next.state.callouts).toEqual([{ callout_id: 'c7', text: 'Iguodala on LeBron' }]);
+    expect(next.state.play).toEqual({ play_id: 'p_blitz_lebron_pnr', seq: 5 });
+    expect(next.state.playAnimate).toBe(true);
   });
 });
 

@@ -376,10 +376,9 @@ export function reduceAddCallout(state: DeckCommandState, payload: unknown): Red
   if (hasFact === hasText) {
     return fail(state, RPC_ERROR.MALFORMED, 'malformed payload');
   }
-  if (hasText && (text.length < 3 || text.length > 60)) {
-    return fail(state, RPC_ERROR.MALFORMED, 'malformed payload');
-  }
-  const rule = calloutRuleReason(hasFact ? factId : null, hasText ? text : null);
+  const fact = hasFact ? factId.trim() : null;
+  const note = hasText ? text.trim() : null;
+  const rule = calloutRuleReason(fact, note);
   if (rule) {
     return fail(state, RPC_ERROR.CALLOUT_REJECTED, rule);
   }
@@ -401,8 +400,8 @@ export function reduceAddCallout(state: DeckCommandState, payload: unknown): Red
     };
   }
   const incoming: OverlayCallout = { callout_id: calloutId };
-  if (hasFact) incoming.fact_id = factId;
-  if (hasText) incoming.text = text;
+  if (hasFact && fact) incoming.fact_id = fact;
+  if (hasText && note) incoming.text = note;
   const without = state.callouts.filter((item) => item.callout_id !== calloutId);
   const callouts = [...without, incoming].slice(-3);
   const next: DeckCommandState = {
@@ -452,11 +451,15 @@ export function seedDeckFromAgent(
     ...stateFromAgentAttributes(agent.attributes),
     ready: state.ready,
   };
-  if (prevAgentIdentity !== null && prevAgentIdentity !== agent.identity) {
+  if (prevAgentIdentity === null || prevAgentIdentity !== agent.identity) {
     return { agentIdentity: agent.identity, state: seeded };
   }
-  if (seeded.lastAppliedSeq < state.lastAppliedSeq) {
+  if (seeded.lastAppliedSeq <= state.lastAppliedSeq) {
     return { agentIdentity: agent.identity, state };
   }
-  return { agentIdentity: agent.identity, state: seeded };
+  const nextPlaySeq = seeded.play?.seq ?? null;
+  const prevPlaySeq = state.play?.seq ?? null;
+  const playAnimate =
+    seeded.play === null ? false : nextPlaySeq !== prevPlaySeq ? true : state.playAnimate;
+  return { agentIdentity: agent.identity, state: { ...seeded, playAnimate } };
 }

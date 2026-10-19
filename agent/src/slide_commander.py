@@ -228,7 +228,13 @@ class SlideCommander:
             return FAILED_CALLOUT.format(
                 reason="no slide on screen. Call show_slide first"
             )
-        rule = callout_rule_reason(fact_id, text)
+        fact = fact_id.strip() if isinstance(fact_id, str) else None
+        note = text.strip() if isinstance(text, str) else None
+        if fact == "":
+            fact = None
+        if note == "":
+            note = None
+        rule = callout_rule_reason(fact, note)
         if rule is not None:
             return rejected_callout(rule)
         self._seq += 1
@@ -237,10 +243,10 @@ class SlideCommander:
             "seq": self._seq,
             "callout_id": f"c{self._seq}",
         }
-        if fact_id:
-            payload["fact_id"] = fact_id
+        if fact:
+            payload["fact_id"] = fact
         else:
-            payload["text"] = text
+            payload["text"] = note
         result = await self._rpc("add_callout", payload, kind="callout")
         applied, failure = _applied_or_failure(result, FAILED_CALLOUT)
         if not applied:

@@ -450,6 +450,38 @@ async def test_invalid_callout_does_not_send_rpc() -> None:
 
 
 @pytest.mark.asyncio
+async def test_add_callout_strips_whitespace_before_payload_branch() -> None:
+    room = _room_with_coach_first()
+    commander = SlideCommander(room)
+    await commander.show_slide("s2_lebron")
+
+    padded_text = await commander.add_callout(text="  Iguodala on LeBron  ")
+    assert padded_text == "Callout is on both screens."
+    text_payload = json.loads(room.local_participant.calls[-1]["payload"])
+    assert text_payload["text"] == "Iguodala on LeBron"
+    assert "fact_id" not in text_payload
+
+    whitespace_fact = await commander.add_callout(
+        fact_id="   ", text="Iguodala on LeBron"
+    )
+    assert whitespace_fact == "Callout is on both screens."
+    mixed_payload = json.loads(room.local_participant.calls[-1]["payload"])
+    assert mixed_payload["text"] == "Iguodala on LeBron"
+    assert "fact_id" not in mixed_payload
+
+    padded_fact = await commander.add_callout(fact_id="  F07  ")
+    assert padded_fact == "Callout is on both screens."
+    fact_payload = json.loads(room.local_participant.calls[-1]["payload"])
+    assert fact_payload["fact_id"] == "F07"
+    assert "text" not in fact_payload
+
+    rpc_count = len(room.local_participant.calls)
+    blank = await commander.add_callout(fact_id="   ")
+    assert blank.startswith("FAILED: callout rejected")
+    assert len(room.local_participant.calls) == rpc_count
+
+
+@pytest.mark.asyncio
 async def test_stale_play_ack_does_not_write_overlay() -> None:
     room = _room_with_coach_first()
 
