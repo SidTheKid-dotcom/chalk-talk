@@ -8,7 +8,7 @@ import { hashSeed, roughCircle } from '@/lib/sketch/rough';
 type HalfCourtProps = {
   deck: Deck;
   diagram: SlideDiagram;
-  highlight?: TargetId;
+  highlights?: TargetId[];
   arrows?: DrawnArrow[];
   markerOverrides?: Partial<Record<PlayerId, [number, number]>>;
   ball?: PlayerId;
@@ -42,13 +42,15 @@ function CourtInk() {
 export function HalfCourt({
   deck,
   diagram,
-  highlight,
+  highlights = [],
   arrows = [],
   markerOverrides,
   ball,
   animate = false,
 }: HalfCourtProps) {
-  const highlightedZone = highlight && highlight in deck.zones ? (highlight as ZoneId) : undefined;
+  const highlightedZones = new Set(
+    highlights.filter((target): target is ZoneId => target in deck.zones)
+  );
   const mappedArrows = arrows.map((arrow) => ({
     ...arrow,
     from: toSvgPoint(arrow.from),
@@ -73,7 +75,7 @@ export function HalfCourt({
     >
       <CourtInk />
       {diagram.zones.map((zoneId) => {
-        if (highlightedZone !== zoneId) return null;
+        if (!highlightedZones.has(zoneId)) return null;
         const [x1, y1, x2, y2] = zoneToSvg(deck.zones[zoneId].box);
         return (
           <rect
@@ -99,7 +101,7 @@ export function HalfCourt({
             position={marker.svg}
             radius={marker.radiusSvg}
             fontSize={marker.fontSizeSvg}
-            highlighted={highlight === marker.id}
+            highlighted={highlights.includes(marker.id)}
             hasBall={ball === marker.id}
             animateHighlight={animate}
           />

@@ -39,6 +39,10 @@ mkdirSync(outDir, { recursive: true });
 const browser = await chromium.launch();
 const errors = [];
 
+function overlaps(a, b) {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
 for (const shot of shots) {
   const context = await browser.newContext({
     viewport: { width: shot.size[0], height: shot.size[1] },
@@ -52,6 +56,33 @@ for (const shot of shots) {
     errors.push(`${shot.name}: ${url} status ${response?.status()}`);
   }
   await page.waitForTimeout(400);
+  if (shot.name.startsWith('slide-')) {
+    const fact = await page.locator('[data-note-kind="fact"]').first().boundingBox();
+    const obstacles = await page
+      .locator('.photo-credits-link, .cutout-photo, .cutout-caption, .slide-court circle')
+      .evaluateAll((elements) =>
+        elements.map((element) => ({
+          label:
+            element.getAttribute('aria-label') ||
+            element.getAttribute('alt') ||
+            element.textContent?.trim() ||
+            element.tagName.toLowerCase(),
+          box: element.getBoundingClientRect().toJSON(),
+        }))
+      );
+    if (!fact) {
+      errors.push(`${shot.name}: fact card is missing`);
+    } else {
+      const collisions = obstacles
+        .filter(({ box }) => box.width > 0 && box.height > 0 && overlaps(fact, box))
+        .map(({ label }) => label);
+      if (collisions.length > 0) {
+        errors.push(`${shot.name}: fact card overlaps ${collisions.join(', ')}`);
+      } else {
+        console.log(`${shot.name}: fact card clears credits, cutouts, and court markers`);
+      }
+    }
+  }
   const dest = join(outDir, `${shot.name}.png`);
   await page.screenshot({ path: dest, fullPage: false });
   console.log(`wrote ${dest}`);

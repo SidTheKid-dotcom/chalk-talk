@@ -17,7 +17,7 @@ export function NoteCard(props: NoteCardProps) {
   const meta = props.kind === 'fact' ? props.fact.source_domain : null;
 
   return (
-    <aside className="note-card w-[240px] px-4 pt-5 pb-4">
+    <aside className="note-card w-[240px] px-4 pt-5 pb-4" data-note-kind={props.kind}>
       <span className="absolute -top-4 right-5">
         <Paperclip />
       </span>
