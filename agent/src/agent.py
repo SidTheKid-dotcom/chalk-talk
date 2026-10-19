@@ -325,7 +325,7 @@ class Assistant(Agent):
     async def call_head_coach(self) -> str:
         if self._coach_link is None:
             return "FAILED: coach link not shown (commander missing)."
-        return await self._coach_link.request_handoff()
+        return await self._coach_link.request_handoff(self)
 
 
 def _on_realtime_availability(ev: RealtimeAvailabilityChangedEvent) -> None:

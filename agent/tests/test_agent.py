@@ -85,7 +85,7 @@ def test_clicker_instructions_are_one_line() -> None:
 @pytest.mark.asyncio
 async def test_call_head_coach_uses_acked_command_path() -> None:
     class CoachLink:
-        async def request_handoff(self) -> str:
+        async def request_handoff(self, _turn_source: object) -> str:
             return "Coach link is on screen. Say one short line, then wait."
 
     assistant = Assistant(coach_link=CoachLink())  # type: ignore[arg-type]

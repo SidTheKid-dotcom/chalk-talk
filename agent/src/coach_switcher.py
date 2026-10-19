@@ -142,15 +142,34 @@ def validate_app_url(app_url: str) -> str:
     return app_url.rstrip("/")
 
 
+def _user_turn_texts(source: object) -> list[str]:
+    chat = getattr(source, "chat_ctx", None)
+    if chat is None:
+        chat = getattr(getattr(source, "current_agent", None), "chat_ctx", None)
+    items = getattr(chat, "items", []) or []
+    turns: list[str] = []
+    for item in items:
+        if not isinstance(item, ChatMessage) or item.role != "user":
+            continue
+        text = item.text_content
+        if not text or not text.strip():
+            continue
+        turns.append(text.strip())
+    return turns
+
+
 @dataclass
 class HandoffState:
     handoff_requested: bool = False
     request_count: int = 0
     active_coach_identity: str | None = None
+    user_turn_count: int | None = None
 
-    def mark_requested(self) -> None:
+    def mark_requested(self, turn_source: object) -> None:
         self.handoff_requested = True
         self.request_count += 1
+        # Includes the request turn. The briefing reads only the turns before it.
+        self.user_turn_count = len(_user_turn_texts(turn_source))
 
 
 class CoachLinkCommander:
@@ -166,7 +185,7 @@ class CoachLinkCommander:
         room_name = quote(self._room.name, safe="")
         return f"{self._app_url}/coach?room={room_name}"
 
-    async def request_handoff(self) -> str:
+    async def request_handoff(self, turn_source: object) -> str:
         player = find_by_role(self._room, "player")
         if player is None:
             return COACH_LINK_FAILED.format(reason="player not found")
@@ -203,7 +222,7 @@ class CoachLinkCommander:
             self._log_result(started, player.identity, False, reason, None)
             return COACH_LINK_FAILED.format(reason=reason)
 
-        self._state.mark_requested()
+        self._state.mark_requested(turn_source)
         self._log_result(started, player.identity, True, None, None)
         _log(
             "handoff_requested",
@@ -236,21 +255,14 @@ def build_coach_briefing(
     session: SessionLike,
     current_slide: str | None,
     *,
-    handoff_requested: bool,
+    user_turn_count: int | None,
 ) -> dict[str, object]:
-    messages = getattr(getattr(session, "current_agent", None), "chat_ctx", None)
-    items = getattr(messages, "items", [])
-    user_turns = [
-        text.strip()
-        for item in items
-        if isinstance(item, ChatMessage)
-        and item.role == "user"
-        and (text := item.text_content)
-        and text.strip()
-    ]
-    relevant = (
-        user_turns[:-1] if handoff_requested and len(user_turns) > 1 else user_turns
-    )
+    user_turns = _user_turn_texts(session)
+    if user_turn_count is None:
+        relevant = user_turns
+    else:
+        # The recorded count includes the request turn. Later turns stay out.
+        relevant = user_turns[: max(user_turn_count - 1, 0)]
     asked = relevant[-3:]
     main_worry = asked[-1] if asked else "No specific concern was captured."
     slide = current_slide or "unknown"
@@ -582,7 +594,7 @@ class CoachSwitcher:
             briefing = build_coach_briefing(
                 self._session,
                 self._slide_state.current_slide,
-                handoff_requested=self._state.handoff_requested,
+                user_turn_count=self._state.user_turn_count,
             )
             try:
                 await self._room.local_participant.send_text(
