@@ -1,0 +1,62 @@
+import type { ArrowKind, Coord } from '@/lib/deck/types';
+import {
+  type Point,
+  arrowHead,
+  curveThrough,
+  hashSeed,
+  pathLengthApprox,
+  screenBar,
+  zigzagPath,
+} from '@/lib/sketch/rough';
+
+export type DrawnArrow = {
+  from: Coord;
+  to: Coord;
+  kind: ArrowKind;
+  option?: boolean;
+  key: string;
+};
+
+type PlayArrowsProps = {
+  arrows: DrawnArrow[];
+  animate?: boolean;
+};
+
+function kindPath(from: Point, to: Point, kind: ArrowKind, seed: number): string {
+  if (kind === 'dribble') return zigzagPath(from, to, seed);
+  if (kind === 'screen') return screenBar(from, to, seed);
+  return curveThrough(from, to, seed, kind === 'pass' ? 10 : 7);
+}
+
+export function PlayArrows({ arrows, animate = false }: PlayArrowsProps) {
+  return (
+    <g>
+      {arrows.map((arrow) => {
+        const seed = hashSeed(arrow.key);
+        const from = arrow.from;
+        const to = arrow.to;
+        const d = kindPath(from, to, arrow.kind, seed);
+        const option = Boolean(arrow.option);
+        const dashed = option || arrow.kind === 'pass';
+        const length = Math.max(24, pathLengthApprox(from, to) * 1.2);
+        return (
+          <g key={arrow.key} opacity={option ? 0.38 : 1}>
+            <path
+              d={d}
+              fill="none"
+              stroke="var(--blue)"
+              strokeWidth={option ? 1.15 : 1.7}
+              strokeDasharray={dashed ? '2.4 1.8' : undefined}
+              strokeLinecap="round"
+              className={animate && !option ? 'draw-stroke' : undefined}
+              style={animate && !option ? { ['--dash' as string]: length } : undefined}
+            />
+            {arrow.kind !== 'screen' ? (
+              <path d={arrowHead(from, to)} fill="none" stroke="var(--blue)" strokeWidth="1.4" />
+            ) : null}
+          </g>
+        );
+      })}
+    </g>
+  );
+}
