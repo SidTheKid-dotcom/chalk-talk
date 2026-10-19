@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-Merged (audited): 01, 02, 05, 08. Running: 04 spike tool order (resumed on OpenAI), 03 round 2 (audit fixes), 07 round 2 (layout). Next: 06 coach-audio spike after 03 merges.
+Merged (audited): 01, 02, 03 (Spike 3 PASS), 05, 08. Running: 04 Spike 2 tool order (OpenAI), 06 Spike 1 coach audio (TTS clips via lk room join), 07 round 2 (layout).
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -9,6 +9,7 @@ Merged (audited): 01, 02, 05, 08. Running: 04 spike tool order (resumed on OpenA
 - `[UNVERIFIED]` pass on ARCHITECTURE and RISKS with `lk docs`. ADR-019 to ADR-022.
 - Task files 01-07 written.
 - 01 setup merged: agent on gpt-realtime-2.1 with explicit dispatch, web starter, Makefile. Spoken mic turn not yet verified (no mic in executor browser).
+- 03 Spike 3 merged: RPC ack after paint, median 117 ms; stale, error codes, hidden tab, agent restart, frozen tab bound all handled.
 - 08 model merged: OpenAI plugin first, LiveKit Inference fallback (RealtimeModelFallbackAdapter). Inference credit likely spent (429).
 - 05 token route merged: role in token, mic-only, coach room pattern, no human attribute edits, room timeouts and cap.
 - 02 deck and facts merged: 19 facts re-verified by auditor, 6 slides, 4 plays, 25 deck tests incl. basketball sanity rules.
