@@ -27,7 +27,7 @@ function expectedVideoGrant(room: string) {
     canPublish: true,
     canSubscribe: true,
     canPublishData: true,
-    canPublishSources: ['microphone'],
+    canPublishSources: ['microphone', 'camera'],
   };
 }
 
