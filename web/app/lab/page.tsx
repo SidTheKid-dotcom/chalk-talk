@@ -1,6 +1,7 @@
 import { CoachBriefing, coachJump } from '@/components/deck/CoachBriefing';
 import { MotionDemo } from '@/components/deck/MotionDemo';
 import { PrimitivesGallery } from '@/components/deck/PrimitivesGallery';
+import { ScaledSlide } from '@/components/deck/ScaledSlide';
 import { SlideView } from '@/components/deck/SlideView';
 import { loadCutoutCredits, resolveJrImageSrc } from '@/lib/deck/credits.server';
 import { deck, firstSentence, getPlay, getSlide } from '@/lib/deck/load';
@@ -55,7 +56,9 @@ export default async function LabPage({ searchParams }: LabPageProps) {
     const slide = getSlide(slideId as SlideId);
     const play = playId && PLAY_IDS.has(playId as PlayId) ? getPlay(playId as PlayId) : undefined;
     const frame = play && slide.diagram ? playFrame(slide.diagram, play) : undefined;
-    return (
+    const captionText = param(query.caption);
+    const scaled = param(query.scale) === '1';
+    const view = (
       <SlideView
         deck={deck}
         slide={slide}
@@ -70,8 +73,20 @@ export default async function LabPage({ searchParams }: LabPageProps) {
         revealJr={highlight === 'k_jr_card' || fallback === 'jr'}
         animate={param(query.animate) === '1'}
         shot={shot || true}
+        captionText={captionText}
       />
     );
+    if (scaled) {
+      return (
+        <div
+          className="relative flex h-svh min-h-0 min-w-0 flex-col overflow-hidden bg-[var(--manila)]"
+          data-player-scale
+        >
+          <ScaledSlide>{view}</ScaledSlide>
+        </div>
+      );
+    }
+    return view;
   }
 
   return (
