@@ -87,3 +87,6 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [schema] Optional `FactId | None` on `add_callout` puts the enum under `anyOf[enum, null]`, not `properties.fact_id.enum`. Read the anyOf branch in schema tests. (source: task 11)
 - [board/play] A 5000 ms play finishes before a screenshot taken after the model's first spoken line. Capture mid-motion immediately after `rpc_roundtrip run_play`, not after speech. (source: task 11)
 - [board/rpc] Applied highlight/play acks are ~120 ms. Removing the player after Ask often lands after the ack; unit tests remain the proof for in-flight 1401/1502/200x. (source: task 11)
+- [board/play] Same-seq `overlay_state` echo after `run_play` used to replace `playAnimate:true` with the attribute seed (`false`), aborting motion after ~100 ms. Ignore same/lower seq for the same agent; animate only a new `play.seq`; keep current animation when play seq is unchanged. (source: task 11 audit)
+- [board/callout] Raw text-length precheck in `reduceAddCallout` returned 2002 MALFORMED. Length belongs to the shared trimmed rule and 2005 CALLOUT_REJECTED. (source: task 11 audit)
+- [board/callout] Whitespace-only `fact_id` must be stripped before the payload branch, or `"   "` plus text is sent as `fact_id` instead of `text`. (source: task 11 audit)
