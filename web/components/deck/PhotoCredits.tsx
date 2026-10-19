@@ -4,7 +4,7 @@ type PhotoCreditsLinkProps = {
 
 export function PhotoCreditsLink({ href = '/lab/credits' }: PhotoCreditsLinkProps) {
   return (
-    <a href={href} className="photo-credits-link font-courier shrink-0 text-[12px] underline">
+    <a href={href} className="photo-credits-link underline">
       Photo credits
     </a>
   );

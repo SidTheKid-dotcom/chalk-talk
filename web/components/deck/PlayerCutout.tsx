@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { seededTilt } from '@/lib/sketch/rough';
+import { LowerThird } from '@/components/deck/LowerThird';
 
 type PlayerCutoutProps = {
   file: string;
@@ -10,42 +10,40 @@ type PlayerCutoutProps = {
   size?: number;
   forceMissing?: boolean;
   className?: string;
+  team?: 'gsw' | 'cle';
 };
 
 export function PlayerCutout({
   file,
   caption,
   name = '',
-  size = 168,
+  size = 280,
   forceMissing = false,
   className = '',
+  team,
 }: PlayerCutoutProps) {
   const [missing, setMissing] = useState(forceMissing);
-  const tilt = seededTilt(file, 3.2);
   const showImage = !missing && !forceMissing;
+  const resolvedTeam = team ?? (caption.includes('CLE') ? 'cle' : 'gsw');
 
   return (
     <figure className={`relative m-0 inline-flex flex-col items-center ${className}`}>
       {showImage ? (
-        <div
-          className="relative px-1 pt-2"
-          style={{ width: size, transform: `rotate(${tilt}deg)` }}
-        >
-          <span className="cutout-tape" />
+        <div className="relative" style={{ width: size }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`/players/${file}`}
             alt={name}
             width={size}
             height={Math.round(size * 1.15)}
-            className="cutout-photo h-auto w-full object-contain"
+            className="cutout-photo h-auto w-full object-contain object-bottom"
             onError={() => setMissing(true)}
           />
         </div>
       ) : null}
-      {caption ? (
-        <figcaption className="cutout-caption font-courier relative z-10 mt-4 max-w-full truncate bg-[#f6f1e4] px-2 py-0.5 text-center text-[11px] leading-tight tracking-wide text-[#191714] uppercase">
-          {caption}
+      {name ? (
+        <figcaption className="cutout-caption relative z-10 mt-[-8px]">
+          <LowerThird name={name} team={resolvedTeam} />
         </figcaption>
       ) : null}
     </figure>

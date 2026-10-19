@@ -28,6 +28,11 @@ function kindPath(from: Point, to: Point, kind: ArrowKind, seed: number): string
   return curveThrough(from, to, seed, kind === 'pass' ? 10 : 7);
 }
 
+function strokeFor(kind: ArrowKind): string {
+  if (kind === 'pass' || kind === 'screen') return '#FFFFFF';
+  return '#FFC72C';
+}
+
 export function PlayArrows({ arrows, animate = false }: PlayArrowsProps) {
   return (
     <g>
@@ -37,22 +42,23 @@ export function PlayArrows({ arrows, animate = false }: PlayArrowsProps) {
         const to = arrow.to;
         const d = kindPath(from, to, arrow.kind, seed);
         const option = Boolean(arrow.option);
-        const dashed = option || arrow.kind === 'pass';
+        const dashed = option || arrow.kind === 'pass' || arrow.kind === 'cut';
         const length = Math.max(24, pathLengthApprox(from, to) * 1.2);
+        const color = strokeFor(arrow.kind);
         return (
           <g key={arrow.key} opacity={option ? 0.38 : 1}>
             <path
               d={d}
               fill="none"
-              stroke="var(--blue)"
+              stroke={color}
               strokeWidth={option ? 1.15 : 1.7}
-              strokeDasharray={dashed ? '2.4 1.8' : undefined}
+              strokeDasharray={arrow.kind === 'pass' ? '1.2 2.4' : dashed ? '2.8 1.6' : undefined}
               strokeLinecap="round"
               className={animate && !option ? 'draw-stroke' : undefined}
               style={animate && !option ? { ['--dash' as string]: length } : undefined}
             />
             {arrow.kind !== 'screen' ? (
-              <path d={arrowHead(from, to)} fill="none" stroke="var(--blue)" strokeWidth="1.4" />
+              <path d={arrowHead(from, to)} fill="none" stroke={color} strokeWidth="1.4" />
             ) : null}
           </g>
         );
