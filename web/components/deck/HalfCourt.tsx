@@ -14,6 +14,7 @@ type HalfCourtProps = {
   ball?: PlayerId;
   animate?: boolean;
   showZoneLabels?: boolean;
+  focusIds?: PlayerId[];
 };
 
 function CourtInk() {
@@ -107,10 +108,19 @@ export function HalfCourt({
   ball,
   animate = false,
   showZoneLabels = false,
+  focusIds = [],
 }: HalfCourtProps) {
   const highlightedZones = new Set(
     highlights.filter((target): target is ZoneId => target in deck.zones)
   );
+  const attackZones = new Set<ZoneId>();
+  for (const target of highlights) {
+    const zone = diagram.attack_zones?.[target as PlayerId];
+    if (zone) {
+      highlightedZones.add(zone);
+      attackZones.add(zone);
+    }
+  }
   const mappedArrows = arrows.map((arrow) => ({
     ...arrow,
     from: toSvgPoint(arrow.from),
@@ -125,6 +135,7 @@ export function HalfCourt({
     players: deck.players,
     matchups: diagram.matchups,
   });
+  const focus = new Set(focusIds);
   const ghostLaid = ghosts
     ? separateGhostsFromLive(
         layoutMarkers({
@@ -161,6 +172,24 @@ export function HalfCourt({
                   fill="#FFC72C"
                   opacity="0.35"
                 />
+              ) : null}
+              {attackZones.has(zoneId) ? (
+                <text
+                  x={(x1 + x2) / 2}
+                  y={y1 - 1.6}
+                  textAnchor="middle"
+                  fill="#FFC72C"
+                  data-attack-zone={zoneId}
+                  style={{
+                    fontFamily: 'var(--font-plex), sans-serif',
+                    fontSize: '2.6px',
+                    letterSpacing: '0.1em',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {`Attacks from: ${deck.zones[zoneId].label}`}
+                </text>
               ) : null}
               {showZoneLabels &&
               [
@@ -209,21 +238,23 @@ export function HalfCourt({
         {laid.map((marker) => {
           const player = deck.players[marker.id];
           if (!player) return null;
+          const faded = focus.size > 0 && !focus.has(marker.id) && !highlights.includes(marker.id);
           return (
-            <Marker
-              key={marker.id}
-              player={player}
-              position={marker.svg}
-              radius={marker.radiusSvg}
-              fontSize={marker.fontSizeSvg}
-              highlighted={highlights.includes(marker.id)}
-              hasBall={ball === marker.id}
-              animateHighlight={animate}
-            />
+            <g key={marker.id} opacity={faded ? 0.22 : 1}>
+              <Marker
+                player={player}
+                position={marker.svg}
+                radius={marker.radiusSvg}
+                fontSize={marker.fontSizeSvg}
+                highlighted={highlights.includes(marker.id)}
+                hasBall={ball === marker.id}
+                animateHighlight={animate}
+              />
+            </g>
           );
         })}
       </svg>
-      <Legend />
+      {mappedArrows.length > 0 ? <Legend /> : null}
     </div>
   );
 }

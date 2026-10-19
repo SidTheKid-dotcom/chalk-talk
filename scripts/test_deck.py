@@ -226,6 +226,17 @@ def basketball_errors(deck: dict) -> list[str]:
                 errors.append(
                     f"{slide['id']} {defender} is not closer to the rim than {offense}"
                 )
+        for player, zone_id in (diagram.get("attack_zones") or {}).items():
+            if player not in markers:
+                errors.append(f"{slide['id']} attack zone player {player} not on slide")
+                continue
+            if zone_id not in diagram.get("zones", []):
+                errors.append(f"{slide['id']} attack zone {zone_id} not on slide")
+                continue
+            x1, y1, x2, y2 = deck["zones"][zone_id]["box"]
+            x, y = markers[player]
+            if not (x1 <= x <= x2 and y1 <= y <= y2):
+                errors.append(f"{slide['id']} {player} is not inside {zone_id}")
 
     for play in deck["plays"]:
         slide = slides.get(play["slide_id"])
