@@ -284,11 +284,12 @@
     "step": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["caption", "duration_ms", "moves", "arrows"],
+      "required": ["caption", "duration_ms", "ball", "moves", "arrows"],
       "properties": {
         "caption": {"type": "string", "minLength": 3, "maxLength": 40},
         "duration_ms": {"type": "integer", "minimum": 300, "maximum": 3000},
         "ball": {"$ref": "#/$defs/playerId"},
+        "action": {"type": "string", "enum": ["trap"]},
         "moves": {"$ref": "#/$defs/markerMap"},
         "arrows": {
           "type": "array",
@@ -303,7 +304,8 @@
       "properties": {
         "from": {"$ref": "#/$defs/playerId"},
         "to": {"$ref": "#/$defs/point"},
-        "kind": {"type": "string", "enum": ["cut", "dribble", "pass", "screen", "rotate"]}
+        "kind": {"type": "string", "enum": ["cut", "dribble", "pass", "screen", "rotate"]},
+        "option": {"type": "boolean"}
       }
     }
   }
