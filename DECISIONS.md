@@ -188,3 +188,10 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Rejected:** Keep polishing the paper layout (does not solve the preference mismatch). Copy Sara's visual theme (wrong product). Let the model rewrite slide text like her editable house rules (conflicts with sourced, approved game-plan content).
 - **Cost:** A focused frontend rewrite and new visual regression baseline. Existing deck, board tools and handoff logic remain reusable.
 - **Guardrail:** Static slide copy stays immutable. The agent may highlight, run prepared plays and add guarded callouts only.
+
+## ADR-028: One debounced active-human floor after handoff
+- **Decision:** After the coach handoff, keep one `RoomIO` linked participant and route it between trusted `role=player` and `role=coach` humans from `active_speakers_changed`. Hold the current participant while they remain active. Otherwise debounce for 200 ms before switching. On coach leave, disable the router and restore the player/presenter path.
+- **Why:** `RoomIO.set_participant()` accepts one identity, but the shared clicker should hear sequential requests from either human. Holding the current active floor prevents overlap from flapping the realtime input.
+- **Rejected:** Mix both microphone tracks into a custom input (more media plumbing and echo risk). Trust join order or identity prefixes (roles are the contract). Keyword intent routing (brittle and banned; the model remains the semantic gate). Switching immediately on every speaker event (thrashes during overlap).
+- **Cost:** A new speaker's first audio can precede the debounced switch. Live phone/laptop validation may show clipping or instability that unit fakes cannot reproduce.
+- **Fallback:** Keep both camera feeds but link only the coach after handoff, as verified in Spike 1.
