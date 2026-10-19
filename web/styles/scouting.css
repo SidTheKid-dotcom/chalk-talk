@@ -53,6 +53,8 @@
 }
 
 .cutout-caption {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -238,8 +240,7 @@
 
 .cutout-photo {
   display: block;
-  filter:
-    drop-shadow(7px 0 0 #f6f1e4) drop-shadow(-7px 0 0 #f6f1e4) drop-shadow(0 6px 0 #f6f1e4)
+  filter: drop-shadow(7px 0 0 #f6f1e4) drop-shadow(-7px 0 0 #f6f1e4) drop-shadow(0 6px 0 #f6f1e4)
     drop-shadow(0 -7px 0 #f6f1e4) drop-shadow(5px 4px 0 #f6f1e4) drop-shadow(-5px 4px 0 #f6f1e4)
     drop-shadow(5px -5px 0 #f6f1e4) drop-shadow(-5px -5px 0 #f6f1e4)
     drop-shadow(3px 6px 6px rgba(25, 23, 20, 0.18));
@@ -263,6 +264,9 @@
   font-style: italic;
   font-weight: 400;
   color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .draw-stroke {
@@ -347,4 +351,24 @@
 html:has([data-scouting]) header.fixed,
 html:has([data-scouting]) body > div.group.fixed {
   display: none !important;
+}
+
+.player-command-bar input:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+
+.player-mobile-meta .photo-credits-link {
+  color: var(--sheet);
+  font-size: 13px;
+}
+
+@media (max-width: 520px) {
+  .player-command-bar {
+    gap: 0.35rem;
+  }
+
+  .player-command-bar button {
+    padding-inline: 0.65rem;
+  }
 }

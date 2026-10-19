@@ -10,7 +10,7 @@ import { PlayerCutout } from '@/components/deck/PlayerCutout';
 import { Points } from '@/components/deck/Points';
 import { Sheet } from '@/components/deck/Sheet';
 import { Stamp } from '@/components/deck/Stamp';
-import { StatusStrip } from '@/components/deck/StatusStrip';
+import { StatusStrip, type StatusStripProps } from '@/components/deck/StatusStrip';
 import { creditForFile, cutoutCaption } from '@/lib/deck/credits';
 import { facts, featuredFact, firstSentence } from '@/lib/deck/load';
 import type { CutoutCredit, Deck, DeckSlide, PlayerId, TargetId } from '@/lib/deck/types';
@@ -20,6 +20,7 @@ export type SlideViewProps = {
   slide: DeckSlide;
   credits: CutoutCredit[];
   highlight?: TargetId;
+  highlights?: TargetId[];
   arrows?: DrawnArrow[];
   markerOverrides?: Partial<Record<PlayerId, [number, number]>>;
   ball?: PlayerId;
@@ -30,6 +31,9 @@ export type SlideViewProps = {
   noteFactId?: string;
   animate?: boolean;
   shot?: boolean;
+  captionText?: string;
+  status?: StatusStripProps;
+  notice?: string | null;
 };
 
 export function SlideView({
@@ -37,6 +41,7 @@ export function SlideView({
   slide,
   credits,
   highlight,
+  highlights,
   arrows,
   markerOverrides,
   ball,
@@ -47,11 +52,15 @@ export function SlideView({
   noteFactId,
   animate = false,
   shot = false,
+  captionText,
+  status,
+  notice,
 }: SlideViewProps) {
   const noteFact = noteFactId ? facts.find((fact) => fact.id === noteFactId) : featuredFact(slide);
-  const caption = firstSentence(slide.notes);
+  const caption = captionText ?? firstSentence(slide.notes);
+  const activeHighlights = highlights ?? (highlight ? [highlight] : []);
   const jrCard = slide.cards.find((card) => card.id === 'k_jr_card');
-  const showJr = Boolean(jrCard) && (revealJr || highlight === 'k_jr_card');
+  const showJr = Boolean(jrCard) && (revealJr || activeHighlights.includes('k_jr_card'));
   const hasCourt = Boolean(slide.diagram);
   const sideCutouts =
     slide.id === 's2_lebron' || slide.id === 's3_kyrie' || slide.id === 's4_offense'
@@ -69,6 +78,12 @@ export function SlideView({
             <Stamp animate={animate} />
           </div>
 
+          {notice ? (
+            <aside className="font-courier absolute top-5 left-1/2 z-20 max-w-[680px] -translate-x-1/2 border-l-4 border-[var(--rust)] bg-[var(--sheet)] px-4 py-2 text-[13px] text-[var(--rust)] shadow-sm">
+              {notice}
+            </aside>
+          ) : null}
+
           <div className={`mt-3 min-h-0 flex-1 ${hasCourt ? 'slide-body' : 'flex flex-col'}`}>
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               <Headline className={slide.title.length > 42 ? 'text-[42px]' : 'text-[52px]'}>
@@ -76,7 +91,14 @@ export function SlideView({
               </Headline>
               {slide.id === 's5_xfactors' ? (
                 <div className="mt-5 grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-10">
-                  <Points points={slide.points} variant="checkbox" />
+                  <div className="flex min-w-0 flex-col items-start">
+                    <Points points={slide.points} variant="checkbox" />
+                    {noteFact ? (
+                      <div className="mt-7">
+                        <NoteCard kind="fact" fact={noteFact} />
+                      </div>
+                    ) : null}
+                  </div>
                   <CutoutRow
                     files={slide.cutouts}
                     credits={credits}
@@ -92,6 +114,11 @@ export function SlideView({
                       slide.id === 's1_tipoff' || slide.id === 's4_offense' ? 'numeral' : 'checkbox'
                     }
                   />
+                  {noteFact ? (
+                    <div className="mt-7">
+                      <NoteCard kind="fact" fact={noteFact} />
+                    </div>
+                  ) : null}
                 </div>
               )}
               {slide.id === 's1_tipoff' ? (
@@ -128,7 +155,7 @@ export function SlideView({
                   <HalfCourt
                     deck={deck}
                     diagram={slide.diagram}
-                    highlight={highlight}
+                    highlights={activeHighlights}
                     arrows={arrows}
                     markerOverrides={markerOverrides}
                     ball={ball}
@@ -149,19 +176,13 @@ export function SlideView({
             ) : null}
           </div>
 
-          <div className="mt-2 flex items-end justify-between gap-6">
+          <div className="mt-2 flex min-w-0 items-end justify-between gap-6">
             <Caption text={caption} />
             <PhotoCreditsLink />
           </div>
-
-          {noteFact ? (
-            <div className="absolute right-8 bottom-5 z-10">
-              <NoteCard kind="fact" fact={noteFact} />
-            </div>
-          ) : null}
         </Sheet>
       </div>
-      <StatusStrip />
+      <StatusStrip {...status} />
     </div>
   );
 }

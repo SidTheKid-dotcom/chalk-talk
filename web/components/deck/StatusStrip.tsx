@@ -1,6 +1,6 @@
 import type { AgentState } from '@/lib/deck/types';
 
-type StatusStripProps = {
+export type StatusStripProps = {
   state?: AgentState;
   turn?: string;
   latencyMs?: string;
