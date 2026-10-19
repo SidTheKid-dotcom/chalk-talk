@@ -2,7 +2,7 @@
 
 ## Now
 SPEED MODE (user records the demo tonight). One audit per task; fix rounds are verified by the planner, not re-audited. Cut: task 14 automated E2E driver, task 04 harness merge, status-panel metrics beyond "—".
-Running: 13B coach link + `/coach` page + live handoff (Grok 4.7); speech-paced play motion (ADR-029, Grok 4.7). Next: merge those, deploy (LiveKit Cloud agent + Vercel), README polish, Loom.
+Running: speech-paced play motion (ADR-029, Grok 4.7). Next: deploy (LiveKit Cloud agent + Vercel), README polish, Loom. Video rail cut.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -20,7 +20,8 @@ Running: 13B coach link + `/coach` page + live handoff (Grok 4.7); speech-paced 
 - 10 player page merged: Scouting Packet start/live/ended states, real RPC deck, captions and typed fallback; 49 web tests, six-slide overlap check and second audit PASS.
 - 11 board tools merged: locked shared seq, acked highlight/play/callout state, guarded claims and deck-driven play motion; 99 agent tests, 72 web tests, live mid-motion evidence and second audit PASS.
 - 12 Hardwood merged: fixed 16:9 stage, large type, slide push, play captions/ghosts, unscaled 44px controls. Planner reviewed r2 stills (slide 5 strip, full-width push, play steps 2/4, three control viewports, portrait rotate hint). `pnpm test` 79 passed.
-- 13A handoff core merged: `call_head_coach`, private briefing, clicker switch, floor router, camera grants; 117 agent tests. Browser coach UI is 13B.
+- 13A handoff core merged: `call_head_coach`, private briefing, clicker switch, floor router, camera grants; 117 agent tests.
+- 13B coach UI merged: player QR + copyable join link, Hardwood `/coach` with private briefing, live clicker + leave recovery. Video rail cut. `pnpm test` 90 passed. Live room: coach `show_slide` s2 136 ms, highlight 410 ms; player command after coach intact (no ADR-028 fallback).
 
 ## Next
 | Wave | Tasks | Gate |

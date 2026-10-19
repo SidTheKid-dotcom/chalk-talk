@@ -11,7 +11,7 @@ Chalk Talk is a voice AI assistant coach. It walks a Warriors player through a s
 - Works the board with three bounded tools: `highlight` a player, zone or card; `run_play` animates one of four prepared plays; `add_callout` posts a sourced fact card or a short coaching note. The model chooses ids; it never writes layout or numbers.
 - Refuses unsourced claims on screen: a free-text note with a digit, `%` or a spelled-out number is rejected in the agent and again in the browser.
 - Stops at once when you talk over it (LiveKit Agents handles barge-in and history truncation).
-- Hands off to a human: "Get me the head coach" sends a room-bound join link, the coach gets a private briefing, the agent says one handoff line and becomes a quiet clicker. If the coach leaves, it returns to the player. _(Agent side built and tested; browser coach page in progress.)_
+- Hands off to a human: "Get me the head coach" shows a room-bound join link and QR. A coach on `/coach` gets a private briefing, the agent becomes a quiet clicker, and both screens stay on the same board. If the coach leaves, it returns to the player. Shared camera tiles are not built.
 
 ## Measured in development
 | What | Result | Where |
@@ -78,3 +78,4 @@ See `DECISIONS.md`.
 - The LiveKit Inference fallback is only as available as the free-tier Inference credit.
 - The slide 6 joke image cannot be licensed, so the public build shows a text-only card.
 - The player view is built for a laptop; on a phone in portrait it asks you to rotate.
+- Player and coach do not show camera tiles yet. Voice still works.
