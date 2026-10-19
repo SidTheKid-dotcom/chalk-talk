@@ -33,15 +33,49 @@ The presenter and clicker can change the current slide with the three bounded bo
 | Failure path | freeze or close player during each tool | bounded failure string; no false narration |
 
 ## Checklist
-- [ ] Implemented
-- [ ] Lint and typecheck pass
-- [ ] Tests pass (list)
-- [ ] Acceptance checks pass with evidence
-- [ ] Screenshots attached
-- [ ] LEARNINGS.md updated if needed
-- [ ] Docs updated if behavior changed
+- [x] Implemented
+- [x] Lint and typecheck pass
+- [x] Tests pass (list)
+- [x] Acceptance checks pass with evidence (live board path, play timing logs, overlay inspect, guardrail; remaining E2E gaps below)
+- [x] Screenshots attached
+- [x] LEARNINGS.md updated if needed
+- [x] Docs updated if behavior changed (none; contracts unchanged)
 
 ## Report (executor fills)
 - Files changed:
+  - Agent: `agent/src/callout.py`; `agent/src/deck_data.py`; `agent/src/slide_commander.py`; `agent/src/prompts.py`; `agent/src/agent.py`; `agent/src/debug_probe.py`; `agent/tests/test_callout.py`; `agent/tests/test_slide_commander.py`; `agent/tests/test_prompts.py`; `agent/tests/test_agent.py`
+  - Web: `web/lib/deck/callout.ts`; `web/lib/deck/callout.test.ts`; `web/lib/deck/commands.ts`; `web/lib/deck/commands.test.ts`; `web/lib/deck/plays.ts`; `web/lib/deck/plays.test.ts`; `web/lib/deck/rpc.ts`; `web/lib/deck/rpc.test.ts`; `web/hooks/usePlayMotion.ts`; `web/components/deck/SlideView.tsx`; `web/components/app/view-controller.tsx`; `web/styles/scouting.css`
+  - Docs: `LEARNINGS.md`; this task report
 - Commands run and key output:
+  - `python3 scripts/sync_deck.py --check` — `sync check passed`
+  - `cd agent && uv run pytest -q` — `98 passed, 2 skipped in 1.98s`
+  - `cd agent && uv run ruff check src tests` — `All checks passed!`
+  - `cd agent && uv run ruff format --check` on the files this task changed — `10 files already formatted`
+  - `cd web && pnpm test` — `Test Files  8 passed (8)` / `Tests  67 passed (67)`
+  - `cd web && pnpm lint` — exit 0; existing unused `error` warning in `components/agents-ui/agent-audio-visualizer-aura.tsx:34` and unnecessary `_barCount` dependency warning in `components/agents-ui/agent-audio-visualizer-radial.tsx:162`
+  - `cd web && pnpm exec tsc --noEmit` — exit 0, no output
+  - Live room `fr-620d590d91904fad`, worker `AW_VmCBuqEUmqdz`, player `player-f0c4c5f9e3`, agent `agent-AJ_Jw894kAM5D3x`. Mic blocked in the embedded browser; typed questions only.
+  - Startup: `rpc_roundtrip show_slide seq=1 s1_tipoff applied=true` (151.5 ms)
+  - Typed `Show me how we trap LeBron.` from slide 1: `executing tool run_play {"play_id":"p_blitz_lebron_pnr"}` then `rpc_roundtrip show_slide seq=2 s2_lebron applied=true` (122.6 ms) then `rpc_roundtrip run_play seq=3 s2_lebron applied=true duration_ms=5000` (151.0 ms). Slide ack before play ack.
+  - Typed `Show me that trap play again.`: `rpc_roundtrip run_play seq=4` on `s2_lebron` (126.2 ms); no extra `show_slide`.
+  - Typed `Highlight LeBron on the court.`: `rpc_roundtrip highlight seq=5 target=cle_james applied=true active=["cle_james"]` (117.9 ms)
+  - Typed `Put Iguodala on LeBron up on the board.`: `rpc_roundtrip add_callout seq=6 callout_id=c6 applied=true` (129.4 ms); arguments `{"text":"Iguodala on LeBron"}`
+  - Typed `Put a note that LeBron scores 40 a night.`: no `add_callout` / no RPC. Model refused: `I can't put that up because it's an invented stat and I don't have a verified fact ID for it.`
+  - `lk room participants get --room fr-620d590d91904fad --identity agent-AJ_Jw894kAM5D3x` after play: `overlay_state={"v":1,"slide_id":"s2_lebron","seq":3,"highlights":[],"play":{"play_id":"p_blitz_lebron_pnr","seq":3},"callouts":[]}`
+  - After highlight: `overlay_state={"v":1,"slide_id":"s2_lebron","seq":5,"highlights":["cle_james"],"play":{"play_id":"p_blitz_lebron_pnr","seq":4},"callouts":[]}`; `current_slide=s2_lebron`; `slide_seq=2`
+  - After valid callout: `overlay_state={"v":1,"slide_id":"s2_lebron","seq":6,"highlights":["cle_james"],"play":{"play_id":"p_blitz_lebron_pnr","seq":4},"callouts":[{"callout_id":"c6","text":"Iguodala on LeBron"}]}`
+  - Failure path: typed `Highlight Green on the court.`; `rpc_roundtrip highlight seq=7 gsw_green applied=true` (121.0 ms) completed before `lk room participants remove`. Player then showed `The film session ended.` Live in-flight 1401/1502 was not timed. Unit tests still cover missing player, timeout, stale, and 2001-2007 for all three tools.
+- Screenshots:
+  - Play last frame (caption `Weak side rotates home`): `/tmp/task11-evidence/play-last-frame.png` and `/home/sidvish/.t3/userdata/browser-artifacts/browser-screenshot-127-0-0-1-mvf8gv8x-684ab9c0.png`
+  - Replay last frame: `/tmp/task11-evidence/play-replay-last-frame.png`
+  - Highlight LeBron (gold ring + caption `LeBron is highlighted.`): `/tmp/task11-evidence/highlight-lebron.png`
+  - Coach's note `Iguodala on LeBron` (Kalam, distinct from F07 NoteCard): `/tmp/task11-evidence/callout-coach-note.png`
+  - Invented-stat refusal, board unchanged: `/tmp/task11-evidence/callout-invented-stat-refused.png`
+  - Session closed after player remove: `/tmp/task11-evidence/session-closed.png`
 - Not done / not verified:
+  - Mid-motion play screenshot: the 5000 ms animation ended before a snapshot taken after the model's first spoken line. Last-frame caption `Weak side rotates home` and `duration_ms=5000` acks are the live play evidence. Interpolation / last-frame / reduced-motion are unit-tested in `web/lib/deck/plays.test.ts`.
+  - Same-room reload restore is still blocked by the token route creating a new random player room (ADR-008; task 10). Overlay seeding from attributes is unit-tested.
+  - Live close-during-RPC for each tool was not captured; highlight seq 7 acked in 121 ms before the kick. Bounded failure strings are unit-tested.
+  - Physical microphone voice turns are still impossible in the embedded browser.
+  - `CHALK_DEBUG=1` debug_probe still does not publish `lk.agent.state`; live verification used the realtime worker.
+  - No product, architecture, or facts docs changed. Deck JSON was not rewritten. `.gitignore`, `opencode.json`, and `design/hardwood` were not touched.
