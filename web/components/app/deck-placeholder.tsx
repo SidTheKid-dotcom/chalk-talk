@@ -30,7 +30,10 @@ export function DeckPlaceholder() {
   const title = slideTitle(deck.currentSlideId) ?? deck.currentSlideId ?? '(none)';
   const coachHref = room.name ? `/coach?room=${encodeURIComponent(room.name)}` : '/coach';
 
-  async function runProbe(action: 'script' | 'dead_tab') {
+  async function runProbe(
+    action: 'script' | 'dead_tab' | 'stale_slide' | 'stale_highlight' | 'show_slide' | 'highlight',
+    extra: Record<string, string> = {}
+  ) {
     if (!agentIdentity) {
       setProbeLog('no agent in room');
       return;
@@ -40,7 +43,7 @@ export function DeckPlaceholder() {
       const result = await room.localParticipant.performRpc({
         destinationIdentity: agentIdentity,
         method: 'debug_probe',
-        payload: JSON.stringify({ action }),
+        payload: JSON.stringify({ action, ...extra }),
         responseTimeout: 60_000,
       });
       setProbeLog(result);
@@ -89,6 +92,20 @@ export function DeckPlaceholder() {
           onClick={() => void runProbe('dead_tab')}
         >
           Dead-tab call
+        </button>{' '}
+        <button
+          type="button"
+          disabled={busy || !agentIdentity}
+          onClick={() => void runProbe('stale_slide')}
+        >
+          Stale slide
+        </button>{' '}
+        <button
+          type="button"
+          disabled={busy || !agentIdentity}
+          onClick={() => void runProbe('stale_highlight', { target: 'cle_james' })}
+        >
+          Stale highlight
         </button>
       </p>
       <pre style={{ whiteSpace: 'pre-wrap', maxHeight: 180, overflow: 'auto' }}>{probeLog}</pre>

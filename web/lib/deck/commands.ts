@@ -40,11 +40,15 @@ export type DeckCommandState = {
 };
 
 export const initialDeckState: DeckCommandState = {
-  ready: true,
+  ready: false,
   currentSlideId: null,
   lastAppliedSeq: 0,
   highlights: [],
 };
+
+export function markDeckReady(state: DeckCommandState): DeckCommandState {
+  return state.ready ? state : { ...state, ready: true };
+}
 
 export type ShowSlideAck = {
   ok: true;
@@ -259,9 +263,30 @@ export function stateFromAgentAttributes(attributes: Record<string, string>): De
   const slideId = attributes.current_slide || overlay?.slide_id || null;
   const highlights = overlay && overlay.slide_id === slideId ? overlay.highlights.slice(0, 2) : [];
   return {
-    ready: true,
+    ready: false,
     currentSlideId: slideId && isSlideId(slideId) ? slideId : slideId,
     lastAppliedSeq: seq,
     highlights,
   };
+}
+
+export function seedDeckFromAgent(
+  state: DeckCommandState,
+  prevAgentIdentity: string | null,
+  agent: { identity: string; attributes: Record<string, string> } | undefined
+): { agentIdentity: string | null; state: DeckCommandState } {
+  if (!agent) {
+    return { agentIdentity: prevAgentIdentity, state };
+  }
+  const seeded = {
+    ...stateFromAgentAttributes(agent.attributes),
+    ready: state.ready,
+  };
+  if (prevAgentIdentity !== null && prevAgentIdentity !== agent.identity) {
+    return { agentIdentity: agent.identity, state: seeded };
+  }
+  if (seeded.lastAppliedSeq < state.lastAppliedSeq) {
+    return { agentIdentity: agent.identity, state };
+  }
+  return { agentIdentity: agent.identity, state: seeded };
 }

@@ -3,13 +3,15 @@ import {
   type DeckCommandState,
   RPC_ERROR,
   initialDeckState,
+  markDeckReady,
   reduceHighlight,
   reduceShowSlide,
+  seedDeckFromAgent,
   stateFromAgentAttributes,
 } from '@/lib/deck/commands';
 
 function state(partial: Partial<DeckCommandState> = {}): DeckCommandState {
-  return { ...initialDeckState, ...partial };
+  return { ...initialDeckState, ready: true, ...partial };
 }
 
 describe('reduceShowSlide', () => {
@@ -179,5 +181,41 @@ describe('stateFromAgentAttributes', () => {
     expect(seeded.currentSlideId).toBe('s3_kyrie');
     expect(seeded.lastAppliedSeq).toBe(8);
     expect(seeded.highlights).toEqual(['cle_irving']);
+  });
+});
+
+describe('seedDeckFromAgent', () => {
+  it('resets lastAppliedSeq when the agent identity changes', () => {
+    const current = state({
+      currentSlideId: 's4_offense',
+      lastAppliedSeq: 10,
+      highlights: ['cle_james'],
+    });
+    const next = seedDeckFromAgent(current, 'agent-old', {
+      identity: 'agent-new',
+      attributes: { current_slide: 's1_tipoff', slide_seq: '0' },
+    });
+    expect(next.agentIdentity).toBe('agent-new');
+    expect(next.state.lastAppliedSeq).toBe(0);
+    expect(next.state.ready).toBe(true);
+  });
+
+  it('does not rewind seq for the same agent identity', () => {
+    const current = state({ currentSlideId: 's4_offense', lastAppliedSeq: 10 });
+    const next = seedDeckFromAgent(current, 'agent-same', {
+      identity: 'agent-same',
+      attributes: { current_slide: 's1_tipoff', slide_seq: '1' },
+    });
+    expect(next.state).toEqual(current);
+  });
+});
+
+describe('markDeckReady', () => {
+  it('starts unready so 2003 can fire, then ready on mount', () => {
+    expect(initialDeckState.ready).toBe(false);
+    expect(reduceShowSlide(initialDeckState, { slide_id: 's1_tipoff', seq: 1 }).ok).toBe(false);
+    const mounted = markDeckReady(initialDeckState);
+    const result = reduceShowSlide(mounted, { slide_id: 's1_tipoff', seq: 1 });
+    expect(result.ok).toBe(true);
   });
 });

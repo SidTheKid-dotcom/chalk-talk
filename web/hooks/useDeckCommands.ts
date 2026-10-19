@@ -6,7 +6,8 @@ import { useRoomContext } from '@livekit/components-react';
 import {
   type DeckCommandState,
   initialDeckState,
-  stateFromAgentAttributes,
+  markDeckReady,
+  seedDeckFromAgent,
 } from '@/lib/deck/commands';
 import { bindDeckRpc } from '@/lib/deck/rpc';
 
@@ -28,9 +29,13 @@ export function useDeckCommands() {
   const room = useRoomContext();
   const [state, setState] = useState<DeckCommandState>(initialDeckState);
   const stateRef = useRef(state);
+  const agentIdentityRef = useRef<string | null>(null);
   stateRef.current = state;
 
   useEffect(() => {
+    const mounted = markDeckReady(stateRef.current);
+    stateRef.current = mounted;
+    setState(mounted);
     const unbind = bindDeckRpc(
       room,
       () => stateRef.current,
@@ -39,21 +44,23 @@ export function useDeckCommands() {
         setState(next);
       }
     );
-    return unbind;
+    return () => {
+      unbind();
+      const unmounted = { ...stateRef.current, ready: false };
+      stateRef.current = unmounted;
+      setState(unmounted);
+    };
   }, [room]);
 
   useEffect(() => {
     const seedFromAgent = () => {
       const agent = findAgentParticipant(room);
-      if (!agent) {
-        return;
+      const next = seedDeckFromAgent(stateRef.current, agentIdentityRef.current, agent);
+      agentIdentityRef.current = next.agentIdentity;
+      if (next.state !== stateRef.current) {
+        stateRef.current = next.state;
+        setState(next.state);
       }
-      const seeded = stateFromAgentAttributes(agent.attributes);
-      if (seeded.lastAppliedSeq < stateRef.current.lastAppliedSeq) {
-        return;
-      }
-      stateRef.current = seeded;
-      setState(seeded);
     };
 
     seedFromAgent();

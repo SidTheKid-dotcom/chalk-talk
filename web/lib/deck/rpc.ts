@@ -9,18 +9,39 @@ export type DeckRpcHost = {
   unregisterRpcMethod: (method: string) => void;
 };
 
+export const AFTER_PAINT_FALLBACK_MS = 100;
+
 /**
  * Two animation frames: the first runs before the next paint, the second after
  * that paint. That is the point the slide (or highlight) is on screen, so the
  * RPC ack matches "after paint" in ARCHITECTURE.md.
+ *
+ * rAF pauses in a background tab, so a hidden document acks immediately and a
+ * visible tab races the frames against a short timeout. A frozen tab never
+ * runs this helper; the agent bounds that wait with max_round_trip_latency.
  */
 export function afterNextPaint(): Promise<void> {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    return Promise.resolve();
+  }
   if (typeof requestAnimationFrame !== 'function') {
     return Promise.resolve();
   }
   return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve();
+    };
+    const timer = setTimeout(finish, AFTER_PAINT_FALLBACK_MS);
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => resolve());
+      requestAnimationFrame(() => {
+        clearTimeout(timer);
+        finish();
+      });
     });
   });
 }

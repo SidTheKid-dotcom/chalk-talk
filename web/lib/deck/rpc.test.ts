@@ -1,7 +1,9 @@
 import { type RpcInvocationData } from 'livekit-client';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type DeckCommandState, initialDeckState } from '@/lib/deck/commands';
-import { bindDeckRpc } from '@/lib/deck/rpc';
+import { AFTER_PAINT_FALLBACK_MS, afterNextPaint, bindDeckRpc } from '@/lib/deck/rpc';
+
+const mountedState: DeckCommandState = { ...initialDeckState, ready: true };
 
 function invocation(payload: unknown): RpcInvocationData {
   return {
@@ -27,10 +29,34 @@ function fakeRoom() {
   };
 }
 
+describe('afterNextPaint', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('resolves immediately when the document is hidden', async () => {
+    const raf = vi.fn();
+    vi.stubGlobal('document', { visibilityState: 'hidden' });
+    vi.stubGlobal('requestAnimationFrame', raf);
+    await afterNextPaint();
+    expect(raf).not.toHaveBeenCalled();
+  });
+
+  it('races two animation frames against a fallback timeout', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('document', { visibilityState: 'visible' });
+    vi.stubGlobal('requestAnimationFrame', vi.fn());
+    const pending = afterNextPaint();
+    await vi.advanceTimersByTimeAsync(AFTER_PAINT_FALLBACK_MS);
+    await pending;
+  });
+});
+
 describe('bindDeckRpc', () => {
   it('unregisters show_slide and highlight on cleanup', () => {
     const room = fakeRoom();
-    let current = initialDeckState;
+    let current = mountedState;
     const unbind = bindDeckRpc(
       room,
       () => current,
@@ -48,7 +74,7 @@ describe('bindDeckRpc', () => {
 
   it('throws RpcError 2001 for an unknown slide id', async () => {
     const room = fakeRoom();
-    let current = initialDeckState;
+    let current = mountedState;
     bindDeckRpc(
       room,
       () => current,
@@ -65,7 +91,7 @@ describe('bindDeckRpc', () => {
 
   it('acks an applied show_slide after paint', async () => {
     const room = fakeRoom();
-    let current: DeckCommandState = initialDeckState;
+    let current: DeckCommandState = mountedState;
     const afterPaint = vi.fn(async () => undefined);
     bindDeckRpc(
       room,
