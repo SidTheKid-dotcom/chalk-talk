@@ -11,6 +11,12 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [livekit/agents] `ToolHandlingOptions(tool_reply_after_audio=...)` from early research does not exist in livekit/agents. Use `StopResponse` or `cancel_tool_reply()` to control replies. (code search; events doc)
 - [livekit/agents] livekit-agents 1.8.7+ reports realtime `e2e_latency` in assistant message metrics when local VAD is set. (changelog 1.8.7)
 - [tooling] The docs MCP may be pending approval in a session. `lk docs search|get-page|code-search|changelog` gives the same source from the shell.
-- [livekit/cli] `lk agent dev` registers under a random `dev-` deployment by default; starter tokens dispatch to production. Use `--deployment production` locally until a cloud agent exists. (lk agent dev --help; audit 01)
+- [livekit/realtime] GPT Realtime 2.1 is turn-based and owns turn detection (semantic VAD by default). Starter STT/TTS, TurnDetector, adaptive interruption, and preemptive_generation conflict; drop them and keep noise cancellation. (docs: /agents/models/realtime/openai, /agents/logic/turns#realtime-models; task 01)
+- [livekit/cli] `lk agent init AGENT-NAME` uses that name as both the directory and the dispatch name. Override `@server.rtc_session(agent_name=...)` from `AGENT_NAME`. (CLI agent-development doc; task 01)
+- [livekit/cli] CLI 2.19+ `lk agent dev` registers under a random `dev-` deployment, so a starter token that dispatches production may miss the local worker. Pass `--deployment production` when no cloud agent exists. (CLI agent-development doc; task 01)
+- [agent/tests] The Python starter's pytest file is fully commented, so `uv run pytest` exits 5 with 0 tests. Add a tiny import/instructions smoke test. (task 01)
+- [livekit/agents] First GPT Realtime job stalled ~900ms importing `openai.types.realtime` on the job process. Prewarm that module if cold-start lag matters. (task 01)
+- [livekit/logs] Worker INFO logs the job and RoomIO link, not the assistant transcript. The reply is in the web chat UI. (task 01)
 - [web] The embedded preview browser has no mic: `getUserMedia` throws `NotSupportedError`. The /player page must catch mic failure and show a message. Voice tests need a real browser. (audit 01)
 - [livekit/agents] Adding plain `vad=` to a realtime session keeps server turn detection; adding `turn_detection` or `interruption` with it switches to client-side turns. VAD is needed for `e2e_latency`. (agent_activity.py; audit 01)
+- [agent/tests] Importing agent.py raises if AGENT_NAME is unset, so a fresh clone fails pytest. Set a default in tests/conftest.py and keep the fail-fast raise. (audit 01; task 01 r2)
