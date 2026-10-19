@@ -1,7 +1,7 @@
 # Progress
 
 ## Now
-Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08, 09 (grounded presenter), 10 (live `/player`), 11 (board tools). Player feedback fixes are in audit; task 12 is the frontend-only Hardwood redesign, followed by task 13 camera-aware head-coach handoff and task 14 realtime E2E. The Spike 2 decision is recorded, but its harness branch failed audit and is not merged.
+Merged: 01, 02, 03 (Spike 3 PASS), 05, 06 (Spike 1 PASS), 07, 08, 09 (grounded presenter), 10 (live `/player`), 11 (board tools), player voice-only controls/caption stability. Task 12 Hardwood frontend redesign is running, followed by task 13 camera-aware head-coach handoff and task 14 realtime E2E. The Spike 2 decision is recorded, but its harness branch failed audit and is not merged.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
