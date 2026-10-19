@@ -5,10 +5,20 @@ Chalk Talk is a voice AI assistant coach. It walks a Warriors player through a s
 **Status: work in progress.** This README only describes what is built and verified. Sections below are filled in as the work lands.
 
 ## What it does
-- Opens on the acked tip-off slide before the assistant speaks.
-- Routes natural questions to one of six prepared slides from deck-owned topics.
-- Grounds each spoken answer in the selected slide's points, notes, and verified fact claims.
-- Keeps slide state in LiveKit participant attributes so reconnecting viewers can recover it.
+- Presents a fixed six-slide Game 7 plan by voice. It opens on slide 1 only after the browser confirms the slide is on screen.
+- Moves the deck from natural questions ("their best guy keeps getting downhill") to the right slide. The model picks from slide ids and topics defined in the deck data.
+- Speaks only from the slide's points, notes and verified facts. Every number on screen traces to a row in `FACTS.md` with a source URL.
+- Works the board with three bounded tools: `highlight` a player, zone or card; `run_play` animates one of four prepared plays; `add_callout` posts a sourced fact card or a short coaching note. The model chooses ids; it never writes layout or numbers.
+- Refuses unsourced claims on screen: a free-text note with a digit, `%` or a spelled-out number is rejected in the agent and again in the browser.
+- Stops at once when you talk over it (LiveKit Agents handles barge-in and history truncation).
+- Hands off to a human: "Get me the head coach" sends a room-bound join link, the coach gets a private briefing, the agent says one handoff line and becomes a quiet clicker. If the coach leaves, it returns to the player. _(Agent side built and tested; browser coach page in progress.)_
+
+## Measured in development
+| What | Result | Where |
+|---|---|---|
+| Slide RPC round trip, ack after paint | median 117 ms (103-122 ms, n=10, local agent to LiveKit Cloud) | `LEARNINGS.md` (spike 3) |
+| Agent ear switch from player to coach | 0.66 ms for `set_participant`, 46 ms including clicker mode, no realtime session reset | `LEARNINGS.md` (spike 1) |
+| Tool choice, text turns, 26 utterances x 3 runs | correct tool 96-100%; slide content spoken before the slide tool: 0 of 344 pre-tool lines | `DECISIONS.md` ADR-026 |
 
 ## Try it
 _Live link and demo video: to be added._
@@ -31,10 +41,40 @@ Once a cloud agent exists (`lk agent create`), a local worker on production take
 `AGENT_NAME` must match on the agent (`@server.rtc_session(agent_name=...)`) and in the player token's explicit dispatch. `POST /api/token` mints short-lived player and coach tokens with a `role` attribute. A missing `LIVEKIT_URL` fails loudly; there is no homepage-agent fallback. The realtime model uses `REALTIME_PROVIDERS=openai,inference` by default (OpenAI plugin first, LiveKit Inference fallback). Evals pin `REALTIME_PROVIDERS=openai`. `CHALK_DEBUG=1` skips realtime credential checks and the GPT session so the RPC probe can run without an OpenAI key.
 
 ## Architecture
-_Diagram and summary: to be written. Design contracts live in `docs/ARCHITECTURE.md`._
+```mermaid
+flowchart LR
+  P["Player browser /player"] -- "POST role=player" --> T["Token route (Next.js)"]
+  C["Coach phone /coach"] -- "POST role=coach + room" --> T
+  P <-- "WebRTC audio" --> R["LiveKit Cloud room"]
+  C <-- "WebRTC audio" --> R
+  A["Python agent (livekit-agents)"] <--> R
+  A <-- "realtime audio + tools" --> M["gpt-realtime-2.1 (OpenAI, LiveKit Inference fallback)"]
+  A -- "RPC show_slide / board tools, waits for ack" --> P
+  A -- "attributes: current_slide, overlay_state, mode" --> C
+  A -- "text stream coach-briefing (coach only)" --> C
+```
+- One LiveKit room per session. Participants are found by a `role` attribute set in the token, never by join order.
+- Every slide and board change is an RPC to the player with an increasing `seq`. The agent narrates only after the ack. The browser drops stale `seq`.
+- The agent mirrors the acked state into its own attributes, so the coach and any late joiner render the same board.
+- Contracts: `docs/ARCHITECTURE.md`. Deck and facts: `deck/`, generated copies kept in sync by `scripts/sync_deck.py --check`.
+
+## Why X, not Y (short)
+| Choice | Over | Why | ADR |
+|---|---|---|---|
+| LiveKit room + server agent | Direct browser-to-Realtime | A real human must join the same call; tools and guardrails stay server-side | 001, 003 |
+| GPT Realtime | STT-LLM-TTS pipeline | Natural voice, native tools; measured tool order was acceptable | 002, 026 |
+| RPC with ack + `seq` | Fire-and-forget events | The agent never describes a slide that is not on screen | 006, 007 |
+| Fixed deck + bounded board tools | Generated slides / generative UI | Every claim is checkable; the model picks approved content, it does not author it | 011, 015, 017 |
+| OpenAI first, Inference fallback | Inference only | Free-tier credit cap would end the demo mid-session | 024 |
 
 ## Decisions
 See `DECISIONS.md`.
 
 ## Known limits
-_To be written._
+- The coach link is a bearer link: anyone with it can join as coach. Rooms are random 64-bit ids with a short token TTL.
+- No rate limit on the token route; rooms close when empty and hold at most four people.
+- After handoff the agent hears one human at a time; a speaker change can clip the first words.
+- If the briefing or the handoff line fails, the coach is ignored until they rejoin.
+- The LiveKit Inference fallback is only as available as the free-tier Inference credit.
+- The slide 6 joke image cannot be licensed, so the public build shows a text-only card.
+- The player view is built for a laptop; on a phone in portrait it asks you to rotate.
