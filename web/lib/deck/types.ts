@@ -69,6 +69,7 @@ export type SlideDiagram = {
   markers: Partial<Record<PlayerId, Coord>>;
   matchups?: Partial<Record<PlayerId, PlayerId>>;
   zones: ZoneId[];
+  attack_zones?: Partial<Record<PlayerId, ZoneId>>;
 };
 
 export type DeckSlide = {

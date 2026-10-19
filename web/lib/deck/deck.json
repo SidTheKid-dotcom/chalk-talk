@@ -28,7 +28,7 @@
       "number": 1,
       "section": "Tip-off",
       "title": "Tip-off: tonight and the three keys",
-      "topics": ["openers", "big picture", "overall plan", "stakes", "the keys"],
+      "topics": ["openers", "big picture", "overall plan", "the plan tonight", "big plan", "stakes", "the keys"],
       "points": [
         "The series is tied. We close at home.",
         "Keys: their best player, their isolation guard, our shooters.",
@@ -128,7 +128,8 @@
           "gsw_barnes": "cle_tthompson",
           "gsw_curry": "cle_smith"
         },
-        "zones": ["z_top_key", "z_left_wing", "z_right_wing", "z_left_elbow", "z_right_elbow", "z_paint"]
+        "zones": ["z_top_key", "z_left_wing", "z_right_wing", "z_left_elbow", "z_right_elbow", "z_paint"],
+        "attack_zones": {"cle_irving": "z_right_wing"}
       },
       "cards": []
     },

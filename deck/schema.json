@@ -243,6 +243,15 @@
         "zones": {
           "type": "array",
           "items": {"$ref": "#/$defs/zoneId"}
+        },
+        "attack_zones": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^(gsw_curry|gsw_thompson|gsw_green|gsw_iguodala|gsw_barnes|cle_james|cle_irving|cle_love|cle_smith|cle_tthompson)$": {
+              "$ref": "#/$defs/zoneId"
+            }
+          }
         }
       },
       "if": {
