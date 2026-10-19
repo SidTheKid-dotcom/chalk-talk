@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { RoomEvent } from 'livekit-client';
 import { useAgent, useSessionContext } from '@livekit/components-react';
 import { WelcomeView } from '@/components/app/welcome-view';
+import { PhotoCreditsLink } from '@/components/deck/PhotoCredits';
 import { ScaledSlide } from '@/components/deck/ScaledSlide';
 import { SlideView } from '@/components/deck/SlideView';
 import { HardwoodStage } from '@/components/hardwood/HardwoodStage';
@@ -185,12 +186,19 @@ export function ViewController({ credits, jrImageSrc }: ViewControllerProps) {
   if (!commands.currentSlideId || !isSlideId(commands.currentSlideId)) {
     return (
       <div className="player-shell">
-        <ScaledSlide>
+        <ScaledSlide
+          rail={
+            <>
+              <PhotoCreditsLink />
+              {sessionControls}
+            </>
+          }
+        >
           <HardwoodStage
             status={status}
             notice={micFailure}
             topic="SETTING THE BOARD"
-            railExtra={sessionControls}
+            showCredits={false}
           >
             <div className="flex h-full items-center justify-center">
               <p className="font-inter m-0 text-[24px] text-[var(--ink-2)]">
@@ -253,8 +261,15 @@ function PlayerSlide({
   const motion = usePlayMotion(slide.diagram, playId, playSeq, playAnimate);
   return (
     <div className="player-shell">
-      <ScaledSlide>
-        <HardwoodStage slide={slide} status={status} notice={notice} railExtra={controls}>
+      <ScaledSlide
+        rail={
+          <>
+            <PhotoCreditsLink />
+            {controls}
+          </>
+        }
+      >
+        <HardwoodStage slide={slide} status={status} notice={notice} showCredits={false}>
           <SlidePush slideId={slideId} seq={seq}>
             <SlideView
               deck={deck}
@@ -302,6 +317,7 @@ function SessionControls({
         type="button"
         data-player-mic
         data-live={microphoneOn && !micFailure ? '1' : '0'}
+        aria-pressed={microphoneOn}
         disabled={Boolean(micFailure)}
         onClick={() => void toggleMicrophone()}
       >
@@ -317,8 +333,8 @@ function SessionControls({
 function EndedView({ notice, onRestart }: { notice?: string | null; onRestart: () => void }) {
   return (
     <div className="lobby-shell">
-      <ScaledSlide>
-        <HardwoodStage topic="SESSION CLOSED">
+      <ScaledSlide rail={<PhotoCreditsLink />}>
+        <HardwoodStage topic="SESSION CLOSED" showCredits={false}>
           <div className="flex h-full items-center justify-center">
             <JoinPanel
               kicker="Session closed"

@@ -1,5 +1,6 @@
 import { CoachBriefing, coachJump } from '@/components/deck/CoachBriefing';
 import { MotionDemo } from '@/components/deck/MotionDemo';
+import { PhotoCreditsLink } from '@/components/deck/PhotoCredits';
 import { PrimitivesGallery } from '@/components/deck/PrimitivesGallery';
 import { ScaledSlide } from '@/components/deck/ScaledSlide';
 import { SlideView } from '@/components/deck/SlideView';
@@ -8,7 +9,7 @@ import { JoinPanel } from '@/components/hardwood/JoinPanel';
 import { PushDemo } from '@/components/hardwood/PushDemo';
 import { loadCutoutCredits, resolveJrImageSrc } from '@/lib/deck/credits.server';
 import { deck, firstSentence, getPlay, getSlide } from '@/lib/deck/load';
-import { playFrame } from '@/lib/deck/plays';
+import { playFrame, playMotionSegments } from '@/lib/deck/plays';
 import type { AgentState, PlayId, SlideId, TargetId } from '@/lib/deck/types';
 
 const SLIDE_IDS = new Set<SlideId>(deck.slides.map((slide) => slide.id));
@@ -22,13 +23,32 @@ function param(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function frameForPlay(
+  diagram: NonNullable<ReturnType<typeof getSlide>['diagram']>,
+  play: ReturnType<typeof getPlay>,
+  stepParam: string | undefined
+) {
+  const step = Number(stepParam);
+  if (!stepParam || !Number.isFinite(step) || step < 1) return playFrame(diagram, play);
+  const segments = playMotionSegments(diagram, play);
+  const indexed = play.start ? segments.slice(1) : segments;
+  const segment = indexed[Math.min(indexed.length, Math.floor(step)) - 1];
+  if (!segment) return playFrame(diagram, play);
+  return {
+    markers: segment.to,
+    arrows: segment.arrows,
+    ball: segment.ball,
+    caption: segment.caption,
+  };
+}
+
 function LabControls() {
   return (
     <div className="player-session-controls" data-player-controls>
       <button type="button" data-player-camera disabled title="Camera tiles are reserved">
         Camera off
       </button>
-      <button type="button" data-player-mic data-live="1">
+      <button type="button" data-player-mic data-live="1" aria-pressed="true">
         Mic on
       </button>
       <button type="button" data-player-end>
@@ -75,8 +95,12 @@ export default async function LabPage({ searchParams }: LabPageProps) {
     const ended = view === 'ended';
     return (
       <div className="lobby-shell">
-        <ScaledSlide>
-          <HardwoodStage vignette={!ended} topic={ended ? 'SESSION CLOSED' : 'FILM SESSION'}>
+        <ScaledSlide rail={<PhotoCreditsLink />}>
+          <HardwoodStage
+            vignette={!ended}
+            topic={ended ? 'SESSION CLOSED' : 'FILM SESSION'}
+            showCredits={false}
+          >
             <div className="flex h-full items-center justify-center">
               <JoinPanel
                 kicker={ended ? 'Session closed' : 'Film session · Game 7'}
@@ -99,13 +123,14 @@ export default async function LabPage({ searchParams }: LabPageProps) {
   if (view === 'push') {
     return (
       <div className="player-shell">
-        <ScaledSlide>
+        <ScaledSlide rail={<PhotoCreditsLink />}>
           <PushDemo
             credits={credits}
             jrImageSrc={jrImageSrc}
             fromId={param(query.from)}
             toId={param(query.to) ?? slideId}
             rapid={param(query.rapid) === '1'}
+            showCredits={false}
           />
         </ScaledSlide>
       </div>
@@ -115,7 +140,8 @@ export default async function LabPage({ searchParams }: LabPageProps) {
   if (slideId && SLIDE_IDS.has(slideId as SlideId)) {
     const slide = getSlide(slideId as SlideId);
     const play = playId && PLAY_IDS.has(playId as PlayId) ? getPlay(playId as PlayId) : undefined;
-    const frame = play && slide.diagram ? playFrame(slide.diagram, play) : undefined;
+    const frame =
+      play && slide.diagram ? frameForPlay(slide.diagram, play, param(query.step)) : undefined;
     const scaled = param(query.scale) === '1';
     const status: AgentState =
       param(query.state) === 'listening'
@@ -136,7 +162,8 @@ export default async function LabPage({ searchParams }: LabPageProps) {
         slide={slide}
         status={status}
         vignette={slide.id === 's1_tipoff'}
-        railExtra={<LabControls />}
+        showCredits={!scaled}
+        railExtra={scaled ? undefined : <LabControls />}
       >
         <SlideView
           deck={deck}
@@ -161,7 +188,16 @@ export default async function LabPage({ searchParams }: LabPageProps) {
     if (scaled) {
       return (
         <div className="player-shell" data-player-scale>
-          <ScaledSlide>{view}</ScaledSlide>
+          <ScaledSlide
+            rail={
+              <>
+                <PhotoCreditsLink />
+                <LabControls />
+              </>
+            }
+          >
+            {view}
+          </ScaledSlide>
         </div>
       );
     }

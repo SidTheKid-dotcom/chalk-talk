@@ -130,6 +130,92 @@ function translated(run) {
   );
 }
 
+function intersects(a, b) {
+  if (!a || !b) return true;
+  const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  return width > 1 && height > 1;
+}
+
+async function freezeMidpoint(name, path) {
+  const context = await browser.newContext({
+    viewport: { width: 1920, height: 1080 },
+    deviceScaleFactor: 1,
+    reducedMotion: 'no-preference',
+  });
+  const page = await context.newPage();
+  const response = await page.goto(`${base}${path}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60000,
+  });
+  if (!response || response.status() >= 400) {
+    errors.push(`${name}: status ${response?.status()}`);
+    await context.close();
+    return;
+  }
+  await page.addStyleTag({
+    content:
+      'nextjs-portal, [data-next-badge-root], #__next-build-watcher { display: none !important; }',
+  });
+  try {
+    await page.waitForFunction(
+      () => document.querySelectorAll('[data-slide-layer][data-animate="1"]').length >= 2,
+      { timeout: 4000 }
+    );
+  } catch {
+    errors.push(`${name}: transition layers did not start`);
+    await context.close();
+    return;
+  }
+  const overlap = await page.evaluate(() => {
+    const pauseAt = (fraction) => {
+      for (const animation of document.getAnimations()) {
+        const effect = animation.effect;
+        if (!effect || typeof effect.getComputedTiming !== 'function') continue;
+        const timing = effect.getComputedTiming();
+        if (typeof timing.duration !== 'number' || !Number.isFinite(timing.duration)) continue;
+        if (timing.duration < 200) continue;
+        animation.pause();
+        animation.currentTime = timing.duration * fraction;
+      }
+    };
+    const boxOf = (el) => {
+      if (!el) return null;
+      const box = el.getBoundingClientRect();
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+    };
+    const headlines = () => {
+      const layers = [...document.querySelectorAll('[data-slide-layer]')];
+      const outgoing = layers.find((el) => el.getAttribute('data-state') === 'exit');
+      const incoming = layers.find((el) => el.getAttribute('data-state') === 'enter');
+      return {
+        outgoing: boxOf(outgoing?.querySelector('.slide-title') ?? null),
+        incoming: boxOf(incoming?.querySelector('.slide-title') ?? null),
+        outgoingId: outgoing?.getAttribute('data-slide-layer') ?? null,
+        incomingId: incoming?.getAttribute('data-slide-layer') ?? null,
+      };
+    };
+    pauseAt(0.5);
+    const half = headlines();
+    pauseAt(0.08);
+    return half;
+  });
+  const file = join(evidenceDir, `${name}-midpoint.png`);
+  await page.screenshot({ path: file, fullPage: false, animations: 'allow' });
+  console.log(`${name}: midpoint ${file}`);
+  if (!overlap?.outgoing || !overlap?.incoming) {
+    errors.push(`${name}: missing headline at the midpoint`);
+  } else if (intersects(overlap.outgoing, overlap.incoming)) {
+    errors.push(
+      `${name}: headlines intersect (${overlap.outgoingId} and ${overlap.incomingId})`
+    );
+  }
+  await context.close();
+}
+
+await freezeMidpoint('push-forward', '/lab?view=push&from=s1_tipoff&to=s2_lebron');
+await freezeMidpoint('push-backward', '/lab?view=push&from=s3_kyrie&to=s2_lebron');
+
 if (forward?.layers?.[0]?.state?.[0]?.id !== 's1_tipoff') {
   errors.push(`forward started on ${forward?.layers?.[0]?.state?.[0]?.id} not s1_tipoff`);
 }

@@ -1,5 +1,8 @@
+'use client';
+
 import { type ReactNode } from 'react';
 import { PhotoCreditsLink } from '@/components/deck/PhotoCredits';
+import { useStageChrome } from '@/components/deck/ScaledSlide';
 import { CameraReserve } from '@/components/hardwood/CameraReserve';
 import type { AgentState } from '@/lib/deck/types';
 import { dsegText } from '@/lib/slide-transition';
@@ -10,6 +13,7 @@ type BottomRailProps = {
   slideNumber?: number | null;
   meta?: string;
   extra?: ReactNode;
+  showCredits?: boolean;
 };
 
 function pillClass(state: AgentState): string {
@@ -38,10 +42,14 @@ export function BottomRail({
   topic = 'FILM SESSION',
   slideNumber = null,
   extra,
+  showCredits = true,
 }: BottomRailProps) {
   const n = slideNumber == null ? '0' : String(slideNumber);
+  const { scale, reservePx } = useStageChrome();
+  const paddingRight =
+    reservePx > 0 ? Math.min(96 + reservePx / Math.max(scale, 0.2), 1500) : undefined;
   return (
-    <footer className="rail" data-rail>
+    <footer className="rail" data-rail style={paddingRight ? { paddingRight } : undefined}>
       <div className={`pill ${pillClass(state)}`} data-state-pill={state}>
         <span className="dot" />
         {state === '—' ? 'Waiting' : state}
@@ -53,9 +61,11 @@ export function BottomRail({
         <span className="led">{dsegText(topic.toUpperCase())}</span>
         <span className="sq" />
         <span className="led">{`${n}/6`}</span>
-        <span className="meta">
-          <PhotoCreditsLink />
-        </span>
+        {showCredits ? (
+          <span className="meta">
+            <PhotoCreditsLink />
+          </span>
+        ) : null}
       </div>
       <CameraReserve />
       {extra}

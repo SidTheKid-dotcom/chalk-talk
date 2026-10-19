@@ -10,6 +10,7 @@ type HardwoodStageProps = {
   notice?: string | null;
   vignette?: boolean;
   railExtra?: ReactNode;
+  showCredits?: boolean;
   children: ReactNode;
 };
 
@@ -20,6 +21,7 @@ export function HardwoodStage({
   notice = null,
   vignette = false,
   railExtra,
+  showCredits = true,
   children,
 }: HardwoodStageProps) {
   const resolvedTopic = topic ?? slide?.section ?? 'FILM SESSION';
@@ -40,6 +42,7 @@ export function HardwoodStage({
         topic={resolvedTopic}
         slideNumber={slide?.number ?? null}
         extra={railExtra}
+        showCredits={showCredits}
       />
     </div>
   );
