@@ -43,3 +43,4 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [web/token] `RoomConfiguration` JWT includes protobuf defaults (`name`, `restartPolicy`, empty `tags`). Assert named fields, not `toEqual` on the whole config. (source: task 05 r2)
 - [web/token] Coach room format `^fr-[0-9a-f]{16}$` is checked in `parseTokenRequest`, so invalid ids 400 before `listRooms`. (source: task 05 r2)
 - [livekit/inference] Free plan: 5 concurrent Inference sessions and $2.50 credit (about 50 realtime minutes). A parallel eval run hit 429 and a usage alert. Run evals at concurrency 1 and stop stale runs. (lk docs pricing-info)
+- [spike 3] RESULT PASS. `show_slide` RPC round trip with ack after two rAFs: min 103.5 ms, median 117.2 ms, max 121.7 ms (n=10, local agent to LiveKit Cloud). Stale seq, 2001, 2004, 2007 and missing player (1401) behave per contract. Late-joining coach renders from attributes. (task 03)
