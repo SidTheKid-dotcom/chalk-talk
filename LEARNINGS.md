@@ -73,3 +73,6 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [livekit/examples] `examples/voice_agents/toggle_io.py` is gone from livekit/agents main (docs MCP returned only the examples README). The API is still `RoomIO.set_participant` in `room_io.py`. (task 06)
 - [livekit/realtime] OpenAI TTS "Assistant, show the Kyrie slide." transcribed as "Distant, show the Kyrie slide." The model still called `show_slide(s3_kyrie)`. (task 06)
 - [tooling] Killing the `pnpm dev` parent can leave a reparented `next dev` child. Stop that PID too. Never `pkill`. (task 06)
+- [spike 2] RESULT: correct tool 96-100%; any speech before tool 57% (config B); slide content before tool 0 of 344 (planner review). Pre-tool speech is a short announcement of the topic. Kept Realtime (ADR-026). (task 04)
+- [spike 2] A title-only tool result made the model invent slide content. Tool results must carry the slide's points, notes and facts. (task 04)
+- [spike 2] Two tool calls in one response ran in order with no overlap (second start 760-980 ms after first end). (task 04)
