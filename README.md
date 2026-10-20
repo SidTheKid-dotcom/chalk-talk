@@ -24,7 +24,7 @@ This README only describes what is built and verified.
 |---|---|---|
 | Slide RPC round trip, ack after paint | median 117 ms (103-122 ms, n=10, local agent to LiveKit Cloud) | `LEARNINGS.md` (spike 3) |
 | Agent ear switch from player to coach | 0.66 ms for `set_participant`, 46 ms including clicker mode, no realtime session reset | `LEARNINGS.md` (spike 1) |
-| Tool choice, text turns, 26 utterances x 3 runs | correct tool 96-100%; slide content spoken before the slide tool: 0 of 344 pre-tool lines | `DECISIONS.md` ADR-026 |
+| Tool choice, text-turn evals, 26 utterances x 3 runs | correct tool 96-100% on text turns. Slide content before the tool: 0 of 344 pre-tool text lines | `DECISIONS.md` ADR-026 |
 
 ## Try it
 [![Watch the Chalk Talk demo on YouTube (4:00)](https://img.youtube.com/vi/3dlApJA9j4Y/maxresdefault.jpg)](https://youtu.be/3dlApJA9j4Y)
@@ -70,7 +70,7 @@ flowchart LR
 | Choice | Over | Why | ADR |
 |---|---|---|---|
 | LiveKit room + server agent | Direct browser-to-Realtime | A real human must join the same call; tools and guardrails stay server-side | 001, 003 |
-| GPT Realtime | STT-LLM-TTS pipeline | Natural voice, native tools; measured tool order was acceptable | 002, 026 |
+| GPT Realtime | STT-LLM-TTS pipeline | Natural voice and native tools. Text-turn evals found tool order acceptable | 002, 026 |
 | RPC with ack + `seq` | Fire-and-forget events | The agent never describes a slide that is not on screen | 006, 007 |
 | Fixed deck + bounded board tools | Generated slides / generative UI | Every claim is checkable; the model picks approved content, it does not author it | 011, 015, 017 |
 | OpenAI first, Inference fallback | Inference only | Free-tier credit cap would end the demo mid-session | 024 |

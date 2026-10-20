@@ -13,6 +13,7 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Revisit:** If the human handoff is cut, reconsider direct Realtime.
 
 ## ADR-002: GPT Realtime as the voice model
+- **Status:** Amended by ADR-026. The STT-LLM-TTS pipeline is not kept as a fallback.
 - **Decision:** `AgentSession` uses OpenAI GPT Realtime (`openai/gpt-realtime-2.1`) via LiveKit Inference or the OpenAI plugin.
 - **Why:** Most natural voice, native tool calls, lowest effort. In LiveKit the model is one config line, so it can change later.
 - **Rejected:** STT-LLM-TTS pipeline as default (more control and live captions, but more tuning; kept as the fallback). A live pipeline/Realtime toggle (cut for scope).
@@ -67,6 +68,7 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Revisit:** SIP or phone handoff, where a spoken whisper in a consultation room fits.
 
 ## ADR-010: Clicker mode instead of the agent leaving
+- **Status:** Amended by ADR-025. Coach leave does not close the session. The agent returns to the player.
 - **Decision:** After handoff the agent stays in the room, stays quiet, changes slides as topics come up, and speaks only when addressed as "Assistant".
 - **Why:** The humans keep a synced deck without touching anything. It shows the agent supporting the human, not replacing them.
 - **Rejected:** Agent leaves the room (slides stop following). Moving participants between rooms (cut for scope).
@@ -87,6 +89,7 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Cost:** Two languages in the repo.
 
 ## ADR-013: Managed hosting
+- **Status:** Amended. Not deployed. There is no LiveKit Cloud agent and no Vercel frontend.
 - **Decision:** Agent on LiveKit Cloud (`lk agent create`). Frontend on Vercel.
 - **Why:** Fastest path to a live link that reviewers can click.
 - **Rejected:** Self-hosting LiveKit server and agent (more ops; loses Cloud-only extras).
@@ -177,7 +180,7 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 
 ## ADR-026: Keep GPT Realtime; allow a short content-free lead-in before slide tools
 - **Decision:** Stay on `gpt-realtime-2.1` (no pipeline fallback). The presenter may say one short lead-in ("One sec, pulling up the LeBron plan.") before `show_slide` or a board tool, but never plan content, assignments, names of plays' steps, facts or numbers before the tool result. The prompt states this rule with examples. The full eval checks it (pre-tool line at most 20 words and no slide content) and also checks that post-tool narration is grounded in the tool result.
-- **Why:** Spike 2 (task 04, 312 text turns on OpenAI) measured any-speech-before-tool at 57% in config B, below the 90% bar the harness implemented. The bar in the task file was "tool before slide speech". Planner review of all 344 pre-tool lines: max 21 words, mean 12.7; a content-marker scan (digits, player names, plan terms, facts) flagged 31, and all 31 only echo the user's topic ("pulling up that trap look"). Slide content before tool: 0 of 344. Correct tool 96-100%. Board tools cost 5.8 points of tool-first vs two tools, within the 10-point limit. A lead-in also covers the RPC round trip (median 117 ms, Spike 3): the slide lands while the line plays.
+- **Why:** Spike 2 (task 04, 312 text turns on OpenAI) measured any-speech-before-tool at 57% in config B, below the 90% bar the harness implemented. The bar in the task file was "tool before slide speech". Planner review of all 344 pre-tool lines: max 21 words, mean 12.7; a content-marker scan (digits, player names, plan terms, facts) flagged 31, and all 31 only echo the user's topic ("pulling up that trap look"). Slide content before tool: 0 of 344. Correct tool 96-100% on text turns. Board tools cost 5.8 points of tool-first vs two tools, within the 10-point limit. A lead-in also covers the RPC round trip (median 117 ms, Spike 3): the slide lands while the line plays.
 - **Rejected:** STT-LLM-TTS pipeline (more latency and tuning; it does not remove pre-tool text either, since text LLMs also lead in before tool calls). Forcing `tool_choice` on every turn (blocks small talk; untested on realtime audio ordering).
 - **Cost:** A lead-in can promise a slide that then fails to show; the tool returns FAILED and the model must say so. Grounding is enforced by prompt and eval, not by code.
 - **Found in the same run:** With a title-only stub result, the model invented slide content ("three keys" not in the deck). The real tool result must carry the slide's points, notes and fact claims, and the prompt must say to speak only from them. "Push or slow it down?" went to s1 instead of s5 five times: tool descriptions must list each slide's topics from deck data.
