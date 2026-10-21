@@ -13,12 +13,12 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Revisit:** If the human handoff is cut, reconsider direct Realtime.
 
 ## ADR-002: GPT Realtime as the voice model
-- **Status:** Amended by ADR-026. The STT-LLM-TTS pipeline is not kept as a fallback.
-- **Decision:** `AgentSession` uses OpenAI GPT Realtime (`openai/gpt-realtime-2.1`) via LiveKit Inference or the OpenAI plugin.
-- **Why:** Most natural voice, native tool calls, lowest effort. In LiveKit the model is one config line, so it can change later.
-- **Rejected:** STT-LLM-TTS pipeline as default (more control and live captions, but more tuning; kept as the fallback). A live pipeline/Realtime toggle (cut for scope).
-- **Cost:** The model may speak before calling `show_slide`. With server VAD, most LiveKit interruption options (including adaptive interruption) do not apply. User transcripts arrive late. No exact scripted `say()`. Higher per-minute cost than a cheap pipeline.
-- **Revisit:** If Spike 2 shows speech before the tool call in more than a small share of eval runs, switch to the pipeline (one config change plus STT/TTS choice).
+- **Status:** Amended by ADR-024 (provider order) and ADR-026 (no pipeline). The agent does not configure an STT-LLM-TTS pipeline, TurnDetector, or adaptive interruption.
+- **Decision:** `AgentSession` uses one realtime model from `agent/src/model.py`. The default id is `gpt-realtime-2.1`. Which provider serves it is ADR-024.
+- **Why:** Most natural voice, native tool calls, lowest effort. The model id is one env var (`REALTIME_MODEL`), so it can change later.
+- **Rejected:** An STT-LLM-TTS pipeline as the voice stack. A live pipeline/Realtime toggle. Neither is in the agent.
+- **Cost:** The presenter prompt allows one short content-free lead-in before a slide or board tool (ADR-026). The session does not set client-side turn detection; the realtime model's own turn detection owns the turn. User transcripts are not shown on the player or coach screens. There is no scripted `say()` API in this agent; the opening line is a `generate_reply` instruction.
+- **Revisit:** Closed by ADR-026. Do not add a pipeline from the Spike 2 result.
 
 ## ADR-003: Not direct browser Realtime
 - **Decision:** Do not connect the browser straight to OpenAI Realtime.
@@ -68,12 +68,12 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Revisit:** SIP or phone handoff, where a spoken whisper in a consultation room fits.
 
 ## ADR-010: Clicker mode instead of the agent leaving
-- **Status:** Amended by ADR-025. Coach leave does not close the session. The agent returns to the player.
-- **Decision:** After handoff the agent stays in the room, stays quiet, changes slides as topics come up, and speaks only when addressed as "Assistant".
+- **Status:** Amended by ADR-025 (coach leave restores the player) and ADR-028 (either human can hold the ear after handoff).
+- **Decision:** After handoff the agent stays in the room. Clicker instructions tell it to stay silent unless addressed as Floppy or Assistant, to call `show_slide` when the humans move to another slide topic, and to use board tools when addressed. `run_play` is also allowed when they clearly discuss a prepared play. The model judges "addressed". There is no string match on the name.
 - **Why:** The humans keep a synced deck without touching anything. It shows the agent supporting the human, not replacing them.
 - **Rejected:** Agent leaves the room (slides stop following). Moving participants between rooms (cut for scope).
-- **Cost:** Depends on switching audio input to the coach (Spike 1). Risk of the agent speaking when not addressed. Spike 1 (task 06) passed: mid-session `set_participant` works with GPT Realtime; the agent then hears only the coach. Coach leave currently closes the session (default `close_on_disconnect`); fallback-to-player is proposed, not built.
-- **Fallback:** The coach taps slides on the phone.
+- **Cost:** The session sets `RoomOptions(close_on_disconnect=False)`. On coach leave the agent disables the floor router, restores presenter instructions and `mode=presenter`, then `set_participant(None)` and `set_participant(player)`. If no player remains, it shuts the session down. A player disconnect ends the session only when the disconnect reason is in LiveKit's `DEFAULT_CLOSE_ON_DISCONNECT_REASONS` and no player is left. The phone has no control that changes slides by tap.
+- **Fallback:** Not built. Voice tools are the only way to move the board.
 
 ## ADR-011: Fixed hand-built deck, not generated
 - **Decision:** Six hand-built slides about one game. No "any topic" generation.
@@ -89,12 +89,12 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Cost:** Two languages in the repo.
 
 ## ADR-013: Managed hosting
-- **Status:** Amended. Not deployed. There is no LiveKit Cloud agent and no Vercel frontend.
-- **Decision:** Agent on LiveKit Cloud (`lk agent create`). Frontend on Vercel.
-- **Why:** Fastest path to a live link that reviewers can click.
-- **Rejected:** Self-hosting LiveKit server and agent (more ops; loses Cloud-only extras).
-- **Cost:** Free-tier cold starts of about 10-20 s and hard usage caps. Warm up before sharing.
-- **Revisit:** Production with PHI would need a paid plan with a BAA, or self-hosting.
+- **Status:** Amended. Not deployed. The repo has no `livekit.toml`, no Vercel project config, and no hosted URL. Rooms still use a LiveKit Cloud project: the local worker joins with `lk agent dev`, and the browser joins with a token.
+- **Decision:** If this is deployed, the agent goes to LiveKit Cloud (`lk agent create`) and the frontend goes to Vercel. That deploy is not in the tree. `agent/Dockerfile` is the image the Cloud deploy would use. `make agent-dev` runs the worker on this machine against `${LIVEKIT_AGENT_DEPLOYMENT:-production}`.
+- **Why:** A hosted link is the shortest path for someone else to open the app. Until that exists, run both processes locally.
+- **Rejected:** Self-hosting the LiveKit server and the agent (more ops).
+- **Cost:** A Cloud agent on a free plan has cold starts and usage caps. This repo has not measured those, because no Cloud agent is configured. Do not treat a research estimate of 10-20 seconds as a measured property of this app.
+- **Revisit:** A deploy would add `livekit.toml` (or the Cloud project's equivalent) and a Vercel project. Production with PHI would need a paid plan with a BAA, or self-hosting.
 
 ## ADR-014: Role-scoped tokens with explicit dispatch
 - **Decision:** Token route sets `role`, uses a random room, explicit agent dispatch (player only), short TTL, and no admin grants.
@@ -106,7 +106,7 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Decision:** The agent can change slide content with three tools: `highlight(target)`, `run_play(play_id)` and `add_callout(fact_id | text)`. Targets, plays and facts are enums from the deck and facts data. Each tool uses the acked RPC path of `show_slide`. Overlays clear on slide change. The tools work in presenter and clicker mode.
 - **Why:** Switching slides only shows a static page. Pointing at a player, running a play and pinning a note let the agent build the explanation while it talks. That is the closest match to a doctor-facing agent that pulls up a chart on request. A fixed menu keeps every pixel checkable: the model picks ids, the deck owns geometry and text, and stats come only from verified `FACTS.md` rows.
 - **Rejected:** Slide switch only (safe, but the deck stays static and the "agent builds the explanation" moment is lost). Freehand or generative UI, where the model emits layout, coordinates or components (seen as the goal of `thesysdev/voice-agent-generativeui`; unverifiable output, invented plays and numbers on screen, hard to eval, more latency). Freehand play drawing by the user (cut for scope).
-- **Clicker trigger:** Any board tool when a human addresses the agent. `run_play` also when the humans clearly discuss a prepared play. Highlight and callout need address, because an unasked note on the coach's screen is noise.
+- **Clicker trigger:** The clicker prompt allows board tools when a human addresses the agent as Floppy or Assistant. `run_play` is also allowed when the humans clearly discuss a prepared play. `show_slide` runs when they move to another slide topic. Highlight and callout need address, because an unasked note on the coach's screen is noise. The tools stay registered in clicker mode; the prompt is what limits them.
 - **Cost:** Five tools instead of two, so more wrong-tool risk and more eval items. More frontend work: overlay layer, animation, two callout card styles, attribute rendering on the coach page. More RPC round trips per turn, and `run_play` may chain two (slide, then play).
 - **Revisit:** Run the slide eval items with two tools, then with five. If the slide pass rate drops, or board items fall below the planner's bar, cut in this order: `add_callout`, then `highlight`. Keep `run_play`, because it carries the demo moment.
 
@@ -145,7 +145,7 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Cost:** None. Nothing was built.
 
 ## ADR-021: Spikes land on the real scaffold
-- **Decision:** Spikes run on the real `agent/` and `web/` setup. Spike 3's RPC client and browser handler are written as production code with tests, and are kept if the auditor approves. Spike 2's measurement harness lives in `evals/spikes/` and is not in the demo path.
+- **Decision:** Spikes run on the real `agent/` and `web/` setup. Spike 3's RPC client and browser handler are the production `show_slide` path, with tests. Spike 2's measurement harness is not in this repo: there is no `evals/` directory. ADR-026 records the decision that followed that spike. The harness is not on the demo path because it is absent, not because it is gated.
 - **Why:** The RPC ack path is core code in every later task. Writing it twice wastes effort.
 - **Rejected:** Throwaway branches for every spike (`docs/RISKS.md` default).
 - **Cost:** Spike code gets a full review. If a spike fails, its code is reverted before the fallback.
@@ -164,27 +164,27 @@ ADR-style. Each entry: decision, why, alternatives rejected, cost, how we'd revi
 - **Cost:** One more short animation step before a play. A few more schema fields.
 
 ## ADR-024: OpenAI plugin first, LiveKit Inference as automatic fallback
-- **Decision:** The agent's realtime model is a `RealtimeModelFallbackAdapter` (livekit-agents 1.8.8, `livekit.agents.llm`) over an ordered list from `REALTIME_PROVIDERS` (default `openai,inference`). `openai` is the OpenAI plugin (`openai.realtime.RealtimeModel`) with our `OPENAI_API_KEY`; `inference` is LiveKit Inference (`inference.RealtimeModel`). Both use `REALTIME_MODEL` (default `gpt-realtime-2.1`) and voice `marin`. Evals pin `REALTIME_PROVIDERS=openai`. Rooms, RPC, attributes, dispatch and agent hosting stay on LiveKit. Amends ADR-002.
-- **Why:** The free Build plan caps LiveKit Inference at $2.50 of credit a month (about 50 realtime minutes) and 5 concurrent realtime sessions, as a hard cap (quotas doc; `lk docs pricing-info`). With Inference first, the credit would run out during the Loom or reviewer sessions, and every later session would pay a failed connect before the swap. OpenAI first keeps every session smooth and turns the free credit into an outage backup. The adapter keeps chat context and re-issues an in-progress reply on swap (adapter docstring). `gpt-realtime-2.1` is available on our key (`GET /v1/models/gpt-realtime-2.1` returned 200).
+- **Decision:** The agent's realtime model is built in `agent/src/model.py`. `REALTIME_PROVIDERS` is an ordered comma list (default `openai,inference`). One name returns that model. Two or more return `RealtimeModelFallbackAdapter` from `livekit.agents.llm`, in list order. `openai` is `openai.realtime.RealtimeModel` with `OPENAI_API_KEY`. `inference` is `inference.RealtimeModel`; an id without a slash is sent as `openai/<id>`. Both use `REALTIME_MODEL` (default `gpt-realtime-2.1`) and voice `marin`. There is no eval suite in the repo that pins the provider. Optional behavior tests (`RUN_AGENT_BEHAVIOR_TESTS=1`) call the same factory, so they follow `REALTIME_PROVIDERS`. Rooms, RPC, attributes and dispatch stay on LiveKit. The worker itself is local unless a Cloud agent is created (ADR-013). Amends ADR-002.
+- **Why:** OpenAI first keeps the session on our key, and Inference is the backup if that model fails. Dollar caps and concurrency caps are LiveKit account terms, not values in this repo; do not treat an old pricing-page figure as a current measurement. The adapter is what the code constructs when more than one provider is listed. A check that `gpt-realtime-2.1` answered `GET /v1/models` was made when this ADR was accepted; this tree does not re-call that endpoint.
 - **Rejected:** Inference first with OpenAI fallback (credit cliff, slower starts after it). OpenAI only (no failover story). Upgrading the LiveKit plan (billing setup for a demo). `gpt-realtime-2.1-mini` by default (kept as a one-variable option; tool-choice quality matters more than cost).
 - **Cost:** Model usage bills to our OpenAI account. Our OpenAI org's data settings apply on the primary path. One more secret on LiveKit Cloud (`OPENAI_API_KEY`). The adapter requires both models to agree on audio output and turn detection capabilities; a mismatch raises at startup.
 - **Synthio angle:** The voice agent survives a model provider outage mid-call with context kept. That is the reliability story a regulated voice product needs.
 - **Revisit:** On a paid LiveKit plan, consider `inference,openai` for one bill and Inference's own OpenAI/Azure routing.
 
 ## ADR-025: Coach leave returns the agent to the player; "addressed" is judged by the model
-- **Decision:** (1) The agent session must survive the coach leaving. Disable close-on-disconnect for the linked participant, and on `role=coach` leave, find `role=player`, `set_participant(player)`, restore presenter instructions and set `mode=presenter`. If no player remains, end the session. (2) In clicker mode, the model decides whether a turn is addressed to it ("Assistant, ...", or clearly a request to the board), from the instruction and examples. No string match on the word "Assistant".
+- **Decision:** (1) The agent session survives the coach leaving. `RoomOptions(close_on_disconnect=False)`. On coach leave, find `role=player`, restore presenter instructions, set `mode=presenter`, `set_participant(None)`, then `set_participant(player)`. If no player remains, shut the session down. A player disconnect uses the same shutdown only when `disconnect_reason` is in `DEFAULT_CLOSE_ON_DISCONNECT_REASONS` and no player remains. (2) In clicker mode, the model decides whether a turn is addressed to it ("Floppy" or "Assistant", or clearly a request to the board), from the instruction. No string match on either name.
 - **Why:** Spike 1 showed the default closes the whole session when the linked coach hangs up (`CloseReason.PARTICIPANT_DISCONNECTED`), which would strand the player mid-demo. It also showed realtime ASR heard "Assistant" as "Distant"; the model still acted correctly, while a keyword check would have failed (and keyword routing is banned, MISTAKES row 7).
 - **Rejected:** Keep the default close (fragile demo). Hear both humans (not supported: one linked participant). A keyword gate on "Assistant" (brittle, banned).
 - **Cost:** More state to test: presenter -> clicker -> presenter. The model may answer a turn not meant for it; clicker eval items cover addressed and not-addressed turns (Risk 7).
 - **Revisit:** If eval shows unaddressed replies above the planner's bar, disable audio output in clicker mode except after an explicit address (`session.output.set_audio_enabled`).
 
 ## ADR-026: Keep GPT Realtime; allow a short content-free lead-in before slide tools
-- **Decision:** Stay on `gpt-realtime-2.1` (no pipeline fallback). The presenter may say one short lead-in ("One sec, pulling up the LeBron plan.") before `show_slide` or a board tool, but never plan content, assignments, names of plays' steps, facts or numbers before the tool result. The prompt states this rule with examples. The full eval checks it (pre-tool line at most 20 words and no slide content) and also checks that post-tool narration is grounded in the tool result.
-- **Why:** Spike 2 (task 04, 312 text turns on OpenAI) measured any-speech-before-tool at 57% in config B, below the 90% bar the harness implemented. The bar in the task file was "tool before slide speech". Planner review of all 344 pre-tool lines: max 21 words, mean 12.7; a content-marker scan (digits, player names, plan terms, facts) flagged 31, and all 31 only echo the user's topic ("pulling up that trap look"). Slide content before tool: 0 of 344. Correct tool 96-100% on text turns. Board tools cost 5.8 points of tool-first vs two tools, within the 10-point limit. A lead-in also covers the RPC round trip (median 117 ms, Spike 3): the slide lands while the line plays.
+- **Decision:** Stay on `gpt-realtime-2.1` (no pipeline in `agent/src`). The presenter prompt allows one short lead-in ("One sec, pulling up the LeBron plan.") before `show_slide` or a board tool, and forbids plan content, assignments, play-step names, facts or numbers before the tool result. After the tool returns, the prompt says to speak only from that result. Nothing in code counts the lead-in words or checks the spoken text.
+- **Why:** Spike 2's text harness is not in this repo, so its rates are not re-runnable here. `LEARNINGS.md` records that the spike kept Realtime: pre-tool speech was a short topic announcement, and that review did not find slide content before the tool. The lead-in also covers the RPC wait. The spike 3 note in `LEARNINGS.md` records a median ack of 117 ms; that figure is not asserted by the current tests.
 - **Rejected:** STT-LLM-TTS pipeline (more latency and tuning; it does not remove pre-tool text either, since text LLMs also lead in before tool calls). Forcing `tool_choice` on every turn (blocks small talk; untested on realtime audio ordering).
 - **Cost:** A lead-in can promise a slide that then fails to show; the tool returns FAILED and the model must say so. Grounding is enforced by prompt and eval, not by code.
-- **Found in the same run:** With a title-only stub result, the model invented slide content ("three keys" not in the deck). The real tool result must carry the slide's points, notes and fact claims, and the prompt must say to speak only from them. "Push or slow it down?" went to s1 instead of s5 five times: tool descriptions must list each slide's topics from deck data.
-- **Open:** Audio check (10 spoken turns) not done; needs a human mic (`evals/spikes/audio_check.sh`).
+- **Found in that spike, and present in the code now:** `slide_narration` returns the slide title, points, notes, fact claims, and the board menu. The presenter prompt says to speak only from that result. `show_slide`'s tool description lists each slide's topics from the deck. The spike's count of wrong routes is not stored in this repo.
+- **Open:** A spoken-audio check of tool order is not in the repo. There is no `evals/spikes/audio_check.sh`.
 
 ## ADR-027: Hardwood Broadcast replaces Scouting Packet
 - **Decision:** Redesign only the frontend around the Hardwood Broadcast direction in `docs/DESIGN-BRIEF.md`: fixed 16:9 hardwood stage, large condensed headlines, dark matte coaching panels, scoreboard/rail chrome, no visible speech captions or typed question bar, and short horizontal push transitions. Player and coach video tiles remain outside the slide geometry. Agent, deck, facts, RPC and tool contracts do not change.

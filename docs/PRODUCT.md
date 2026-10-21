@@ -6,9 +6,9 @@ A voice AI assistant coach presents the Warriors' game plan for Game 7 of the 20
 ## Who is in the room
 | Participant | Who | Device | Sees | Hears / speaks |
 |---|---|---|---|---|
-| Player | The user (reviewer) | Laptop browser, `/player` | Slides, overlays, mic control, status panel | Talks to the agent, then to the coach |
-| Agent | AI assistant coach | Server (LiveKit Cloud agent) | — | Presents; after handoff, speaks only when addressed |
-| Coach | A real human | Phone browser, `/coach` via join link or QR | Slides, overlays, mic control, private briefing card | Talks to the player and can address the agent |
+| Player | The user | Laptop browser, `/player` | Slides, overlays, mic, camera, bottom-rail state (Listening / Thinking / Speaking / Waiting), coach link + QR | Talks to the agent, then to the coach |
+| Agent | Floppy, the AI assistant coach | Local Python worker in a LiveKit Cloud room. No Cloud agent deployment is configured in this repo. | — | Greets on a blank board. After a question, presents from the deck. After handoff, speaks only when the model judges the turn addressed as Floppy or Assistant |
+| Coach | A real human | Phone or browser, `/coach` via join link or QR | Slides, overlays, mic, camera, private briefing card, mode label once set | Talks to the player and can address the agent |
 
 ## Board tools: the agent changes slide content
 The agent can change what is on the current slide, not only which slide is shown. It uses a fixed menu of three tools. The model picks ids from enums in the deck data. It never generates layout, coordinates or free numbers.
@@ -26,26 +26,26 @@ Shared behavior:
 - `run_play` switches to the play's slide first if needed, through the same acked slide path.
 - Limits: at most 2 highlights and 3 callouts at once (the oldest drops). One play at a time; its last frame stays until the slide changes or another play runs.
 - Presenter mode: the agent uses `highlight` and `run_play` when they directly answer the question or when asked to show something. It adds a callout only when a human asks to put something up.
-- Clicker mode: any board tool runs when a human addresses the agent ("Assistant, ..."). `run_play` may also run without address when the humans clearly discuss one of the plays. After a board change in clicker mode the agent stays silent, or says one short line if addressed.
+- Clicker mode: the prompt allows a board tool when a human addresses the agent as Floppy or Assistant. `run_play` may also run when the humans clearly discuss one of the plays. `show_slide` runs when the topic changes. The prompt says to stay silent unless addressed. It does not cap the addressed reply at one sentence, and the code does not enforce silence.
 - Callout guardrail: any callout with a fact or stat must use a `fact_id` from `FACTS.md` (verified = y). The card then shows that approved claim verbatim. Free text is only for short coaching instructions: at most 60 characters and 8 words, one line, no digits, no `%`, no spelled-out numbers. Exact rule: `docs/ARCHITECTURE.md#callout-rule`. This mirrors Synthio's on-label approved-claims guardrail.
 
 Not included: freehand play drawing, model-authored layouts or diagrams, new plays made up live. If asked, the agent says it can run the prepared plays and names them.
 
 ## Demo script
-1. The player opens the link and says hello. The agent presents slide 1.
-2. Player: "How do we stop LeBron?" The agent shows slide 2 and answers.
-3. Player: "Show me how we trap him." The agent calls `run_play(p_blitz_lebron_pnr)`. The blitz animates on slide 2 while the agent walks through it step by step.
-4. Player cuts in: "Wait, what about Kyrie?" The agent stops at once. It shows slide 3 (the play overlay clears) and answers. The status panel shows the interruption and the turn latency.
-5. Player: "Where does he attack from?" The agent calls `highlight(cle_irving)`. A ring appears on the Kyrie marker at his isolation spot in the diagram, and the agent explains the matchup.
-6. Player: "Get me the head coach." The agent says a short line ("Getting Coach now.") and calls `call_head_coach`. A coach join link and QR code appear on the player's screen.
-7. A real person opens the link on a phone and joins as Coach. Only the coach sees a private briefing card: what was asked, the main worry, the current slide. The coach's phone shows slide 3 with the Kyrie highlight already on it. The agent says one handoff line out loud: "Coach, they're worried about Kyrie. We're on slide 3."
-8. The coach takes over. The agent enters clicker mode. It stays quiet. It changes slides as topics come up. It speaks only when addressed by name ("Assistant, ...").
-9. Coach: "Let's go back to LeBron." The agent shows slide 2 without speaking. Coach: "Assistant, put Iguodala on LeBron." The agent calls `add_callout(text="Iguodala on LeBron")`. The card appears live on both screens.
+1. The player opens `/player` and starts the session. The board stays blank. The agent says the opening greeting and waits. It does not load slide 1 until asked for the plan.
+2. Player: "How do we stop LeBron?" The agent shows slide 2 after the ack and answers from the tool result.
+3. Player: "Show me how we trap him." The agent calls `run_play(p_blitz_lebron_pnr)`. The blitz animates on slide 2. Captioned steps advance while `lk.agent.state` is `speaking`.
+4. Player cuts in: "Wait, what about Kyrie?" LiveKit stops the playout and truncates history. The agent shows slide 3 (the play overlay clears) and answers. Nothing on screen lists the interruption or a turn latency.
+5. Player: "Where does he attack from?" The agent calls `highlight(cle_irving)`. The Kyrie marker is highlighted, and the deck's attack zone for him (`z_right_wing`) lights with it.
+6. Player: "Get me the head coach." The agent calls `call_head_coach`. After the ack the tool tells the model to say one short line and wait. The line is not fixed. A coach join link and QR appear on the player's screen.
+7. A real person opens the link and joins as Coach. Only the coach sees the briefing card: paraphrased topics, the main worry, the summary, and the current slide. The agent then says one handoff line naming that worry and the current slide id. It is not a fixed Kyrie sentence.
+8. The agent enters clicker mode and links the coach, then the floor router can move the ear to whichever trusted human is speaking. It stays quiet unless addressed as Floppy or Assistant. It changes slides as topics come up.
+9. Coach: "Let's go back to LeBron." The clicker prompt says to show slide 2 without presenting. Coach: "Assistant, put Iguodala on LeBron." The agent may call `add_callout` with short text that passes the callout rule. The card appears on both screens after the ack. The code does not force that exact string.
 
 The demo path uses no mock data and fakes nothing. The coach is a real person.
 
 ## Slides
-All slides are real HTML/React. Visuals are text plus 3-4 template court diagrams. Diagrams carry player markers and court zones that the board tools can highlight, and template plays that `run_play` animates. Real players appear only as licensed paper cutouts from `design/players/` (see `docs/DESIGN-BRIEF.md#player-cutouts`). No logos drawn by us, no video. Every fact or number on a slide or callout must be in `FACTS.md` with a source URL and verified = y. Content below is an outline of substance, not final copy. The writer fills facts from `FACTS.md` only.
+All slides are React, drawn from `deck/deck.json`. Diagrams carry player markers and court zones that the board tools can highlight, and plays that `run_play` animates. Real players appear as licensed paper cutouts from `design/players/` (see `docs/DESIGN-BRIEF.md`). Slide 1 draws GSW/CLE badges when the local logo files are absent. Human camera tiles are separate from the slide. There is no game film and no screen share. Every fact or number on a slide or callout must be in `FACTS.md` with a source URL and verified = y. The slide copy that ships is the deck, not the outline below.
 
 Framing rule: this is a pre-game room before Game 7. Slides may only use facts known before Game 7 (regular season and Finals Games 1-6). Never use the Game 7 result.
 
@@ -101,7 +101,7 @@ Player marker ids (full list in `docs/ARCHITECTURE.md#deck-data-additions`): War
 - Diagram: half court, blank for the coach. Zones only, no markers, no plays. The coach can say "Assistant, highlight the left corner."
 - Hidden element: the JR card `k_jr_card` (LeBron arms spread at J.R. Smith, from the 2018 Finals). It is pre-placed and hidden. `highlight(k_jr_card)` reveals it through the normal acked board path. Look and fallback: `docs/DESIGN-BRIEF.md#slide-6-the-jr-card`.
 - Agent says in substance: this decision belongs to the head coach. Offers to call him.
-- JR beat: when the player asks about the clock, the score or end-of-game situations, or as the agent's closing line on this slide, the agent calls `highlight(k_jr_card)`. After the ack it says one short line, for example "Know the score and the clock. Don't be JR." At most once per session. In clicker mode only when addressed.
+- JR beat: slide 6 notes tell the model that if they ask about the clock, the score, or closing, it should reveal the JR card after the ack and say one short line, at most once. That limit is in the notes, not a counter in the agent. In clicker mode the prompt only allows `highlight` when addressed. The public build shows the text card when `local-assets/` has no image.
 - The JR card is from 2018. It does not reveal the 2016 Game 7 result, winner or MVP, and the agent never does either.
 - Routes here: late-game and closing questions. The agent should offer `call_head_coach`.
 - Eval examples: "Who takes the last shot?" / "What do we run down one with a minute left?" / "How do we manage the clock at the end?" (expects `highlight(k_jr_card)`).
@@ -110,7 +110,7 @@ Player marker ids (full list in `docs/ARCHITECTURE.md#deck-data-additions`): War
 - "Get me the head coach." / "I want to hear this from Coach." / "Can someone with authority make this call?" -> `call_head_coach`.
 
 ## Eval
-One script in `evals/`. Each item has a mode (`presenter` or `clicker`), a starting slide, who speaks, the utterance, the expected tool calls (with acceptable argument sets), and forbidden tool calls. Run 3x. Report the pass rate per group and overall.
+Intended shape, not a runner. There is no `evals/` directory and no script that executes the items below. Each item was specified with a mode (`presenter` or `clicker`), a starting slide, who speaks, the utterance, the expected tool calls, and forbidden tool calls. Nothing in CI prints a pass rate.
 
 Size: 35-45 items.
 - At least 20 slide and handoff items (examples per slide above).
@@ -120,7 +120,7 @@ Size: 35-45 items.
 
 Eval rule: at least half of the slide items and at least one item per board tool must avoid the title words (no "LeBron", "Kyrie", "offense", "trap", "highlight" in those items). This tests understanding, not keyword match.
 
-Baseline: run the slide and handoff items once with only `show_slide` and `call_head_coach` registered, then with all five tools. If the slide pass rate drops, or board items fall below the bar the planner sets, use the fallback order in `docs/RISKS.md#risk-9-wrong-tool-with-five-tools`.
+Baseline, if a runner is added later: run the slide and handoff items once with only `show_slide` and `call_head_coach` registered, then with all five tools. Nothing in this repo does that run. The fallback order in `docs/RISKS.md` has not been applied; all five tools stay registered.
 
 Board tool examples (expected):
 | Mode, slide | Speaker: utterance | Expected | Notes |
@@ -157,15 +157,11 @@ Negative examples (forbidden):
 3. A real human joins from a phone and never asks the player to repeat anything. The board on the phone already matches the player's screen.
 4. The private briefing card appears only on the coach's phone.
 5. Clicker mode: the AI stays quiet but keeps the slides in step with the humans. "Assistant, put Iguodala on LeBron" puts a card on both screens at once.
-6. The "hidden depth" panel shows what the system is doing.
+6. The bottom rail shows whether Floppy is listening, thinking, or speaking while the board moves.
 
-### Hidden depth panel (player view)
-- Turn state: listening / thinking / speaking.
-- Latency per turn.
-- Interruption log: what the player heard before cutting in.
-- Slide trace: "heard 'Kyrie' -> slide 3".
-- Board trace: "heard 'show me how we trap him' -> run_play p_blitz_lebron_pnr, ack". Rejected callouts show the reason.
-- Handoff timeline: requested -> coach joined -> briefing sent -> clicker mode.
+### Agent state on screen
+Built: a pill for Listening, Thinking, Speaking, or Waiting, on the player rail and the coach header. The coach side panel also shows Presenter or Clicker once the agent has set `mode`.
+Not built: latency per turn, an interruption log, a slide trace, a board trace, or a handoff timeline. `StatusStrip` implements those labels and is not mounted. `chalk-talk-events` is not sent.
 
 ## Why Synthio will love it
 | Chalk Talk | Synthio |
@@ -179,31 +175,31 @@ Negative examples (forbidden):
 | Head coach sticks to deck facts | On-label guardrail: answers stay inside approved content |
 | Stat callouts need a `fact_id`; free text has no numbers | Approved-claims guardrail: any claim shown maps to an approved claim |
 | Board tools are a fixed menu, not generated UI | Regulated content: the agent picks approved assets, it does not author them |
-| Eval script with pass rate, including negative cases | Synthio's eval framework |
+| Unit tests on the callout rule, token roles and board commands. No pass-rate script is in the repo | Synthio's eval framework |
 
 One line: you never repeat yourself to the human. This is a warm handoff in an NBA jersey.
 
 ## Acceptance criteria (per brief requirement)
 | Requirement | Acceptance check |
 |---|---|
-| Presents 5-6 slides | 6 slides render from one deck source. Agent presents slide 1 on start. |
-| Changes slides based on questions | Eval slide items run 3x, pass rate reported. Live demo steps 2 and 4 work. |
-| Changes slide content (board tools) | Demo steps 3, 5 and 9 work live on both screens. Each board tool acks before narration. A dead player tab makes each tool return a failure string. Stale seq is ignored. Overlays clear on slide change. A coach who joins late sees the current overlays. Eval board items, including negatives, run 3x with pass rate reported. |
-| Callout guardrail | Unit tests: free text with a digit, `%`, a spelled-out number, over 60 characters or over 8 words is rejected in the agent and in the browser. A fact callout shows the `FACTS.md` claim verbatim. Unverified fact ids are not in the enum. |
-| Can be interrupted | Player speech stops agent audio. Interruption log shows the heard text. |
-| Lightweight frontend | Next.js app, two pages, deployed on Vercel. |
-| Lightweight backend | One Python agent plus one token route. Agent deployed on LiveKit Cloud. |
-| Ships fast | Live link works after warm-up. Loom shows the full demo script. |
+| Presents 5-6 slides | 6 slides render from `deck/deck.json` and its synced copies. The opening board is blank. Slide 1 loads when the player asks for the plan, after the ack. |
+| Changes slides based on questions | The presenter prompt and `show_slide` description route from deck topics. No eval script reports a pass rate. |
+| Changes slide content (board tools) | `highlight`, `run_play` and `add_callout` RPC to the player and wait for the ack. A failure string is returned on timeout or `RpcError`. Stale seq is ignored. Overlays clear on slide change. A late joiner reads `overlay_state`. |
+| Callout guardrail | Agent and browser both apply the callout rule. A fact card shows the facts-file claim. Unverified fact ids are not in the tool enum. |
+| Can be interrupted | Player speech is handled by LiveKit barge-in. There is no on-screen interruption log. |
+| Lightweight frontend | Next.js app, `/player` and `/coach`, run locally. Not deployed to Vercel in this repo. |
+| Lightweight backend | One Python agent plus `POST /api/token`. The worker runs locally against a LiveKit Cloud room. No Cloud agent deployment is configured. |
+| Demo | README links a recorded video. There is no hosted link in the repo. |
 | Grounded facts | Every slide and callout fact appears in `FACTS.md` with a verified source. |
 
 ## Ranked deliverables
-1. Live deployed link.
-2. 2-minute Loom opening with the interruption, a play running, and the coach join.
-3. README: what, how to run, mermaid diagram, decisions summary, known limits. Plain and honest.
+1. Live deployed link. Not in the repo (ADR-013).
+2. A demo video is linked from the README.
+3. README: what, how to run, mermaid diagram, decisions summary, known limits.
 4. `DECISIONS.md`.
-5. Status panel.
-6. Eval script: slide, handoff and board-tool items with negatives (see Eval), run 3x, report pass rate.
-7. A few tests: deck schema (plays, targets, captions), command handler seq logic, overlay state reducer, callout text rule, token route roles.
+5. Agent-state pill on the rail. The latency and trace panel is not mounted.
+6. Eval script. Not in the repo. The item list above is the spec only.
+7. Tests that are in the repo include the deck check under `scripts/`, agent pytest (`make agent-test`), and `pnpm test` in `web/`. This file does not quote a count.
 
 ## Cut list
-Live stats APIs, logos, unlicensed player photos, video, freehand play drawing, model-generated layouts or diagrams (generative UI), new plays made up live, more than 4 plays, board tools beyond the three, moving people between rooms, a pipeline/Realtime toggle, any-topic deck generation. Board fallback order if time or eval demands it: drop `add_callout` first, then `highlight`; keep `run_play`. Rule: if it does not make Synthio love it, cut it.
+Live stats APIs, unlicensed player photos, game film, screen share, freehand play drawing, model-generated layouts or diagrams, new plays made up live, more than 4 plays, board tools beyond the three, moving people between rooms, an STT-LLM-TTS pipeline or a pipeline/Realtime toggle, any-topic deck generation. Human camera tiles are in the app; they are not game film. Team marks on slide 1 are drawn badges unless local logo files are present. Board fallback order if a future eval demands it: drop `add_callout` first, then `highlight`; keep `run_play`. That order has not been applied. The three board tools are all registered.

@@ -4,8 +4,9 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 
 ## Spike 1: Agent hears the coach after handoff (highest risk)
 - **Question:** Can the agent switch its audio input from the player to the coach mid-session, with GPT Realtime as the model?
-- **Known:** `AgentSession` links to one participant (default: the first to join). `RoomIO.set_participant(identity)` and `session.room_io.set_participant(...)` are documented in Python (sessions doc, turns doc, `livekit/agents` `examples/voice_agents/toggle_io.py`).
-- **Unknown:** Does it work cleanly with the realtime model mid-session? Can the agent hear both humans at once? `[VERIFIED]` No: `set_participant` takes one identity, so the agent hears one human at a time. Fallback A is the expected design. Mid-session switch with GPT Realtime 2.1 (OpenAI plugin): `[VERIFIED - Spike 1 / task 06]` clean; no session reset; player audio ignored; switch 46.23 ms. Coach leave does not fall back to the player: default `close_on_disconnect=True` closes the session (`PARTICIPANT_DISCONNECTED`).
+- **Known:** `AgentSession` links to one participant. `CoachSwitcher` calls `session.room_io.set_participant(identity)`. `examples/voice_agents/toggle_io.py` was not on livekit/agents main when Spike 1 ran (`LEARNINGS.md`).
+- **Spike result, since superseded:** `set_participant` takes one identity. Spike 1 switched to the coach and ignored the player; its timings are in `LEARNINGS.md`. That spike also saw the default `close_on_disconnect=True` end the session on coach leave.
+- **Current code:** `close_on_disconnect=False`. Coach leave restores the player (ADR-025). After the switch, a 200 ms floor router can link either trusted human (ADR-028). The agent still hears only one of them at a time.
 - **Test:** Room with two browser tabs (player, coach). After a trigger, call `set_participant(coach_identity)`. Coach says "Assistant, show the Kyrie slide."
 - **Pass:** Agent responds to the coach's speech and calls `show_slide`. No crash. Agent ignores the player's audio (or hears both, note which). **Result: PASS.**
 - **Fail fallback A:** Agent listens only to the coach after handoff (acceptable).
@@ -17,8 +18,8 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 - **Test:** Strict instruction ("call show_slide first, then speak; never describe a slide before the tool result"). Run 20 routing questions in text or audio, 3 times. Log order of first audio vs tool call.
 - **Board tools:** Run the test twice: with `show_slide` and `call_head_coach` only, then with all five tools. Include the `run_play` items. Log the order of first play-specific audio vs the `run_play` call.
 - **Pass:** Tool call comes before slide-specific speech in nearly all runs. Planner sets the bar and records the measured rate.
-- **Fail fallback:** Swap to an STT-LLM-TTS pipeline (one config change plus STT and TTS models). Keep tools and RPC unchanged.
-- **Noted, not planned:** GPT-Live 1 (`openai/gpt-live-1`, added in livekit-agents 1.8.8) sends tool decisions to a backend model and speaks after the tool batch has results (GPT-Live doc). It might fix tool order, but it is full-duplex and append-only context, so interruption and truncation behave differently. Consider only if the pipeline fallback also fails.
+- **Fail fallback:** Not taken. ADR-026 kept GPT Realtime. The agent has no STT-LLM-TTS pipeline to swap in.
+- **Noted, not in the agent:** GPT-Live 1 was considered as another way to order tools. It is not configured. `REALTIME_MODEL` defaults to `gpt-realtime-2.1`.
 
 ## Spike 3: RPC show_slide round trip with ack and seq
 - **Question:** Does `perform_rpc` to the player identity return an ack after render, with timeout and stale-seq handling?
@@ -28,17 +29,17 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 - **Fail fallback:** If ack after paint is slow, ack after state commit and note it.
 
 ## Risk 4: Free-tier cold start
-- **Known:** Build plan cold starts of about 10-20 s after idle (from research).
-- **Mitigation:** Warm the agent before sharing the link and before recording. README states it.
+- **Known:** Research mentioned Build-plan cold starts after idle. This repo has not measured that, and it has no Cloud agent to cold-start. The local worker is `lk agent dev`.
+- **Mitigation:** None in the running app. A future Cloud deploy would need its own warm-up note. The README does not claim a cold-start time.
 
-## Risk 5: Free-tier quota
-- **Known:** Hard caps on agent minutes and inference credit (from research; confirm on pricing page).
-- **Mitigation (taken, ADR-024):** The agent uses the OpenAI plugin with our own key by default. The free plan's Inference credit ($2.50 a month, hard cap) and 5-session realtime cap no longer apply. LiveKit agent-session minutes (1,000 a month on the free plan) still apply to the deployed agent. Keep dev sessions short.
-- **Known gap:** The Inference fallback is only as available as the Inference credit left. In task 08 the swap was proven (invalid OpenAI key, availability event, swap to Inference) but Inference returned 429, so no reply came from it. Re-check after the monthly reset if the fallback matters for the demo.
+## Risk 5: Inference quota
+- **Known:** LiveKit Inference has account quotas. The dollar and concurrency figures are not stored in this repo. Do not quote them from this file.
+- **Mitigation (taken, ADR-024):** The default provider list is `openai,inference`. The OpenAI plugin uses `OPENAI_API_KEY`. Inference is the fallback model inside `RealtimeModelFallbackAdapter` when both names are set.
+- **Known gap:** If Inference rejects the session, the fallback cannot speak. Task 08 saw a 429 on that path (`LEARNINGS.md`). That result is not a live quota reading.
 
 ## Risk 6: Token route production guard
-- **Known:** `agent-starter-react` token route throws in production unless a flag is set (from research).
-- **Mitigation:** Handle deliberately in the token route task. Keep role validation.
+- **Known:** The upstream starter threw in production unless a flag was set.
+- **Current code:** `POST /api/token` has no `IS_VERCEL_PREVIEW` check. It requires `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` and `AGENT_NAME`. `GET` returns 405. `/player` throws at import if `LIVEKIT_URL` is unset. There is no homepage-agent fallback.
 
 ## Risk 7: Agent speaks in clicker mode when not addressed
 - **Mitigation:** Clicker instructions plus eval items for "not addressed" turns. If it still talks, disable audio output in clicker mode except for name-addressed turns. API exists: `session.output.set_audio_enabled(bool)` (text-and-transcriptions doc). Deciding when to re-enable it is the hard part.
@@ -53,8 +54,8 @@ Run these spikes before feature work. Each spike is a throwaway branch or a mini
 
 ## Risk 10: Animation and RPC timing vs speech
 - **Risk:** The model speaks before the play starts, or talks faster or slower than the steps. `run_play` from another slide chains two round trips. A barge-in during a play stops the audio but not the animation. Parallel tool calls in one response could apply out of order.
-- **Mitigation:** `run_play` acks at the first frame, so speech starts with the motion. The tool result gives step captions in order, and each step shows its caption on screen, so the board explains itself if speech drifts. Keep plays short (2-5 steps). A slide change clears the play. One agent-side lock runs RPC tools in call order. Measure round trips in Spike 3 and log them in the board trace.
-- **Fallback:** If speech and motion drift badly, ack at the end of the play and narrate after. Accept the extra pause.
+- **Mitigation (current, ADR-029):** `run_play` acks at the first painted frame. Captioned steps then advance only while `lk.agent.state` is `speaking`, using the speech budget in `web/lib/deck/plays.ts` (`700` ms per word plus `1600` ms, clamped to 4–10 s). A pause freezes the frame. A play that never speaks finishes remaining steps at deck speed after `700` ms. A slide change clears the play. One agent-side lock runs RPC tools in call order. There is no on-screen board trace.
+- **Fallback:** Ack-at-end was not taken.
 
 ## Risk 11: Coach screen out of sync with the player
 - **Risk:** The coach renders overlays from the `overlay_state` attribute with no ack. Attribute delay or split updates could show a stale or missing overlay.

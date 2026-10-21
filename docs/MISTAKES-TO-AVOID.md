@@ -6,7 +6,7 @@ Named repos: `aydrian/teleprompter` and the `livekit-examples` teleprompter (Nod
 
 | # | Rule | Seen in |
 |---|---|---|
-| 1 | Do not mint tokens with `roomAdmin`. Use role-scoped grants (coach: publish audio, subscribe; no admin), a short TTL, a random room per session, and a coach link bound to that room. | teleprompter |
+| 1 | Do not mint tokens with `roomAdmin`. Human grants are room join, publish, subscribe, publish data, and microphone plus camera. No screen share and no `canUpdateOwnMetadata`. TTL is 15 minutes. The player room name is `fr-` plus 16 hex chars, and the coach link is bound to that room. | teleprompter |
 | 2 | Do not target `remote_participants[0]` or "first participant". Address player and coach by identity or role attribute. Critical with 3 participants. | livekit-examples teleprompter (Python) |
 | 3 | Get the ack before speaking: `await perform_rpc`, then return the tool result. No fire-and-forget slide change. | WS demo, thesys |
 | 4 | Return a failure string to the model on RPC timeout or error, so it does not narrate a slide that is not on screen. | — |
@@ -22,8 +22,8 @@ Named repos: `aydrian/teleprompter` and the `livekit-examples` teleprompter (Nod
 | 14 | Do not commit build output or private AI planning docs. Keep `.gitignore` for `.next`, `__pycache__`, `.env`. | local demo (target/), WS demo (plan doc) |
 | 15 | Commit history: incremental, meaningful commits. A single dump looks bad. | several demos had very few commits |
 | 16 | README: concise and honest. Diagram, a "why" for each choice, known limits. No filler, no emoji walls. | — |
-| 17 | Deploy: live Vercel URL plus agent on LiveKit Cloud. | only teleprompter and thesys deploy |
-| 18 | Tests and evals: unit tests for tool handlers and token roles, plus a scripted eval of slide and board-tool selection, with negative cases. | few have tests |
+| 17 | A public demo usually needs a live URL. This repo has not deployed: no Vercel project config and no LiveKit Cloud agent config (ADR-013). | only teleprompter and thesys deploy |
+| 18 | Unit tests cover tool handlers, the callout rule and token roles. A scripted slide/board eval is not in the repo. | few have tests |
 | 19 | Prompt: one source of truth. Do not duplicate the deck in prompt and code. No "use tools aggressively" or filler phrases. | thesys, phrase demo |
 | 20 | Logging: structured. No emoji spam. | teleprompter |
 | 21 | Do not keep a fixed shared room name. | teleprompter |

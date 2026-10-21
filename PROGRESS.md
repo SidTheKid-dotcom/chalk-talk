@@ -1,8 +1,11 @@
 # Progress
 
 ## Now
-SPEED MODE (user records the demo tonight). One audit per task; fix rounds are verified by the planner, not re-audited. Cut: task 14 automated E2E driver, task 04 harness merge, status-panel metrics beyond "—".
-Demo video recorded and trimmed. Next: deploy (LiveKit Cloud agent + Vercel), add the live link and video to the README, push, submit. Floppy opens with a one-line Game 7 intro and waits. Coach invite is a dimmed QR modal. Briefing is a paraphrased summary, not raw turns. Phone media still needs the https QR.
+Local app. Next.js serves `/player` and `/coach`. The Python worker is `lk agent dev` against a LiveKit Cloud room. No `livekit.toml` and no Vercel project config are in the repo. The README links the demo video and says there is no hosted deployment.
+
+The opening board is blank. Slide 1 is a later `show_slide` after the player asks for the plan. Coach leave restores presenter mode and the player ear. After handoff, a 200 ms floor router can link either human. Play steps follow `lk.agent.state`. Realtime defaults to the OpenAI plugin, then LiveKit Inference. There is no STT-LLM-TTS pipeline and no `evals/` harness.
+
+Cut, and still absent: task 14 E2E driver, task 04 harness, and the latency/trace panel (`StatusStrip` is not mounted). The rail shows Listening, Thinking, Speaking, or Waiting.
 
 ## Done
 - Scaffold: agent guides, product spec, architecture contracts, decisions, risks, references, facts template.
@@ -26,6 +29,8 @@ Demo video recorded and trimmed. Next: deploy (LiveKit Cloud agent + Vercel), ad
 - Camera rail: player and coach publish camera after connect (mic still starts if camera is denied). Human tiles from `role` / guests, agent excluded, gold border on `activeSpeakers`. `/lab` keeps placeholder tiles.
 
 ## Next
+Waves 0-3 in the table below are the work already merged, except the eval harness and the metrics panel. Wave 4 (deploy) has no project files here. Wave 5 is not started. Do not read this table as a claim that those gates are still open.
+
 | Wave | Tasks | Gate |
 |---|---|---|
 | 0 | 01 setup, 02 deck and facts | none |
@@ -33,31 +38,28 @@ Demo video recorded and trimmed. Next: deploy (LiveKit Cloud agent + Vercel), ad
 | 1b | 06 spike coach audio | 03 and 05 merged |
 | 2 | presenter agent, /player slides | spikes pass or fallbacks chosen |
 | 3 | board tools, handoff + /coach, status panel, eval | wave 2 |
-| 4 | deploy | wave 3 |
-| 5 | freeze: E2E, README, secret scan, UI audit, Loom | deploy |
+| 4 | deploy | not started; no Cloud agent or Vercel config in the repo |
+| 5 | freeze: E2E, secret scan, UI audit | deploy |
 
 ## Blocked
-- Task 04 harness merge: fix multi-tool scoring, reconcile metric labels/manual-review evidence, clear ruff, and complete the human audio/interruption checks.
+- Task 04 harness: not in the repo. There is no `evals/` tree to score.
 
-## Handoff task must include (audit 06)
-- `RoomOptions(close_on_disconnect=False)`; on coach leave clear the switched state, `set_participant(player)` by role, restore presenter mode (ADR-025).
-- Switch order per ARCHITECTURE: briefing, handoff line, clicker instructions, `mode` attribute, `set_participant` last; or roll back on failure.
-- Attributes-changed handler only on `changed_attributes["role"] == "coach"`.
-- Move `CoachSwitcher`, `find_by_role`, `participant_role` to `agent/src/coach_switcher.py`; `SlideCommander.find_player` uses `find_by_role`. Move the four debug `session.on` loggers out of `agent.py` or behind debug (they log transcripts at INFO).
-- Tests: attributes-changed path, coach present at attach, second coach after leave, failing `update_instructions` logged; add `drain()` instead of reading `_tasks`.
+## Handoff behavior now in the agent
+- `RoomOptions(close_on_disconnect=False)`. On coach leave the floor router disables, presenter instructions and `mode=presenter` are restored, then `set_participant(None)` and `set_participant(player)`.
+- Switch order: store and send the briefing, handoff line, clicker instructions, `mode=clicker`, `set_participant(coach)`, then enable the floor router. Failures before the ear switch roll back.
+- Attributes-changed handler runs only when `changed_attributes["role"] == "coach"`.
+- `CoachSwitcher` lives in `agent/src/coach_switcher.py`. Transcript logs are behind `CHALK_SESSION_DEBUG=1`.
 
-## Lane B (task 13) must include (audit 13A)
-- Live check: speaker change, then "Assistant, ..." command. The floor router may clip the first words of a new speaker (active-speaker detection + debounce + new stream). If the command is lost, take the ADR-028 fallback (coach-only ear after handoff).
-- README known limit: if the briefing or handoff line fails, the coach is ignored until they rejoin.
+## Floor router
+- After handoff, either trusted human can take the ear after 200 ms. The first words of a new speaker can be clipped. The ADR-028 coach-only fallback is not behind a flag; the router stays on.
+- If both briefing writes fail, or the handoff line fails, that coach is not switched until they rejoin. A failed text stream still continues when `coach_briefing` was stored.
 
-## Ship checklist (collected from audits)
-- README Known limits: coach link is a bearer link (anyone with it joins as coach); no rate limit on the token route; free-tier cold start and minute caps.
-- Vercel: set `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `AGENT_NAME` for build and runtime (page checks env at build).
-- LiveKit Cloud agent: `AGENT_NAME` must be a secret (`lk agent secrets`), or the worker crash-loops.
-- After `lk agent create`: local dev must stop using `--deployment production` (set `LIVEKIT_AGENT_DEPLOYMENT`).
-- Agent: cap session length (cost guard).
-- Agent nits from audit 08: log `__qualname__` and each fallback model id; parse providers once; validate providers and key at worker start, not per job; comment on tests reading `_models`.
-- /player: show a clear message when the agent session ends on error (all realtime models failed).
-- /player: featured fact card must not cover the Photo credits link (license), cutouts or court markers; move it into the left column. Coach view: BRIEFING stamp collides with the binder clip.
-- `CHALK_DEBUG` must not be set in `lk agent secrets` or any deploy config (enables the debug_probe RPC).
-- Decide whether planning files (`CLAUDE.md`, `AGENTS.md`, `.claude/`, `.agents/`, `docs/plan/`) stay public.
+## Ship checklist (not done unless noted)
+- README known limits already include the bearer coach link and the lack of a token-route rate limit. They do not state a cold-start time. This repo has not measured one.
+- A Vercel deploy is not configured. `/player` throws at import if `LIVEKIT_URL` is unset, so a build that loads that module needs the variable. The token route also requires `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` and `AGENT_NAME` when it is called.
+- No Cloud agent is configured. `AGENT_NAME` is required at worker import. After a future `lk agent create`, local dev must set `LIVEKIT_AGENT_DEPLOYMENT` so it does not take the production deployment name.
+- No session-length cap is in the agent.
+- Realtime factory logs the model class and each fallback id, parses providers once, and validates them at import unless `CHALK_DEBUG=1`.
+- `/player` ends the session on an explicit agent failure or when a live agent finishes. The ended screen says the film session ended.
+- `CHALK_DEBUG=1` skips the realtime session and registers `debug_probe`. Do not set it on a shared worker.
+- Planning files (`CLAUDE.md`, `AGENTS.md`, `docs/plan/`) are in the repo.

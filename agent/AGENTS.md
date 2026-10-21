@@ -1,6 +1,8 @@
 # AGENTS.md
 
-This is a LiveKit Agents project. LiveKit Agents is a Python SDK for building voice AI agents. This starter is designed to run in LiveKit Cloud. See @README.md for more about the rest of the LiveKit ecosystem.
+This directory is the Chalk Talk Python worker, started from the LiveKit Agents starter. The running session is GPT Realtime from `src/model.py` (`REALTIME_PROVIDERS`, default `openai,inference`). It does not use the starter STT-LLM-TTS pipeline, TurnDetector, or adaptive interruption. `scenarios.yaml` is still the starter's generic assistant scenarios. They do not describe Floppy, and this repo has no simulations workflow under `.github/workflows`. See the repo-root `README.md` for how to run the app.
+
+The notes below are LiveKit's starter guidance. Where they disagree with `src/`, follow `src/`.
 
 ## Tooling
 
@@ -40,7 +42,7 @@ Voice AI agents are highly sensitive to latency. Design complex agents in a stru
 
 ## Testing
 
-To keep agent behavior from regressing, add a scenario to `scenarios.yaml` and run it with `lk agent simulate text --scenarios scenarios.yaml`. Make sure the scenarios run in CI on every merge to `main`. Read the [simulations documentation](https://docs.livekit.io/testing/simulations/) before editing them.
+`scenarios.yaml` is the starter file and is not the Chalk Talk deck. This repo has no workflow that runs `lk agent simulate` on merge. Behavior checks that do exist are `uv run pytest` in this directory. Read the [simulations documentation](https://docs.livekit.io/testing/simulations/) before adding a real scenario.
 
 Important: when you modify core agent behavior such as instructions, tool descriptions, or tasks, workflows, and handoffs, never guess at what works. Start by writing a scenario for the desired behavior. For example, if you're adding a tool, write a scenario that exercises it, then iterate on the tool until the scenario passes. This is how you produce a working, reliable agent.
 

@@ -21,16 +21,15 @@ Full spec: `docs/PRODUCT.md`.
 
 ## Architecture summary
 - One LiveKit Cloud room per session. Random room name. Participants: player, agent, coach.
-- Agent: Python `livekit-agents` 1.8.x. `AgentSession` with GPT Realtime (`gpt-realtime-2.1`; `REALTIME_PROVIDERS` default `openai,inference`; evals pin `REALTIME_PROVIDERS=openai`).
+- Agent: Python `livekit-agents` 1.8.x. `AgentSession` with GPT Realtime (`gpt-realtime-2.1`; `REALTIME_PROVIDERS` default `openai,inference`). There is no eval suite that pins a provider. The worker runs locally (`lk agent dev`). No Cloud agent config is in the repo.
 - Agent modes: `presenter` and `clicker`.
-- Tools: `show_slide(slide_id, seq)`, `call_head_coach()`, and three board tools: `highlight(target)`, `run_play(play_id)`, `add_callout(fact_id | text)`.
+- Tools: `show_slide(slide_id)`, `call_head_coach()`, and three board tools: `highlight(target)`, `run_play(play_id)`, `add_callout(fact_id | text)`. The agent owns `seq`. The model does not pass it.
 - Board tools are a fixed menu. The model picks ids from the deck data. It never makes layout.
 - Every slide and board tool sends RPC to the player (found by role attribute). It waits for the ack.
 - The current slide and the board (`overlay_state`) are agent attributes. The coach and late joiners render from them.
 - Overlays clear on slide change.
-- The coach briefing is a private text stream (topic `coach-briefing`).
-- Frontend: Next.js from `agent-starter-react`. Pages `/player` and `/coach`. Token route with role.
-- Deploy: agent on LiveKit Cloud, frontend on Vercel.
+- The coach briefing is a private text stream (topic `coach-briefing`) and the agent attribute `coach_briefing`.
+- Frontend: Next.js. Pages `/player` and `/coach`. `/` redirects to `/player`. Token route is `POST /api/token` with role. Run it locally. There is no Vercel project config in the repo.
 
 Full contracts: `docs/ARCHITECTURE.md`. Decisions: `DECISIONS.md`.
 
@@ -44,9 +43,9 @@ Full contracts: `docs/ARCHITECTURE.md`. Decisions: `DECISIONS.md`.
 
 ## Repo map (planned)
 ```
-agent/        Python agent (livekit-agents). Deck data, tools, modes, prompts.
-web/          Next.js app. /player, /coach, token route, slides, status panel.
-evals/        Tool-choice eval: utterances -> expected and forbidden tool calls.
+agent/        Python agent (livekit-agents). Tools, modes, prompts. Deck copy in agent/data.
+web/          Next.js app. /player, /coach, token route, slides, camera rail.
+evals/        Not in this repo. The intended item list is docs/PRODUCT.md.
 docs/         PRODUCT, ARCHITECTURE, RISKS, REFERENCES, MISTAKES-TO-AVOID, DESIGN-BRIEF.
 docs/plan/    One task file per unit of work. Use TEMPLATE.md.
 design/       UI concept images (concepts/), taste refs (refs/), licensed player cutouts (players/). See docs/DESIGN-BRIEF.md.
@@ -69,7 +68,7 @@ LEARNINGS.md  Surprises and gotchas found while building.
 - Source every slide fact in `FACTS.md` with a URL. Do not invent numbers.
 - Use no mock data in the demo path. Do not fake anything in the demo.
 - Never use `remote_participants[0]`. Find participants by the `role` attribute.
-- Get the RPC ack before the agent narrates a slide.
+- Get the RPC ack before the agent narrates slide content. The presenter prompt allows one short content-free lead-in before the tool. Nothing in code blocks that lead-in.
 - Send an increasing `seq` with every `show_slide` and board RPC. Use one counter. The browser drops stale seq values.
 - Board tools use enums from the deck data only. No freehand or generated layout.
 - A callout with a fact or stat must use a verified `fact_id`. Free text has no numbers. Check the rule in agent and browser.
@@ -88,7 +87,7 @@ lk cloud auth # link LiveKit Cloud project
 lk skills install # LiveKit docs MCP + skills for Claude Code and Cursor
 # --- task 01: agent + web local run ---
 make agent-dev          # cd agent && lk agent dev --deployment ${LIVEKIT_AGENT_DEPLOYMENT:-production}
-make web-dev            # cd web && pnpm dev
+make web-dev            # cd web && pnpm dev --hostname 0.0.0.0
 make agent-test         # cd agent && uv run pytest
 make web-lint           # cd web && pnpm lint
 make web-typecheck      # cd web && pnpm exec tsc --noEmit

@@ -1,23 +1,23 @@
 # Chalk Talk — architecture and contracts
 
-Status: design. Items marked `[UNVERIFIED - check LiveKit docs]` must be confirmed with the LiveKit docs MCP before use. Items marked `[VERIFIED]` were checked with `lk docs` (search, get-page, code-search) against livekit-agents 1.8.8 docs; the source is named inline. Contracts here are the source of truth for both agent and web code. Change them only through the planner, and log the change in `DECISIONS.md`.
+Status: contracts aligned with `agent/` and `web/`. Where an older sentence disagreed with the code, this file now follows the code. Items marked `[UNVERIFIED]` were not re-checked against LiveKit docs in the docs sync. Items marked `[VERIFIED]` name the source that was checked when they were written. Change a contract only with a matching code change, and log it in `DECISIONS.md`.
 
 ## System diagram
 ```mermaid
 flowchart LR
   subgraph Browser_Player["Player browser /player"]
-    PUI["Slides + status panel"]
+    PUI["Slides + agent-state rail"]
     PRPC["RPC handlers: show_slide, highlight, run_play, add_callout"]
   end
   subgraph Browser_Coach["Coach phone /coach"]
     CUI["Slides + overlays + briefing card"]
     CTS["Text stream handler: coach-briefing"]
   end
-  TR["Next.js token route /api/token (Vercel)"]
+  TR["Next.js token route /api/token (local; not a Vercel project in this repo)"]
   subgraph LK["LiveKit Cloud room (random name per session)"]
     AG["Python agent (livekit-agents) presenter / clicker"]
   end
-  OAI["OpenAI GPT Realtime (via LiveKit Inference or plugin)"]
+  OAI["gpt-realtime-2.1 (OpenAI plugin, then Inference)"]
 
   PUI -- "POST role=player" --> TR
   CUI -- "POST role=coach + room" --> TR
@@ -35,15 +35,15 @@ flowchart LR
 ## Components
 | Component | Tech | Responsibility |
 |---|---|---|
-| Agent | Python, `livekit-agents` 1.8.x, `AgentSession` + GPT Realtime | Presents, routes slides and board tools, validates tool input, owns seq and overlay state, generates briefing, switches modes |
-| Deck data | One file in `agent/` (JSON or Python) | Single source of slide ids, titles, notes, fact ids, diagrams (markers, zones) and plays. Web imports or receives the same data. |
-| Facts data | Generated from `FACTS.md` | Fact id, claim text, verified flag. Source for the `add_callout` fact enum and card text. |
-| Token route | Next.js route handler, `livekit-server-sdk` | Mints role-scoped tokens, random room, explicit dispatch, short TTL |
-| `/player` | Next.js page from `agent-starter-react` | Slides, overlays (RPC-driven), mic, status panel, coach link + QR |
-| `/coach` | Next.js page | Slides, overlays (attribute-driven), mic, private briefing card |
-| Eval | Python script in `evals/` | Utterances -> expected and forbidden tool calls (slides, board tools, handoff). Runs 3x. Prints pass rate per group. Item format: `docs/PRODUCT.md#eval`. |
+| Agent | Python, `livekit-agents` 1.8.x, `AgentSession` + GPT Realtime | Presents, routes slides and board tools, validates tool input, owns seq and overlay state, generates briefing, switches modes. Run locally with `lk agent dev`. No Cloud agent config is in the repo. |
+| Deck data | `deck/deck.json`, copied by `scripts/sync_deck.py` into `agent/data/deck.json` and `web/lib/deck/deck.json` | Single hand-edited source of slide ids, titles, notes, fact ids, diagrams and plays. The copies are what the agent and the browser import. |
+| Facts data | `FACTS.md`, generated to `deck/facts.json` by `scripts/build_facts.py` (verified rows only), then copied with the deck | Fact id, claim text. Source for the `add_callout` fact enum and card text. |
+| Token route | Next.js `POST /api/token`, `livekit-server-sdk` | Mints role-scoped tokens, random room, explicit dispatch, 15-minute TTL |
+| `/player` | Next.js page | Slides, overlays (RPC-driven), mic, camera, bottom-rail agent state, coach link + QR. `/` redirects here. |
+| `/coach` | Next.js page | Slides, overlays (attribute-driven), mic, camera, private briefing card, mode label when the attribute is set |
+| Eval | Not in the repo | `docs/PRODUCT.md` still lists the intended utterances. There is no script that runs them. |
 
-Deck single source: the planner decides how web gets the deck (shared JSON file imported by both, or bundled copy generated from one file). It must not be hand-duplicated. The same holds for facts: `FACTS.md` is the source. A script or a test keeps the facts data in step with it.
+Deck single source: `deck/deck.json` and `deck/facts.json`. `scripts/sync_deck.py --check` fails if a committed copy drifted. Do not hand-edit the copies.
 
 ## Contracts
 
@@ -54,8 +54,9 @@ Deck single source: the planner decides how web gets the deck (shared JSON file 
 | `current_slide` | Agent (`local_participant.set_attributes`) | slide id string, e.g. `s3_kyrie` | Late joiners and reconnects render from this. |
 | `slide_seq` | Agent | integer as string | Seq of the last acked slide. |
 | `overlay_state` | Agent | JSON string, see [Overlay state](#overlay-state) | Current board overlays. Set only after an ack. Cleared in the same `set_attributes` call that changes `current_slide`. |
-| `mode` | Agent | `presenter` \| `clicker` | UI shows it in the status panel. |
-| `lk.agent.state` | LiveKit (built in) | listening / thinking / speaking ... | Used for turn state in the panel. |
+| `mode` | Agent | `presenter` \| `clicker` | Set to `clicker` after a successful coach switch, and back to `presenter` on leave or rollback. Not set at session start. The coach page shows it. The player rail does not. |
+| `coach_briefing` | Agent | JSON string of the briefing | Written before the text stream so a late coach handler can still read it. |
+| `lk.agent.state` | LiveKit (built in) | listening / thinking / speaking ... | Mapped to the rail pill. Also the clock for captioned play steps. |
 
 Identity format: `player-<random>`, `coach-<random>`. Identity prefix is not trusted for routing; the `role` attribute is.
 
@@ -63,7 +64,7 @@ Identity format: `player-<random>`, `coach-<random>`. Identity prefix is not tru
 `s1_tipoff`, `s2_lebron`, `s3_kyrie`, `s4_offense`, `s5_xfactors`, `s6_last_two`
 
 ### Deck data additions
-The deck data is the single source for board ids. Tool enums, browser validation and rendering all read it. Names, positions and steps below are placeholders that the planner checks (see `docs/PRODUCT.md#slides`).
+The deck file is the source for board ids. Tool enums, browser validation and rendering read the synced copies. The ids below match `deck/deck.json`. Marker positions and play steps live in that file. `docs/PRODUCT.md` is the outline, not the copy on screen.
 
 Player ids (enum `PlayerId`):
 | id | Label |
@@ -95,7 +96,7 @@ Per slide:
 | `s5_xfactors` | text strip, no court | — | — | — |
 | `s6_last_two` | blank half court | — (card: `k_jr_card`) | all zones | — |
 
-Shape (sketch; planner fixes the final format):
+The JSON below is a sketch of the shape. The shipped geometry, captions and matchups are `deck/deck.json`, not this sketch.
 ```json
 {
   "slides": [{
@@ -205,9 +206,9 @@ Seq: one agent-owned counter for all agent -> player commands (`show_slide`, `hi
 | `highlight` | When pointing at a player or zone answers the question, or when asked | Only when a human addresses the agent |
 | `run_play` | When asked to show or walk through a play, or when the play is the clearest answer | When addressed, or when the humans clearly discuss one of the plays |
 | `add_callout` | Only when a human asks to put something up | Only when a human addresses the agent |
-| `call_head_coach` | On request; offered for slide 6 topics | Not used |
+| `call_head_coach` | On request; the prompt offers the head coach for late-game topics | Still registered. The clicker prompt does not tell the model to call it. |
 
-In clicker mode the agent stays silent after a board change unless addressed; if addressed, one short line at most. If Spike 1 shows the agent hears only the coach after handoff, player-addressed triggers in clicker mode do not apply.
+In clicker mode the prompt says to stay silent unless addressed as Floppy or Assistant. It does not cap an addressed reply at one line. `show_slide` is still called when the topic changes. After the switch, the floor router can link the player or the coach, so a player can address the agent too.
 
 ### RPC methods (agent -> browser)
 All payloads are JSON strings. Handlers registered in `useEffect`, unregistered in cleanup.
@@ -315,7 +316,7 @@ Errors: throw `RpcError` (never return an "Error:" string).
 
 `[VERIFIED]` (RPC doc, "Errors"): codes 1001-1999 are reserved for LiveKit. App codes therefore use 2001-2007 (ADR-020). Built-in codes the agent must map to a failure string: 1400 unsupported method, 1401 recipient not found, 1500 application error (any non-`RpcError` throw), 1501 connection timeout, 1502 response timeout, 1503 recipient disconnected, 1505 send failed. Default `response_timeout` is 10 s; we set about 3 s.
 
-Ack timing: the browser acks after the slide is committed to the screen (after next paint). Planner decides the exact method (e.g. `requestAnimationFrame`) in the RPC spike. Board methods use the same method; `run_play` acks after the first animation frame.
+Ack timing: after two `requestAnimationFrame` callbacks when the document is visible. A hidden document acks without waiting on `requestAnimationFrame`. Board methods use the same wait; `run_play` acks after the first painted frame, then the speaking clock advances later steps.
 
 ### Overlay state
 Choice (ADR-016): the player gets board changes as acked RPC. The agent then mirrors the result into its own participant attribute `overlay_state`. The coach page and any late joiner render from that attribute. The coach does not get RPC.
@@ -364,9 +365,9 @@ Rendering from the attribute (coach page, and player page on reconnect):
 ### Text streams
 | Topic | Direction | Destination | Content |
 |---|---|---|---|
-| `coach-briefing` | agent -> coach | `destination_identities=[coach_identity]` only | JSON: `{"asked": [...], "main_worry": "...", "current_slide": "s3_kyrie", "summary": "..."}`. The same JSON is also written to the agent attribute `coach_briefing` so a late coach handler still gets the summary as text. |
-| `lk.transcription` | built in | all | Live transcripts for the panel |
-| `chalk-talk-events` (optional) | agent -> player | player | Panel events: slide trace, interruption, handoff timeline. Planner may use attributes instead. |
+| `coach-briefing` | agent -> coach | `destination_identities=[coach_identity]` only | JSON: `{"asked": [...], "main_worry": "...", "current_slide": "<slide id or unknown>", "summary": "..."}`. `asked` is up to three paraphrased notes, not raw turns. The same JSON is written to the agent attribute `coach_briefing` before the stream. The coach page reads that attribute. |
+| `lk.transcription` | built in | room | Not rendered. Player and coach screens do not show a transcript. |
+| `chalk-talk-events` | — | — | Not implemented. |
 
 `send_text(..., topic=..., destination_identities=[...])` is documented for text streams. `[VERIFIED]` Python: `await room.local_participant.send_text(text, *, topic=..., destination_identities=[...])` is keyword-only (`livekit-rtc` `participant.py`). Executor confirms the exact keyword list in the installed version.
 
@@ -374,16 +375,16 @@ Rendering from the attribute (coach page, and player page on reconnect):
 | Mode | Instructions (substance) | Listens to |
 |---|---|---|
 | `presenter` | Present the deck. Call `show_slide` before speaking about any slide. Call a board tool before describing the board change. Answer from slide notes and facts only. Offer the head coach for slide 6 topics. Only the prepared plays exist; never invent one. | Player |
-| `clicker` | Do not present. Do not answer unless addressed as "Assistant". Call `show_slide` when the humans move to a topic on another slide. Board tools when addressed; `run_play` also when the humans clearly discuss a prepared play. Stay silent otherwise. | The active trusted player or coach selected by the bounded floor router |
+| `clicker` | Do not present. Stay silent unless addressed as Floppy or Assistant. Call `show_slide` when the humans move to a topic on another slide, including X-factors. Board tools when addressed; `run_play` also when the humans clearly discuss a prepared play. | The active trusted player or coach selected by the floor router (`FLOOR_DEBOUNCE_S = 0.2`) |
 
 The board tool rules come from [Tools by mode](#tools-by-mode). The prompt lists the menu by reading the deck data, not by a hand-written copy.
 
-Exact switch trigger: the agent sees a participant join with `role=coach` (event `participant_connected`, or attribute change). A prior handoff request is not required. Then, in order:
-1. Build the briefing from the session so far.
-2. `send_text` the briefing to the coach only.
-3. Say the one handoff line ("Coach, they're worried about Kyrie. We're on slide 3.").
-4. Update instructions to clicker mode (`agent.update_instructions(...)`). Set attribute `mode=clicker`.
-5. Switch audio input to the coach: `session.room_io.set_participant(coach_identity)`. This method is documented (sessions doc, turns doc, `room_io.py`). `[VERIFIED]` signature: `RoomIO.set_participant(participant_identity: str | None)`, "Switch audio and video streams to specified participant". It takes one identity, so the agent hears one human at a time. Behavior mid-session with GPT Realtime 2.1: `[VERIFIED - Spike 1 / task 06]` switch is clean (0.66 ms for `set_participant`, 46.23 ms including clicker instructions and `mode=clicker`); no realtime session reset. `close_on_disconnect=False`. Only the library's close reasons (`CLIENT_INITIATED`, `ROOM_DELETED`, `USER_REJECTED`) end the session, and only when no player remains. Coach leave restores the player.
+Exact switch trigger: the agent sees a participant with `role=coach` (`participant_connected`, or `participant_attributes_changed` when the changed `role` is `coach`). A prior `call_head_coach` is not required. A second coach is ignored while one switch is active. Then, in order:
+1. Build the briefing from user turns before the handoff request (or all user turns if no request was recorded). Concerns are paraphrased, not raw transcripts.
+2. Write `coach_briefing`, wait 0.4 s, then `send_text` the same JSON to the coach identity on topic `coach-briefing`. If the attribute write succeeded, a failed stream still continues. If both fail, the switch stops.
+3. `generate_reply` with `tool_choice="none"` and instructions to say one short line: the player's main concern and the current slide id. Not a fixed sentence. `allow_interruptions` is not passed. If that line fails, the switch stops.
+4. `update_instructions` to the clicker prompt. Set attribute `mode=clicker`. On failure, roll back to the presenter prompt and `mode=presenter`.
+5. `session.room_io.set_participant(coach_identity)`, then enable the floor router. `[VERIFIED]` in this repo: `RoomIO.set_participant(participant_identity: str | None)` is what `CoachSwitcher` calls. It takes one identity, so the agent hears one human at a time. Spike 1's timings are in `LEARNINGS.md`; they are not a current test assertion. `close_on_disconnect=False`. A player disconnect ends the session only when `disconnect_reason` is in `DEFAULT_CLOSE_ON_DISCONNECT_REASONS` and no player remains. This file does not list that set; the constant is the source. Coach leave restores the player: `set_participant(None)`, then `set_participant(player)`.
 
 If a coach joins without a handoff request: still brief and switch (the link only exists after the request, so this is unlikely).
 
@@ -395,19 +396,19 @@ After the initial coach switch, `active_speakers_changed` can move the single li
 Request:
 ```json
 {"role": "player"}
-{"role": "coach", "room": "fr-8f3k2q"}
+{"role": "coach", "room": "fr-0123456789abcdef"}
 ```
 Response:
 ```json
-{"serverUrl": "wss://...", "roomName": "fr-8f3k2q", "participantToken": "<jwt>", "participantName": "Player"}
+{"serverUrl": "wss://...", "roomName": "fr-0123456789abcdef", "participantToken": "<jwt>", "participantName": "Player"}
 ```
 Rules:
-- `player`: server creates a random room name. Token includes explicit agent dispatch (`RoomConfiguration` with `agents: [{agentName}]`). TTL short (about 15 min).
-- `coach`: must pass an existing room name. No dispatch. Short TTL.
-- Grants (both): `roomJoin`, `room=<name>`, `canPublish`, `canPublishSources=[microphone,camera]`, `canSubscribe`, `canPublishData` (needed for RPC responses). No screen share, `roomAdmin`, `roomCreate`, `roomList` or `canUpdateOwnMetadata`.
-- Sets token attribute `role`.
-- Rejects unknown roles with 400. No GET route.
-- The starter's production guard (throws unless `IS_VERCEL_PREVIEW=true`) must be handled deliberately, not deleted blindly. Planner decides.
+- `player`: server creates a room name matching `^fr-[0-9a-f]{16}$` (16 hex chars, 64 bits). Token includes explicit agent dispatch (`RoomConfiguration.agents`). TTL is `15m`. Room config: `emptyTimeout` 60 s, `departureTimeout` 20 s, `maxParticipants` 4.
+- `coach`: must pass a room name that matches that pattern. The route then checks the room exists (`listRooms`). No dispatch. TTL is `15m`.
+- Grants (both): `roomJoin`, `room=<name>`, `canPublish`, `canPublishSources` microphone and camera, `canSubscribe`, `canPublishData`. No screen share. The grant object does not set `roomAdmin`, `roomCreate`, `roomList` or `canUpdateOwnMetadata`.
+- Sets token attribute `role`. Participant name is `Player` or `Coach`. Identity is `<role>-` plus 10 hex chars.
+- Unknown roles, a missing coach room, and a bad room pattern return 400. A well-formed coach room that is not open returns 404.
+- `GET /api/token` returns 405 with `Allow: POST`. There is no `IS_VERCEL_PREVIEW` guard. `/player` throws at import if `LIVEKIT_URL` is unset. The token route returns 500 if `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` or `AGENT_NAME` is missing.
 
 Coach link risk: anyone with the link can join as coach. Acceptable for a demo; noted in README known limits.
 
@@ -472,8 +473,7 @@ sequenceDiagram
   P->>A: audio "Wait, what about Kyrie?"
   M->>A: speech started (server VAD)
   A->>P: stop playout
-  A->>A: truncate history to heard text
-  A->>P: panel event: interruption + heard text
+  A->>A: LiveKit truncates history to heard text
   M->>A: tool call show_slide(s3_kyrie)
   A->>P: RPC show_slide {s3_kyrie, seq}
   P-->>A: ack
@@ -490,17 +490,19 @@ sequenceDiagram
   participant T as Token route
   participant C as Coach
   P->>A: "Get me the head coach"
-  A->>P: audio "Getting Coach now."
   A->>A: call_head_coach()
   A->>P: RPC show_coach_link {url}
   P->>P: show link and QR
+  A->>P: audio, one short line, then wait (wording is the model's)
   C->>T: POST role=coach, room
   T-->>C: coach token
   C->>A: joins room (role=coach)
+  A->>A: set attribute coach_briefing
   A->>C: send_text coach-briefing (coach only)
-  A->>P: audio "Coach, they're worried about Kyrie. We're on slide 3."
+  A->>P: audio, one line: main concern and current slide id
   A->>A: update_instructions(clicker), mode=clicker
   A->>A: room_io.set_participant(coach)
+  A->>A: enable floor router
   C->>P: live conversation
   A->>P: RPC show_slide when topic changes
   C->>A: "Assistant, put Iguodala on LeBron"
@@ -515,7 +517,11 @@ sequenceDiagram
 - On connect, `/player` and `/coach` read the agent's `current_slide` and `overlay_state` attributes and render them. Plays show their last frame.
 - Any RPC with a seq at or below the last applied seq is ignored. On reconnect, the player page sets its last applied seq from `overlay_state.seq` (or `slide_seq` if higher).
 
-## Observability for the panel
-- Turn state from `lk.agent.state`.
-- Latency per turn: `[VERIFIED]` livekit-agents 1.8.7 adds realtime `e2e_latency` (last user speech to first agent playback) in `event.item.metrics` on `conversation_item_added` for assistant messages, when local VAD is configured (changelog 1.8.7). Show "—" when absent.
-- Slide trace, board trace (tool, ids, ack or failure reason, round trip) and handoff timeline from agent-sent events.
+## What the screens show for agent state
+- Player and coach bottom rails map `lk.agent.state` to Listening, Thinking, Speaking, or Waiting. They do not show turn count, latency, interruptions, or a slide trace.
+- `StatusStrip` (turn, latency, interruptions) is in the repo and is not mounted.
+- The session does not set a local VAD, so this app does not read `e2e_latency`.
+- Transcript logging exists only when `CHALK_SESSION_DEBUG=1`.
+
+## Startup
+`present_opening_slide` waits up to 5 seconds for `role=player`, logs the board as blank, then `generate_reply` with `tool_choice="none"` and the fixed greeting. It does not call `show_slide`. The presenter prompt says to keep the board blank until the player asks for the plan or another slide topic, and to call `show_slide("s1_tipoff")` when they ask for the plan. `show_startup_slide` (retry s1) is still in the module and is not called from the job.

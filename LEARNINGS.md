@@ -2,6 +2,8 @@
 
 Surprises, gotchas and fixes found while building. One entry per line. Newest last.
 
+This is a chronological log. A later line wins when it disagrees with an earlier one. It is not a description of every current behavior. For that, read the code, `README.md`, `DECISIONS.md` and `docs/ARCHITECTURE.md`.
+
 Format: `- [area] What happened. Why. Fix or workaround. (source: task file / doc link)`
 
 - [livekit/rpc] RPC codes 1001-1999 are reserved for LiveKit. App codes moved to 2001-2007. (RPC doc "Errors"; ADR-020)
@@ -124,3 +126,4 @@ Format: `- [area] What happened. Why. Fix or workaround. (source: task file / do
 - [agent/audio] ai-coustics `audio_enhancement` blocked the agent event loop 100ms–1.1s on every credential refresh (`_on_credentials_updated`), which stutters agent audio and delays RPCs. Removed it; browser AEC/NS handles the mic.
 - [web/lineup] Five lower-thirds with team badges need ~1200px; the hero column has ~800. Use a five-column grid with a team-colored underline instead of the per-player badge.
 - [web/coach] If coach `connect()` finishes after the join effect cancelled, returning without `disconnect()` leaves a second coach in the room. Disconnect when cancelled. Close the invite overlay once a coach tile exists so QR and camera are not two windows.
+- [docs] Current tree, checked against the code: the opening board stays blank (`present_opening_slide` does not call `show_slide`); coach leave restores the player (`close_on_disconnect=False`, then `set_participant(None)` and the player); there is no STT-LLM-TTS pipeline; `REALTIME_PROVIDERS` defaults to `openai,inference`; `evals/` is not in the repo; there is no `livekit.toml` or Vercel project config; the session does not enable ai-coustics. Earlier lines that say the pipeline is the fallback, that coach leave is unbuilt, or that noise cancellation stays on, are the notes from those tasks.

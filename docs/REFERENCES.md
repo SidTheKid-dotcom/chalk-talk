@@ -40,7 +40,7 @@ Only links found in our research or checked while writing this scaffold. Prefer 
 | https://github.com/livekit-examples/agent-starter-python | Agent template (`lk agent init --template agent-starter-python`) |
 | https://github.com/livekit-examples/agent-starter-react | Frontend base. Token route at `app/api/token/route.ts`. |
 | https://github.com/livekit-examples/python-agents-examples | `docs/examples/rpc_agent`, `state_tracking`, `complex-agents/teleprompter` |
-| https://github.com/livekit/agents/blob/main/examples/voice_agents/toggle_io.py | `RoomIO.set_participant` / `unset_participant` via RPC. Key for Spike 1. |
+| `RoomIO.set_participant` in the installed `livekit-agents` package (`room_io.py`) | What Spike 1 and `CoachSwitcher` call. `examples/voice_agents/toggle_io.py` was not on livekit/agents main when that spike ran (`LEARNINGS.md`). |
 | https://github.com/livekit/agents/issues/6411 | Realtime speaks then calls tool (double reply). Context for Spike 2. |
 | https://github.com/livekit/agents/issues/3963 | Realtime history and truncation discussion |
 | https://github.com/livekit/agents/issues/2018 | Explicit RoomIO with a chosen participant |
